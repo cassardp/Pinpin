@@ -51,14 +51,62 @@ class ContentTypeDetector {
         let host = url?.host?.lowercased() ?? ""
         
         let socialHosts = [
+            // Twitter/X
             "twitter.com", "www.twitter.com",
             "x.com", "www.x.com",
+            
+            // Meta (Facebook/Instagram/Threads)
+            "facebook.com", "www.facebook.com", "fb.com", "m.facebook.com",
             "instagram.com", "www.instagram.com",
+            "threads.net", "www.threads.net",
+            "threads.com", "www.threads.com",
+            
+            // Pinterest
             "pinterest.com", "www.pinterest.com",
             "pin.it", "www.pin.it",
+            "pinterest.fr", "pinterest.de", "pinterest.co.uk",
+            
+            // TikTok
             "tiktok.com", "www.tiktok.com",
-            "threads.net", "www.threads.net",
-            "threads.com", "www.threads.com"
+            "vm.tiktok.com", "m.tiktok.com",
+            
+            // LinkedIn
+            "linkedin.com", "www.linkedin.com",
+            "lnkd.in", "www.lnkd.in",
+            
+            // Snapchat
+            "snapchat.com", "www.snapchat.com",
+            "snap.com", "www.snap.com",
+            
+            // Discord
+            "discord.com", "www.discord.com",
+            "discord.gg", "discordapp.com",
+            
+            // Reddit
+            "reddit.com", "www.reddit.com",
+            "redd.it", "old.reddit.com", "m.reddit.com",
+            
+            // Telegram
+            "t.me", "telegram.me", "telegram.org",
+            
+            // WhatsApp
+            "wa.me", "whatsapp.com", "www.whatsapp.com",
+            "chat.whatsapp.com", "web.whatsapp.com",
+            
+            // Mastodon & Fediverse
+            "mastodon.social", "mastodon.online", "mas.to",
+            "mstdn.social", "fosstodon.org",
+            
+            // Autres plateformes
+            "tumblr.com", "www.tumblr.com",
+            "medium.com", "www.medium.com",
+            "flickr.com", "www.flickr.com",
+            "vimeo.com", "www.vimeo.com",
+            "twitch.tv", "www.twitch.tv",
+            "clubhouse.com", "www.clubhouse.com",
+            "behance.net", "www.behance.net",
+            "dribbble.com", "www.dribbble.com",
+            "deviantart.com", "www.deviantart.com"
         ]
         
         return socialHosts.contains(host)
@@ -90,10 +138,33 @@ class ContentTypeDetector {
     
     private func isPodcastURL(_ urlString: String) -> Bool {
         let podcastPlatforms = [
+            // Plateformes principales
             "podcasts.apple.com", "spotify.com/show", "spotify.com/episode",
-            "soundcloud.com", "anchor.fm", "buzzsprout.com", "podbean.com",
-            "castbox.fm", "overcast.fm", "pocketcasts.com", "stitcher.com",
-            "tunein.com", "iheart.com", "audible.com", "podcast.google.com"
+            "podcast.google.com", "podcasts.google.com",
+            
+            // Plateformes audio généralistes
+            "soundcloud.com",
+            
+            // Hébergeurs de podcasts
+            "anchor.fm", "buzzsprout.com", "podbean.com", "libsyn.com",
+            "spreaker.com", "simplecast.com", "transistor.fm", "captivate.fm",
+            "acast.com", "megaphone.fm", "redcircle.com", "whooshkaa.com",
+            "podcast.co", "fireside.fm", "castos.com", "podscribe.com",
+            
+            // Applications d'écoute
+            "overcast.fm", "pocketcasts.com", "castbox.fm", "castro.fm",
+            "downcast.fm", "playerFM.com", "podcastaddict.com",
+            "stitcher.com", "tunein.com", "iheart.com", "iheartradio.com",
+            "radiofrance.fr", "radiocanada.ca", "bbc.co.uk/sounds",
+            
+            // Plateformes européennes
+            "deezer.com/show", "deezer.com/episode", "podimo.com",
+            "podtail.com", "podcast.de", "podcastone.com",
+            
+            // Plateformes spécialisées
+            "luminary.link", "himalaya.com", "podchaser.com",
+            "listen.stitcher.com", "podbay.fm", "podscribe.ai",
+            "rss.com", "podcast.app", "podfollow.com"
         ]
         
         // Patterns spécifiques pour les podcasts
@@ -105,10 +176,49 @@ class ContentTypeDetector {
     
     private func isBookURL(_ urlString: String) -> Bool {
         let bookPlatforms = [
+            // Plateformes principales
             "books.apple.com", "goodreads.com", "google.com/books",
-            "audible.com", "scribd.com", "kindle.amazon.com", "kobo.com",
-            "librarything.com", "bookbub.com", "overdrive.com", "hoopla.com",
-            "blinkist.com", "storytel.com", "bookmate.com"
+            "kindle.amazon.com", "amazon.com/books", "amazon.com/kindle",
+            
+            // Livres audio
+            "audible.com", "audible.fr", "audible.de", "audible.co.uk",
+            "libro.fm", "downpour.com", "audiobooks.com",
+            "scribd.com", "storytel.com", "bookbeat.com",
+            
+            // Liseuses et éditeurs
+            "kobo.com", "rakuten.com/kobo", "barnesandnoble.com/nook",
+            "play.google.com/books", "microsoft.com/books",
+            
+            // Bibliothèques numériques
+            "overdrive.com", "hoopla.com", "libby.app", "cloudlibrary.com",
+            "axis360.baker-taylor.com", "rbdigital.com",
+            
+            // Plateformes sociales de lecture
+            "librarything.com", "shelfari.com", "anobii.com",
+            "bookbub.com", "bookish.com", "litsy.com",
+            
+            // Plateformes d'abonnement
+            "blinkist.com", "getabstract.com", "perlego.com",
+            "bookmate.com", "nextory.com", "skoobe.de",
+            
+            // Éditeurs et librairies
+            "hachette.com", "penguinrandomhouse.com", "harpercollins.com",
+            "simonandschuster.com", "macmillan.com", "scholastic.com",
+            "waterstones.com", "whsmith.co.uk", "blackwells.co.uk",
+            "fnac.com/livre", "cultura.com/livres", "decitre.fr",
+            "thalia.de", "hugendubel.de", "weltbild.de",
+            
+            // Plateformes indépendantes
+            "smashwords.com", "draft2digital.com", "lulu.com",
+            "bookfunnel.com", "prolificworks.com", "instafreebie.com",
+            
+            // Plateformes académiques
+            "jstor.org", "springer.com", "wiley.com", "elsevier.com",
+            "cambridge.org", "oxfordacademic.com", "taylorfrancis.com",
+            
+            // Plateformes gratuites
+            "gutenberg.org", "archive.org", "openlibrary.org",
+            "manybooks.net", "feedbooks.com", "planetebook.com"
         ]
         
         // Patterns spécifiques pour les livres
@@ -149,28 +259,58 @@ class ContentTypeDetector {
             return true
         }
         
-        // Détections spécifiques par plateforme
-        if hasSpecificProductPattern(urlString) {
-            return true
-        }
-        
         return false
     }
     
     private func isShowURL(_ urlString: String) -> Bool {
         // Plateformes de streaming principales
         let showPlatforms = [
-            // Plateformes majeures
+            // Plateformes majeures US
             "netflix.com", "disneyplus.com", "hulu.com", "hbomax.com", "max.com",
             "paramountplus.com", "peacocktv.com", "apple.com/tv", "tv.apple.com",
-            // Amazon Prime Video
-            "amazon.com/prime/video", "amazon.com/gp/video", "primevideo.com",
-            // Autres plateformes
+            "primevideo.com",
+            
+            // Plateformes spécialisées US
             "crunchyroll.com", "funimation.com", "showtime.com", "starz.com",
             "epix.com", "discovery.com", "discoveryplus.com", "pluto.tv",
-            // Plateformes internationales
-            "canal-plus.com", "canalplus.com", "france.tv", "arte.tv",
-            "ocs.fr", "molotov.tv", "salto.fr", "tf1.fr", "m6.fr", "mycan.al"
+            "tubi.tv", "roku.com", "vudu.com", "fandangonow.com",
+            "amc.com", "fxnetworks.com", "adultswim.com", "cartoonnetwork.com",
+            
+            // Plateformes françaises
+            "canal-plus.com", "canalplus.com", "mycanal.fr", "mycan.al",
+            "france.tv", "francetelevisions.fr", "arte.tv", "arte.fr",
+            "ocs.fr", "molotov.tv", "salto.fr", "6play.fr",
+            "tf1.fr", "tf1plus.fr", "m6.fr", "m6plus.fr",
+            "rmc.fr", "bfmtv.com", "cnews.fr", "lci.fr",
+            
+            // Plateformes européennes
+            "bbc.co.uk/iplayer", "itv.com", "channel4.com", "my5.tv",
+            "sky.com", "nowtv.com", "britbox.com", "acorn.tv",
+            "ard.de", "zdf.de", "rtl.de", "pro7.de", "sat1.de",
+            "tvnow.de", "joyn.de", "magentasport.de", "dazn.com",
+            "rai.it", "mediaset.it", "la7.it", "raiplay.it",
+            "rtve.es", "atresplayer.com", "mitele.es", "movistarplus.es",
+            "nos.nl", "npo.nl", "rtl.nl", "videoland.com",
+            "svtplay.se", "tv4play.se", "viafree.se", "cmore.se",
+            "nrk.no", "tv2.no", "viaplay.no", "discovery.no",
+            
+            // Plateformes asiatiques
+            "viki.com", "dramafever.com", "kocowa.com", "wavve.com",
+            "iqiyi.com", "youku.com", "bilibili.com", "tencent.com",
+            "hotstar.com", "zee5.com", "sonyliv.com", "voot.com",
+            
+            // Plateformes latino-américaines
+            "globoplay.globo.com", "telecineplay.com.br", "nowonline.com.br",
+            "clarovideo.com", "blim.com", "paramount.com.mx",
+            
+            // Plateformes gratuites
+            "youtube.com/tv", "dailymotion.com", "vimeo.com/ondemand",
+            "twitch.tv", "mixer.com", "facebook.com/watch",
+            "imdb.com/tv", "crackle.com", "popcornflix.com",
+            
+            // Plateformes sportives
+            "espn.com", "espnplus.com", "nbcsports.com", "foxsports.com",
+            "eurosport.com", "rmc.fr/sport", "lequipe.fr", "beinsports.com"
         ]
         
         // Vérification des plateformes
@@ -186,8 +326,16 @@ class ContentTypeDetector {
             "/tv/", "/watch/", "/stream/", "/movie/"
         ]
         
-        // Vérification des patterns si on est sur une plateforme vidéo
-        if urlString.contains("amazon.com") || urlString.contains("apple.com") {
+        // Vérification spécifique Amazon Prime Video
+        if urlString.contains("amazon.com") {
+            // Seulement si c'est Prime Video ou contient des patterns vidéo
+            return urlString.contains("/prime/video") || 
+                   urlString.contains("/gp/video") ||
+                   showPatterns.contains { urlString.contains($0) }
+        }
+        
+        // Vérification Apple TV
+        if urlString.contains("apple.com") {
             return showPatterns.contains { urlString.contains($0) }
         }
         
@@ -198,21 +346,104 @@ class ContentTypeDetector {
     
     private func containsEcommerceHost(_ urlString: String) -> Bool {
         let ecommerceHosts = [
-            // Marketplaces
+            // Marketplaces mondiaux
             "amazon.", "amzn.", "ebay.", "etsy.", "alibaba.", "aliexpress.",
-            // Grandes surfaces
+            "mercadolibre.", "rakuten.", "jd.com", "tmall.", "taobao.",
+            
+            // Marketplaces européens
+            "zalando.", "otto.", "cdiscount.", "fnac.", "darty.",
+            "bol.com", "coolblue.", "mediamarkt.", "saturn.", "elgiganten.",
+            "komplett.", "dustinhome.", "alternate.", "notebooksbilliger.",
+            
+            // Grandes surfaces US
             "walmart.", "target.", "bestbuy.", "homedepot.", "lowes.",
-            "ikea.", "wayfair.", "overstock.", "costco.", "samsclub.",
-            // Mode
-            "macys.", "nordstrom.", "zappos.", "asos.", "hm.com",
-            "zara.", "uniqlo.", "gap.", "oldnavy.", "bananarepublic.",
+            "costco.", "samsclub.", "kroger.", "walgreens.", "cvs.",
+            
+            // Grandes surfaces européennes
+            "carrefour.", "auchan.", "leclerc.", "intermarche.", "casino.",
+            "tesco.", "asda.", "sainsburys.", "morrisons.", "argos.",
+            "currys.", "johnlewis.", "marksandspencer.", "next.",
+            "rewe.", "edeka.", "real.", "kaufland.", "lidl.", "aldi.",
+            "coop.", "ica.", "rema1000.", "netto.",
+            
+            // Mode mondiale
             "nike.", "adidas.", "puma.", "underarmour.", "lululemon.",
-            // Beauté
-            "sephora.", "ulta.", "cvs.", "walgreens.", "rite-aid.",
+            "hm.com", "zara.", "uniqlo.", "gap.", "oldnavy.",
+            "bananarepublic.", "macys.", "nordstrom.", "zappos.",
+            
+            // Mode européenne
+            "asos.", "boohoo.", "prettylittlething.", "missguided.",
+            "aboutyou.", "zalando.", "lamoda.", "answear.",
+            "kiabi.", "celio.", "jules.", "camaieu.", "promod.",
+            "mango.", "bershka.", "pullandbear.", "stradivarius.",
+            "massimodutti.", "oysho.", "uterque.",
+            
+            // Luxe
+            "lvmh.", "chanel.", "hermes.", "gucci.", "prada.",
+            "burberry.", "versace.", "armani.", "dolcegabbana.",
+            "ysl.", "dior.", "fendi.", "bottegaveneta.",
+            "net-a-porter.", "mrporter.", "farfetch.", "ssense.",
+            "matchesfashion.", "mytheresa.", "luisaviaroma.",
+            
             // Tech
             "apple.com/", "microsoft.com/", "samsung.com/", "sony.com/",
+            "dell.", "hp.", "lenovo.", "asus.", "acer.", "msi.",
+            "newegg.", "microcenter.", "bhphotovideo.", "adorama.",
+            
+            // Beauté
+            "sephora.", "ulta.", "douglas.", "nocibe.", "marionnaud.",
+            "boots.", "superdrug.", "feelunique.", "lookfantastic.",
+            "beautybay.", "cultbeauty.", "spacenk.",
+            
+            // Maison & Jardin
+            "ikea.", "wayfair.", "overstock.", "houzz.", "westelm.",
+            "potterybarn.", "crateandbarrel.", "cb2.", "worldmarket.",
+            "maisonsdumonde.", "but.", "conforama.", "fly.",
+            "castorama.", "leroymerlin.", "bricorama.", "bricodepot.",
+            "hornbach.", "bauhaus.", "obi.", "hagebau.", "toom.",
+            "wickes.", "screwfix.", "toolstation.", "homebase.",
+            
+            // Alimentaire
+            "instacart.", "freshdirect.", "peapod.", "shipt.",
+            "ocado.", "tesco.", "asda.", "morrisons.", "sainsburys.",
+            "monoprix.", "franprix.", "naturalia.", "biocoop.",
+            "rewe.", "edeka.", "netto.", "penny.",
+            
+            // Électronique spécialisée
+            "boulanger.", "rueducommerce.", "ldlc.", "materiel.net",
+            "topachat.", "grosbill.", "pixmania.",
+            "cyberport.", "computeruniverse.", "mindfactory.",
+            "proshop.", "webhallen.", "inet.", "ellos.",
+            
+            // Livres & Culture
+            "barnesandnoble.", "bookdepository.", "waterstones.",
+            "whsmith.", "blackwells.", "foyles.",
+            "fnac.", "cultura.", "decitre.", "mollat.",
+            "thalia.", "hugendubel.", "weltbild.", "mayersche.",
+            
+            // Sport
+            "decathlon.", "intersport.", "gosport.", "sportsdirect.",
+            "jdsports.", "footlocker.", "sizeer.", "snipes.",
+            "wiggle.", "chainreactioncycles.", "bike24.", "probikeshop.",
+            
+            // Jouets
+            "toysrus.", "smythstoys.", "entertainer.", "argos.",
+            "kingjouer.", "picwictoys.", "maxitoys.",
+            "mytoys.", "spiele-max.", "br-online.",
+            
             // Plateformes e-commerce
-            "shopify.com", "myshopify.com", "bigcommerce.com", "woocommerce.com"
+            "shopify.com", "myshopify.com", "bigcommerce.com", "woocommerce.com",
+            "prestashop.", "magento.", "opencart.", "wix.com/stores",
+            "squarespace.com/commerce", "etsy.com/shop",
+            
+            // Marketplaces spécialisées
+            "reverb.", "discogs.", "catawiki.", "chrono24.",
+            "vestiairecollective.", "rebag.", "fashionphile.",
+            "stockx.", "goat.", "grailed.", "depop.", "vinted.",
+            
+            // Autres grandes enseignes
+            "wish.", "joom.", "banggood.", "gearbest.", "lightinthebox.",
+            "rosegal.", "zaful.", "romwe.", "shein.", "yesstyle."
         ]
         
         return ecommerceHosts.contains { urlString.contains($0) }
@@ -230,24 +461,5 @@ class ContentTypeDetector {
         return productPatterns.contains { urlString.contains($0) }
     }
     
-    private func hasSpecificProductPattern(_ urlString: String) -> Bool {
-        // Amazon
-        if urlString.contains("amazon.") && (urlString.contains("/dp/") || urlString.contains("/gp/product/")) {
-            return true
-        }
-        
-        // eBay
-        if urlString.contains("ebay.") && urlString.contains("/itm/") {
-            return true
-        }
-        
-        // Shopify stores
-        if urlString.contains("myshopify.com") || 
-           (urlString.contains("/products/") && !urlString.contains("blog")) ||
-           (urlString.contains("/collections/") && urlString.contains("/products/")) {
-            return true
-        }
-        
-        return false
-    }
+
 }
