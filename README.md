@@ -1,4 +1,4 @@
-# Pinpin
+# Pinpin IOS
 
 **A local, privacy-friendly alternative to Pinterest: no ads, no login, all your collections are stored on your device and iCloud.**
 
