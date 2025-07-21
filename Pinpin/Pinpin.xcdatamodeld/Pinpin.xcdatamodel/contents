@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22758" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="ContentItem" representedClassName="ContentItem" syncable="YES" codeGenerationType="class">
+        <attribute name="contentType" optional="NO" attributeType="String" defaultValueString="webpage"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="itemDescription" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="metadata" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer"/>
+        <attribute name="thumbnailUrl" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="NO" attributeType="String" defaultValueString="Nouveau contenu"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="url" optional="YES" attributeType="String"/>
+        <attribute name="userId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+    </entity>
+</model>
