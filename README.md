@@ -1,48 +1,51 @@
-# Neeed
+# Pinpin
 
-Une application iOS pour sauvegarder et organiser vos contenus favoris avec synchronisation iCloud.
+**A local, privacy-friendly alternative to Pinterest: no ads, no login, all your collections are stored on your device and iCloud.**
 
-## Fonctionnalités
+An open-source iOS application to save and organize your favorite content, with iCloud synchronization.
 
-- 📱 Application iOS native
-- 🔗 Extension de partage pour sauvegarder du contenu depuis n'importe quelle app
-- ☁️ Synchronisation automatique avec iCloud via CloudKit
-- 💾 Stockage local avec Core Data
-- 🎵 Support pour différents types de contenu (musique, articles, etc.)
+## Features
+
+- 📱 Native iOS application
+- 🔗 Share Extension to save content from any app
+- ☁️ Automatic synchronization with iCloud using CloudKit
+- 💾 Local storage with Core Data
+- 🎵 Supports multiple content types (music, articles, etc.)
 
 ## Architecture
 
-- **Core Data** : Stockage local des données
-- **CloudKit** : Synchronisation cloud automatique
-- **UserDefaults partagés** : Communication entre l'app principale et l'extension de partage
-- **Share Extension** : Permet de sauvegarder du contenu depuis d'autres applications
+- **Core Data**: Local data storage
+- **CloudKit**: Automatic cloud synchronization
+- **Shared UserDefaults**: Communication between the main app and the share extension
+- **Share Extension**: Save content from other applications
 
-## Configuration requise
+## Requirements
 
 - iOS 15.0+
 - Xcode 14.0+
-- Compte développeur Apple (pour CloudKit)
+- Apple Developer account (for CloudKit)
 
 ## Installation
 
-1. Clonez le repository
-2. Ouvrez `Neeed2.xcodeproj` dans Xcode
-3. Configurez votre équipe de développement dans les paramètres du projet
-4. Compilez et lancez l'application
+1. Clone this repository
+2. Open `Pinpin.xcodeproj` in Xcode
+3. Set your development team in the project settings
+4. Build and run the application
 
-## Structure du projet
+## Project Structure
 
 ```
-Neeed2/
-├── Neeed2/                 # Application principale
-│   ├── Models/            # Modèles Core Data
-│   ├── Views/             # Vues SwiftUI
-│   ├── Services/          # Services (Core Data, CloudKit)
-│   └── Neeed2.xcdatamodeld # Modèle de données Core Data
-└── NeeedShareExtension/   # Extension de partage
+Pinpin/
+├── Pinpin/                    # Main application
+│   ├── Models/                # Core Data models
+│   ├── Views/                 # SwiftUI views
+│   ├── Services/              # Services (Core Data, CloudKit)
+│   └── Pinpin.xcdatamodeld    # Core Data model
+└── PinpinShareExtension/      # Share Extension
     └── ShareViewController.swift
 ```
 
-## Migration
+## License
 
-Ce projet a été migré de Supabase vers Core Data + CloudKit pour une meilleure intégration native iOS et une synchronisation automatique avec iCloud.
+This project is open source and available under the [MIT License](LICENSE).
+
