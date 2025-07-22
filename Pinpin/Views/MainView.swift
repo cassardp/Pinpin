@@ -14,7 +14,7 @@ struct MainView: View {
     @State private var isMenuOpen = false
     @State private var isSettingsOpen = false
     @State private var isAboutOpen = false
-    @GestureState private var dragOffset: CGFloat = 0
+
     @State private var dragTranslation: CGFloat = 0
     @State private var isSwipingHorizontally: Bool = false
     @State private var selectedContentType: String? = nil
@@ -144,6 +144,9 @@ struct MainView: View {
                             Color.black.opacity(0.001) // invisible mais cliquable
                                 .contentShape(Rectangle())
                                 .onTapGesture {
+                                    // Haptic feedback sourd pour la fermeture du menu
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
+                                    impactFeedback.impactOccurred()
                                     withAnimation {
                                         isMenuOpen = false
                                         isSettingsOpen = false
@@ -157,28 +160,33 @@ struct MainView: View {
             }
             .offset(x: calculateOffset(menuWidth: menuWidth))
             .gesture(
-                DragGesture(minimumDistance: 10, coordinateSpace: .local)
-                    .updating($dragOffset) { value, state, _ in
-                        let dx = value.translation.width
-                        state = clampedTranslation(dx, max: geo.size.width * 0.8)
-                    }
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
                         let dx = value.translation.width
                         let dy = value.translation.height
-                        let angle = atan2(dy, dx) * 180 / .pi
-                        isSwipingHorizontally = abs(angle) < 30
+                        
+                        // Détection immédiate du glissement horizontal
+                        if abs(dx) > 1 && abs(dy) < 20 {
+                            isSwipingHorizontally = true
+                        }
+                        
+                        // Suivi immédiat du doigt - toujours mettre à jour dragTranslation
+                        // Mais limiter selon l'état du menu
                         if dx < 0 && !isMenuOpen {
-                            return
+                            // Menu fermé, glissement vers la gauche -> pas de mouvement
+                            dragTranslation = 0
+                        } else if dx > 0 && isMenuOpen {
+                            // Menu ouvert, glissement vers la droite -> pas de mouvement
+                            dragTranslation = 0
+                        } else {
+                            // Suivi normal du doigt
+                            dragTranslation = clampedTranslation(dx, max: geo.size.width * 0.8)
                         }
-                        if dx > 0 && isMenuOpen {
-                            return
-                        }
-                        dragTranslation = clampedTranslation(dx, max: geo.size.width * 0.8)
                     }
                     .onEnded { value in
                         let predicted = value.predictedEndTranslation.width
                         let effectiveTranslation = dragTranslation + predicted
-                        let threshold = geo.size.width * 0.3
+                        let threshold = geo.size.width * 0.25
 
                         if effectiveTranslation < -threshold && !isMenuOpen {
                             return
@@ -189,8 +197,14 @@ struct MainView: View {
 
                         withAnimation(.easeOut(duration: 0.25)) {
                             if effectiveTranslation > threshold {
+                                // Haptic feedback sourd pour l'ouverture du menu
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
+                                impactFeedback.impactOccurred()
                                 isMenuOpen = true
                             } else if effectiveTranslation < -threshold {
+                                // Haptic feedback sourd pour la fermeture du menu
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
+                                impactFeedback.impactOccurred()
                                 isMenuOpen = false
                             }
                             dragTranslation = 0
