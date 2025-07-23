@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentItemCard: View {
-    let item: ContentItem
+    @ObservedObject var item: ContentItem
     @StateObject private var userPreferences = UserPreferences.shared
     
     var body: some View {
@@ -42,6 +42,8 @@ struct ContentItemCard: View {
                     TextContentView(item: item)
                 }
             }
+            .blur(radius: item.isHidden ? 15 : 0, opaque: item.isHidden)
+            .clipped()
             
             // URL en overlay dans le coin bas gauche
             if userPreferences.showURLs, let url = item.url, !url.isEmpty {
@@ -63,6 +65,13 @@ struct ContentItemCard: View {
                     }
             }
         }
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.5)
+                .onEnded { _ in
+                    // Le long press est géré par le contextMenu dans MainView
+                    // On ne fait rien ici, juste bloquer le tap
+                }
+        )
         .onTapGesture {
             // Handle tap to open content
             if let urlString = item.url {

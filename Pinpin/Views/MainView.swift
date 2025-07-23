@@ -14,7 +14,6 @@ struct MainView: View {
     @State private var isMenuOpen = false
     @State private var isSettingsOpen = false
     @State private var isAboutOpen = false
-
     @State private var dragTranslation: CGFloat = 0
     @State private var isSwipingHorizontally: Bool = false
     @State private var selectedContentType: String? = nil
@@ -243,6 +242,18 @@ struct MainView: View {
         return baseOffset + offset + dragTranslation
     }
     
+    private func toggleItemVisibility(_ item: ContentItem) {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            item.isHidden.toggle()
+        }
+        
+        // Forcer la notification des changements
+        item.objectWillChange.send()
+        
+        // Sauvegarder les changements
+        contentService.updateContentItem(item)
+    }
+    
     @ViewBuilder
     private func buildContentCard(for item: ContentItem, at index: Int) -> some View {
         ContentItemCard(item: item)
@@ -264,29 +275,13 @@ struct MainView: View {
     
     @ViewBuilder
     private func buildContextMenu(for item: ContentItem) -> some View {
-        if let url = item.url, !url.isEmpty {
-            Button(action: {
-                UIPasteboard.general.string = url
-            }) {
-                Label("Copy link", systemImage: "doc.on.doc")
-            }
-        }
-
         Button(action: {
-            if let url = item.url, !url.isEmpty, let shareURL = URL(string: url) {
-                let activityVC = UIActivityViewController(
-                    activityItems: [shareURL],
-                    applicationActivities: nil
-                )
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                   let window = windowScene.windows.first {
-                    window.rootViewController?.present(activityVC, animated: true)
-                }
-            }
+            toggleItemVisibility(item)
         }) {
-            Label("Share", systemImage: "square.and.arrow.up")
+            Label(item.isHidden ? "Show" : "Hide", 
+                  systemImage: item.isHidden ? "eye" : "eye.slash")
         }
-
+        
         Divider()
 
         Button(role: .destructive, action: {
