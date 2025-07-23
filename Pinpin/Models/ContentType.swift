@@ -17,13 +17,14 @@ enum ContentType: String, CaseIterable {
     case app = "app"
     case product = "product"
     case book = "book"
+    case travel = "travel"
     case podcast = "podcast"
     case show = "show"
     case text = "text"
     
     var displayName: String {
         switch self {
-        case .webpage: return "Web"
+        case .webpage: return "Misc"
         case .article: return "Article"
         case .video: return "Video"
         case .music: return "Music"
@@ -32,6 +33,7 @@ enum ContentType: String, CaseIterable {
         case .app: return "App"
         case .product: return "Shopping"
         case .book: return "Book"
+        case .travel: return "Travel"
         case .podcast: return "Podcast"
         case .show: return "Show"
         case .text: return "Text"

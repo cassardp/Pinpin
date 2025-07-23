@@ -32,6 +32,8 @@ class ContentTypeDetector {
             return "podcast"
         } else if isBookURL(urlString) {
             return "book"
+        } else if isTravelURL(urlString) {
+            return "travel"
         } else if isAppURL(urlString) {
             return "app"
         } else if isImageURL(urlString) {
@@ -237,6 +239,125 @@ class ContentTypeDetector {
         
         return bookPlatforms.contains { urlString.contains($0) } ||
                bookPatterns.contains { urlString.contains($0) }
+    }
+    
+    private func isTravelURL(_ urlString: String) -> Bool {
+        let travelPlatforms = [
+            // Hébergement
+            "airbnb.com", "www.airbnb.com", "airbnb.fr", "airbnb.de", "airbnb.co.uk",
+            "booking.com", "www.booking.com",
+            "expedia.com", "www.expedia.com", "expedia.fr", "expedia.de", "expedia.co.uk",
+            "hotels.com", "www.hotels.com",
+            "trivago.com", "www.trivago.com", "trivago.fr", "trivago.de",
+            "agoda.com", "www.agoda.com",
+            "hostelworld.com", "www.hostelworld.com",
+            "vrbo.com", "www.vrbo.com",
+            "homeaway.com", "www.homeaway.com",
+            "marriott.com", "www.marriott.com",
+            "hilton.com", "www.hilton.com",
+            "accor.com", "www.accor.com", "accorhotels.com",
+            "ihg.com", "www.ihg.com",
+            "hyatt.com", "www.hyatt.com",
+            
+            // Transport aérien
+            "airfrance.com", "www.airfrance.com", "airfrance.fr",
+            "lufthansa.com", "www.lufthansa.com",
+            "britishairways.com", "www.britishairways.com",
+            "klm.com", "www.klm.com", "klm.fr",
+            "easyjet.com", "www.easyjet.com",
+            "ryanair.com", "www.ryanair.com",
+            "vueling.com", "www.vueling.com",
+            "transavia.com", "www.transavia.com", "transavia.fr",
+            "emirates.com", "www.emirates.com",
+            "qantas.com", "www.qantas.com",
+            "delta.com", "www.delta.com",
+            "united.com", "www.united.com",
+            "american.com", "www.aa.com",
+            "skyscanner.com", "www.skyscanner.com", "skyscanner.fr",
+            "kayak.com", "www.kayak.com", "kayak.fr",
+            "momondo.com", "www.momondo.com", "momondo.fr",
+            "opodo.com", "www.opodo.com", "opodo.fr",
+            "edreams.com", "www.edreams.com", "edreams.fr",
+            "govoyages.com", "www.govoyages.com",
+            "lastminute.com", "www.lastminute.com", "lastminute.fr",
+            
+            // Transport ferroviaire
+            "sncf-connect.com", "www.sncf-connect.com",
+            "oui.sncf", "www.oui.sncf",
+            "trainline.com", "www.trainline.com", "trainline.fr",
+            "thetrainline.com", "www.thetrainline.com",
+            "bahn.de", "www.bahn.de",
+            "trenitalia.com", "www.trenitalia.com",
+            "renfe.com", "www.renfe.com",
+            "sbb.ch", "www.sbb.ch",
+            "ns.nl", "www.ns.nl",
+            "eurostar.com", "www.eurostar.com",
+            "thalys.com", "www.thalys.com",
+            
+            // Location de voiture
+            "hertz.com", "www.hertz.com", "hertz.fr",
+            "avis.com", "www.avis.com", "avis.fr",
+            "europcar.com", "www.europcar.com", "europcar.fr",
+            "enterprise.com", "www.enterprise.com", "enterprise.fr",
+            "sixt.com", "www.sixt.com", "sixt.fr",
+            "budget.com", "www.budget.com", "budget.fr",
+            "rentalcars.com", "www.rentalcars.com",
+            "autoeurope.com", "www.autoeurope.com", "autoeurope.fr",
+            
+            // Croisières
+            "royalcaribbean.com", "www.royalcaribbean.com",
+            "msc.com", "www.msccruises.com", "www.msc.com",
+            "costacruises.com", "www.costacruises.com",
+            "ncl.com", "www.ncl.com",
+            "princess.com", "www.princess.com",
+            "celebrity.com", "www.celebritycruises.com",
+            
+            // Plateformes de voyage
+            "tripadvisor.com", "www.tripadvisor.com", "tripadvisor.fr",
+            "viator.com", "www.viator.com",
+            "getyourguide.com", "www.getyourguide.com", "getyourguide.fr",
+            "klook.com", "www.klook.com",
+            "tiqets.com", "www.tiqets.com",
+            "civitatis.com", "www.civitatis.com", "civitatis.fr",
+            "musement.com", "www.musement.com",
+            
+            // Voyages organisés
+            "thomascook.com", "www.thomascook.com",
+            "tui.com", "www.tui.com", "tui.fr",
+            "clubmed.com", "www.clubmed.com", "clubmed.fr",
+            "nouvellefrontiere.fr", "www.nouvellefrontiere.fr",
+            "promovacances.com", "www.promovacances.com",
+            "fram.fr", "www.fram.fr",
+            "lookea.com", "www.lookea.com",
+            "jetcost.com", "www.jetcost.com", "jetcost.fr",
+            
+            // Transport urbain
+            "uber.com", "www.uber.com",
+            "lyft.com", "www.lyft.com",
+            "bolt.eu", "www.bolt.eu",
+            "freenow.com", "www.freenow.com",
+            "kapten.com", "www.kapten.com",
+            "blablacar.com", "www.blablacar.com", "blablacar.fr",
+            
+            // Autres services voyage
+            "rome2rio.com", "www.rome2rio.com",
+            "omio.com", "www.omio.com", "omio.fr",
+            "wanderu.com", "www.wanderu.com",
+            "busbud.com", "www.busbud.com",
+            "flixbus.com", "www.flixbus.com", "flixbus.fr",
+            "megabus.com", "www.megabus.com", "megabus.fr",
+            "ouibus.com", "www.ouibus.com"
+        ]
+        
+        // Patterns spécifiques pour le voyage
+        let travelPatterns = [
+            "/flight/", "/flights/", "/hotel/", "/hotels/",
+            "/booking/", "/reservation/", "/travel/", "/trip/",
+            "/destination/", "/cruise/", "/vacation/", "/holiday/"
+        ]
+        
+        return travelPlatforms.contains { urlString.contains($0) } ||
+               travelPatterns.contains { urlString.contains($0) }
     }
     
     private func isAppURL(_ urlString: String) -> Bool {

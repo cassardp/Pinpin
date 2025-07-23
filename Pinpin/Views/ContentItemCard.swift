@@ -32,6 +32,8 @@ struct ContentItemCard: View {
                     MusicContentView(item: item)
                 case .book:
                     BookContentView(item: item)
+                case .travel:
+                    TravelContentView(item: item)
                 case .podcast:
                     PodcastContentView(item: item)
                 case .show:
