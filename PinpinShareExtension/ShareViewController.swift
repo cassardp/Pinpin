@@ -29,8 +29,15 @@ class ShareViewController: UIViewController {
         guard let extensionContext = extensionContext,
               let extensionItem = extensionContext.inputItems.first as? NSExtensionItem,
               let attachments = extensionItem.attachments else {
+            print("[ShareExtension] Aucun attachment trouvé")
             completeRequest()
             return
+        }
+        
+        // Debug: Logger tous les types d'attachments reçus
+        print("[ShareExtension] \(attachments.count) attachment(s) reçu(s):")
+        for (index, attachment) in attachments.enumerated() {
+            print("  Attachment \(index): \(attachment.registeredTypeIdentifiers)")
         }
         
         // Traiter seulement le premier attachment pertinent (comportement natif)
@@ -88,6 +95,10 @@ class ShareViewController: UIViewController {
     
     private func handleURL(_ url: URL, completion: @escaping () -> Void) {
         let contentType = ContentTypeDetector.shared.detectContentType(from: url)
+        
+        // Debug: Logger l'URL et le type détecté
+        print("[ShareExtension] URL reçue: \(url.absoluteString)")
+        print("[ShareExtension] Type détecté: \(contentType)")
         
         // Utiliser LinkPresentation pour obtenir les métadonnées système (plus fiable)
         let metadataProvider = LPMetadataProvider()
@@ -192,14 +203,20 @@ class ShareViewController: UIViewController {
     }
     
     private func handleText(_ text: String, completion: @escaping () -> Void) {
+        // Debug: Logger le texte reçu
+        print("[ShareExtension] Texte reçu: \(text)")
+        
         // Détecter les URLs dans le texte
         if let detectedURL = extractURLFromText(text) {
             // Si on trouve une URL, la traiter avec LinkPresentation
             handleURL(detectedURL, completion: completion)
         } else {
+            // Vérifier si c'est du contenu Apple Books (texte sans URL)
+            let contentType = detectContentTypeFromText(text)
+            
             // Sinon, traiter comme texte simple
             saveSharedContent(
-                type: "text",
+                type: contentType,
                 title: text,
                 url: nil,
                 description: text,
@@ -297,6 +314,12 @@ class ShareViewController: UIViewController {
             "metadata": metadata ?? [:],
             "timestamp": Date().timeIntervalSince1970
         ]
+        
+        // Debug: Logger le contenu sauvegardé
+        print("[ShareExtension] Sauvegarde contenu:")
+        print("  - Type: \(type)")
+        print("  - Titre: \(title)")
+        print("  - URL: \(url ?? "nil")")
         
         // Méthode 1: UserDefaults partagés (simplifié)
         if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") {
@@ -454,5 +477,28 @@ class ShareViewController: UIViewController {
         }
         
         return nil
+    }
+    
+    // MARK: - Content Type Detection from Text
+    
+    private func detectContentTypeFromText(_ text: String) -> String {
+        let lowercaseText = text.lowercased()
+        
+        // Détection Apple Books - mots-clés typiques
+        let bookKeywords = [
+            "apple books", "ibooks", "livre", "book", "author", "auteur",
+            "chapter", "chapitre", "page", "isbn", "edition", "édition",
+            "publisher", "éditeur", "novel", "roman", "poetry", "poésie"
+        ]
+        
+        let bookKeywordCount = bookKeywords.filter { lowercaseText.contains($0) }.count
+        
+        // Si plusieurs mots-clés de livre sont présents, c'est probablement un livre
+        if bookKeywordCount >= 2 {
+            return "book"
+        }
+        
+        // Sinon, retourner "text" par défaut
+        return "text"
     }
 }

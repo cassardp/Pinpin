@@ -121,7 +121,7 @@ struct MainView: View {
                                             .id(storageStatsRefreshTrigger)
                                     }
 
-                                    Color.clear.frame(height: 100)
+                                    Color.clear.frame(height: 40)
                                 }
                             }
                             .padding(.horizontal, 10)

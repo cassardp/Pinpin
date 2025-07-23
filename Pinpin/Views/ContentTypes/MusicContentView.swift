@@ -12,9 +12,13 @@ struct MusicContentView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            SmartAsyncImage(item: item)
-                .frame(maxWidth: .infinity)
-                .aspectRatio(contentMode: .fit)
+            Rectangle()
+                .aspectRatio(1, contentMode: .fit)
+                .overlay(
+                    SmartAsyncImage(item: item)
+                        .aspectRatio(contentMode: .fill)
+                        .clipped()
+                )
         }
     }
 }

@@ -23,9 +23,12 @@ class SharedContentService: ObservableObject {
         guard let pendingContents = sharedDefaults?.array(forKey: "pendingSharedContents") as? [[String: Any]],
               !pendingContents.isEmpty else {
             // Réinitialiser le flag même s'il n'y a rien à traiter
+            print("[SharedContentService] Aucun contenu en attente")
             clearNewContentFlag()
             return
         }
+        
+        print("[SharedContentService] Traitement de \(pendingContents.count) contenu(s) en attente")
         
         for contentData in pendingContents {
             await processSharedContent(contentData)
@@ -41,8 +44,11 @@ class SharedContentService: ObservableObject {
         guard let typeString = contentData["type"] as? String,
               let contentType = ContentType(rawValue: typeString),
               let title = contentData["title"] as? String else {
+            print("[SharedContentService] Erreur: données invalides pour le contenu")
             return
         }
+        
+        print("[SharedContentService] Traitement contenu: \(typeString) - \(title)")
         
         let url = contentData["url"] as? String
         let description = contentData["description"] as? String

@@ -67,6 +67,7 @@ struct ContentItemCard: View {
                     }
             }
         }
+        .cornerRadius(14)
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
