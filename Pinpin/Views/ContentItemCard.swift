@@ -13,6 +13,10 @@ struct ContentItemCard: View {
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
+            // Conteneur pour limiter la zone de toucher
+            Color.clear
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Contenu principal
             Group {
                 switch item.contentTypeEnum {
@@ -67,7 +71,7 @@ struct ContentItemCard: View {
                     }
             }
         }
-        .cornerRadius(14)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
@@ -81,6 +85,8 @@ struct ContentItemCard: View {
                 handleContentTap(urlString: urlString)
             }
         }
+        // S'assurer que la zone de toucher ne dépasse pas les limites visuelles avec les coins arrondis
+        .contentShape(RoundedRectangle(cornerRadius: 14))
     }
     
     private func handleContentTap(urlString: String) {

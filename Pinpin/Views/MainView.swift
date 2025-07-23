@@ -245,6 +245,7 @@ struct MainView: View {
                     contentService.loadMoreContentItems()
                 }
             }
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 14))
             .contextMenu {
                 ContentItemContextMenu(
                     item: item,
