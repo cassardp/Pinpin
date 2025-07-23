@@ -112,7 +112,7 @@ struct ContentItemCard: View {
     private func shortenURL(_ urlString: String) -> String {
         // Cas spécial pour les URLs locales
         if urlString.hasPrefix("file:///") {
-            return "Local file"
+            return "Local"
         }
         
         guard let url = URL(string: urlString),

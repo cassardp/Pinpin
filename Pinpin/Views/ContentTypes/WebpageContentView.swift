@@ -1,9 +1,4 @@
-//
-//  WebpageContentView.swift
-//  Neeed2
-//
-//  Specialized view for webpage content type
-//
+
 
 import SwiftUI
 

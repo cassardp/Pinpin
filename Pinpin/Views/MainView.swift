@@ -15,7 +15,17 @@ struct MainView: View {
     @State private var isSettingsOpen = false
     @State private var isAboutOpen = false
     @State private var dragTranslation: CGFloat = 0
+    @State private var gestureDirection: GestureDirection? = nil {
+        didSet {
+            isSwipingHorizontally = gestureDirection == .horizontal
+        }
+    }
     @State private var isSwipingHorizontally: Bool = false
+    
+    enum GestureDirection {
+        case horizontal
+        case vertical
+    }
     @State private var selectedContentType: String? = nil
     
     // FetchRequest pour récupérer tous les items
@@ -122,19 +132,11 @@ struct MainView: View {
                             }
 
                         }
-                        .simultaneousGesture(
-                            DragGesture().onChanged { value in
-                                let dx = value.translation.width
-                                let dy = value.translation.height
-                                let angle = atan2(dy, dx) * 180 / .pi
-                                isSwipingHorizontally = abs(angle) < 30
-                            }
-                        )
                         .scrollIndicators(.hidden)
                         .refreshable {
                             contentService.loadContentItems()
                         }
-                        .disabled(isSwipingHorizontally || isMenuOpen || isSettingsOpen)
+                        .scrollDisabled(gestureDirection == .horizontal || isMenuOpen || isSettingsOpen)
                     }
                     
                     // Overlay pour fermer les menus
@@ -159,57 +161,44 @@ struct MainView: View {
             }
             .offset(x: calculateOffset(menuWidth: menuWidth))
             .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                DragGesture(minimumDistance: 10, coordinateSpace: .local)
                     .onChanged { value in
                         let dx = value.translation.width
                         let dy = value.translation.height
                         
-                        // Détection immédiate du glissement horizontal
-                        if abs(dx) > 1 && abs(dy) < 20 {
-                            isSwipingHorizontally = true
+                        // Déterminer la direction du geste au premier mouvement significatif
+                        if gestureDirection == nil {
+                            gestureDirection = abs(dx) > abs(dy) ? .horizontal : .vertical
                         }
                         
-                        // Suivi immédiat du doigt - toujours mettre à jour dragTranslation
-                        // Mais limiter selon l'état du menu
-                        if dx < 0 && !isMenuOpen {
-                            // Menu fermé, glissement vers la gauche -> pas de mouvement
-                            dragTranslation = 0
-                        } else if dx > 0 && isMenuOpen {
-                            // Menu ouvert, glissement vers la droite -> pas de mouvement
+                        // Ne traiter que les gestes horizontaux
+                        guard gestureDirection == .horizontal else { return }
+                        
+                        // Calculer dragTranslation selon l'état du menu
+                        if (dx < 0 && !isMenuOpen) || (dx > 0 && isMenuOpen) {
                             dragTranslation = 0
                         } else {
-                            // Suivi normal du doigt
                             dragTranslation = clampedTranslation(dx, max: geo.size.width * 0.8)
                         }
                     }
                     .onEnded { value in
-                        let predicted = value.predictedEndTranslation.width
-                        let effectiveTranslation = dragTranslation + predicted
+                        defer { gestureDirection = nil }
+                        
+                        guard gestureDirection == .horizontal else { return }
+                        
+                        let effectiveTranslation = dragTranslation + value.predictedEndTranslation.width
                         let threshold = geo.size.width * 0.25
-
-                        if effectiveTranslation < -threshold && !isMenuOpen {
-                            return
-                        }
-                        if effectiveTranslation > threshold && isMenuOpen {
-                            return
-                        }
-
+                        
+                        let shouldToggleMenu = (effectiveTranslation > threshold && !isMenuOpen) || 
+                                             (effectiveTranslation < -threshold && isMenuOpen)
+                        
                         withAnimation(.easeOut(duration: 0.25)) {
-                            if effectiveTranslation > threshold {
-                                // Haptic feedback sourd pour l'ouverture du menu
-                                let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
-                                impactFeedback.impactOccurred()
-                                isMenuOpen = true
-                            } else if effectiveTranslation < -threshold {
-                                // Haptic feedback sourd pour la fermeture du menu
-                                let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
-                                impactFeedback.impactOccurred()
-                                isMenuOpen = false
+                            if shouldToggleMenu {
+                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                isMenuOpen.toggle()
                             }
                             dragTranslation = 0
                         }
-
-                        isSwipingHorizontally = false
                     }
             )
             .animation(.interactiveSpring(response: 0.35, dampingFraction: 0.85, blendDuration: 0.25), value: isMenuOpen)
@@ -242,18 +231,6 @@ struct MainView: View {
         return baseOffset + offset + dragTranslation
     }
     
-    private func toggleItemVisibility(_ item: ContentItem) {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            item.isHidden.toggle()
-        }
-        
-        // Forcer la notification des changements
-        item.objectWillChange.send()
-        
-        // Sauvegarder les changements
-        contentService.updateContentItem(item)
-    }
-    
     @ViewBuilder
     private func buildContentCard(for item: ContentItem, at index: Int) -> some View {
         ContentItemCard(item: item)
@@ -269,26 +246,13 @@ struct MainView: View {
                 }
             }
             .contextMenu {
-                buildContextMenu(for: item)
+                ContentItemContextMenu(
+                    item: item,
+                    contentService: contentService,
+                    onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 }
+                )
             }
     }
     
-    @ViewBuilder
-    private func buildContextMenu(for item: ContentItem) -> some View {
-        Button(action: {
-            toggleItemVisibility(item)
-        }) {
-            Label(item.isHidden ? "Show" : "Hide", 
-                  systemImage: item.isHidden ? "eye" : "eye.slash")
-        }
-        
-        Divider()
 
-        Button(role: .destructive, action: {
-            contentService.deleteContentItem(item)
-            storageStatsRefreshTrigger += 1
-        }) {
-            Label("Delete", systemImage: "trash")
-        }
-    }
 }

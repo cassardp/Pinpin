@@ -253,7 +253,7 @@
 				DEVELOPMENT_TEAM = ZJA29UUY93;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PinpinShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Neeed;
+				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
@@ -283,7 +283,7 @@
 				DEVELOPMENT_TEAM = ZJA29UUY93;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PinpinShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Neeed;
+				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
