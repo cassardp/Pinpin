@@ -21,6 +21,8 @@ struct MainView: View {
         }
     }
     @State private var isSwipingHorizontally: Bool = false
+    @State private var numberOfColumns: Int = 2
+    @State private var initialPinchScale: CGFloat = 1.0
     
     enum GestureDirection {
         case horizontal
@@ -85,18 +87,15 @@ struct MainView: View {
                                 if filteredItems.isEmpty {
                                     EmptyStateView()
                                 } else {
-                                    MasonryGrid(
-                                        items: filteredItems,
-                                        columns: 2,
-                                        spacing: 10,
-                                        content: { item in
+                                    PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: 10) {
+                                        ForEach(filteredItems, id: \.safeId) { item in
                                             if let index = filteredItems.firstIndex(of: item) {
                                                 buildContentCard(for: item, at: index)
                                             } else {
                                                 buildContentCard(for: item, at: 0)
                                             }
                                         }
-                                    )
+                                    }
                                     .animation(nil, value: filteredItems)
 
                                     if contentService.isLoadingMore {
@@ -137,6 +136,23 @@ struct MainView: View {
                             contentService.loadContentItems()
                         }
                         .scrollDisabled(gestureDirection == .horizontal || isMenuOpen || isSettingsOpen)
+                        .simultaneousGesture(
+                            MagnificationGesture()
+                                .onChanged { scale in
+                                    let newColumns = calculateColumnsFromScale(scale)
+                                    if newColumns != numberOfColumns {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            numberOfColumns = newColumns
+                                        }
+                                        // Haptic feedback léger
+                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                        impactFeedback.impactOccurred()
+                                    }
+                                }
+                                .onEnded { _ in
+                                    initialPinchScale = 1.0
+                                }
+                        )
                     }
                     
                     // Overlay pour fermer les menus
@@ -255,5 +271,19 @@ struct MainView: View {
             }
     }
     
+    // MARK: - Pinch Gesture Logic
+    private func calculateColumnsFromScale(_ scale: CGFloat) -> Int {
+        let minColumns = 1
+        let maxColumns = 4
+        
+        // Logique inverse : pinch in (scale < 1) = plus de colonnes, pinch out (scale > 1) = moins de colonnes
+        let baseColumns = 2
+        let sensitivity: CGFloat = 0.3
+        
+        let columnChange = Int((1.0 - scale) / sensitivity)
+        let newColumns = baseColumns + columnChange
+        
+        return max(minColumns, min(maxColumns, newColumns))
+    }
 
 }
