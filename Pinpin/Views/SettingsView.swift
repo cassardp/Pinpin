@@ -48,6 +48,31 @@ struct SettingsView: View {
                         .background(Color(UIColor.secondarySystemGroupedBackground))
                         .cornerRadius(12)
                         
+                        HStack {
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                
+                                Text("Disable Corner Radius")
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                                
+                                Text("Square cards design")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                            }
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $userPreferences.disableCornerRadius)
+                                .labelsHidden()
+                                .tint(.primary)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
+                        
                         Spacer()
                         
                     }

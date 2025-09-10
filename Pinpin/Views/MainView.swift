@@ -10,6 +10,7 @@ import SwiftUI
 struct MainView: View {
     @StateObject private var contentService = ContentServiceCoreData()
     @StateObject private var sharedContentService: SharedContentService
+    @StateObject private var userPreferences = UserPreferences.shared
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var isSettingsOpen = false
@@ -21,7 +22,7 @@ struct MainView: View {
         }
     }
     @State private var isSwipingHorizontally: Bool = false
-    @State private var numberOfColumns: Int = 2
+    @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
     
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -35,6 +36,9 @@ struct MainView: View {
     }
     
     private var dynamicCornerRadius: CGFloat {
+        if userPreferences.disableCornerRadius {
+            return 0
+        }
         switch numberOfColumns {
         case 1: return 20
         case 2: return 14
@@ -160,6 +164,10 @@ struct MainView: View {
                             // Double tap pour cycler entre les nombres de colonnes
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 numberOfColumns = numberOfColumns == 4 ? 1 : numberOfColumns + 1
+                            }
+                            // Remonter en haut de la liste
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                proxy.scrollTo("top", anchor: .top)
                             }
                             // Haptic feedback
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)

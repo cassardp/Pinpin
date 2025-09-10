@@ -16,7 +16,14 @@ class UserPreferences: ObservableObject {
         }
     }
     
+    @Published var disableCornerRadius: Bool {
+        didSet {
+            UserDefaults.standard.set(disableCornerRadius, forKey: "disableCornerRadius")
+        }
+    }
+    
     private init() {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
+        self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
     }
 }
