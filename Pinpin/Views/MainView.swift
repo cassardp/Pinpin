@@ -22,7 +22,27 @@ struct MainView: View {
     }
     @State private var isSwipingHorizontally: Bool = false
     @State private var numberOfColumns: Int = 2
-    @State private var initialPinchScale: CGFloat = 1.0
+    
+    // Propriétés calculées pour l'espacement et le corner radius
+    private var dynamicSpacing: CGFloat {
+        switch numberOfColumns {
+        case 1: return 16
+        case 2: return 10
+        case 3: return 8
+        case 4: return 6
+        default: return 10
+        }
+    }
+    
+    private var dynamicCornerRadius: CGFloat {
+        switch numberOfColumns {
+        case 1: return 20
+        case 2: return 14
+        case 3: return 10
+        case 4: return 8
+        default: return 14
+        }
+    }
     
     enum GestureDirection {
         case horizontal
@@ -87,12 +107,12 @@ struct MainView: View {
                                 if filteredItems.isEmpty {
                                     EmptyStateView()
                                 } else {
-                                    PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: 10) {
+                                    PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
                                         ForEach(filteredItems, id: \.safeId) { item in
                                             if let index = filteredItems.firstIndex(of: item) {
-                                                buildContentCard(for: item, at: index)
+                                                buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
                                             } else {
-                                                buildContentCard(for: item, at: 0)
+                                                buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
                                             }
                                         }
                                     }
@@ -136,23 +156,15 @@ struct MainView: View {
                             contentService.loadContentItems()
                         }
                         .scrollDisabled(gestureDirection == .horizontal || isMenuOpen || isSettingsOpen)
-                        .simultaneousGesture(
-                            MagnificationGesture()
-                                .onChanged { scale in
-                                    let newColumns = calculateColumnsFromScale(scale)
-                                    if newColumns != numberOfColumns {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            numberOfColumns = newColumns
-                                        }
-                                        // Haptic feedback léger
-                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                                        impactFeedback.impactOccurred()
-                                    }
-                                }
-                                .onEnded { _ in
-                                    initialPinchScale = 1.0
-                                }
-                        )
+                        .onTapGesture(count: 2) {
+                            // Double tap pour cycler entre les nombres de colonnes
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                numberOfColumns = numberOfColumns == 4 ? 1 : numberOfColumns + 1
+                            }
+                            // Haptic feedback
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
+                        }
                     }
                     
                     // Overlay pour fermer les menus
@@ -248,8 +260,8 @@ struct MainView: View {
     }
     
     @ViewBuilder
-    private func buildContentCard(for item: ContentItem, at index: Int) -> some View {
-        ContentItemCard(item: item)
+    private func buildContentCard(for item: ContentItem, at index: Int, cornerRadius: CGFloat) -> some View {
+        ContentItemCard(item: item, cornerRadius: cornerRadius, numberOfColumns: numberOfColumns)
             .id(item.safeId)
             .allowsHitTesting(!isSwipingHorizontally)
             .animation(nil, value: filteredItems)
@@ -261,7 +273,7 @@ struct MainView: View {
                     contentService.loadMoreContentItems()
                 }
             }
-            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 14))
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: cornerRadius))
             .contextMenu {
                 ContentItemContextMenu(
                     item: item,
@@ -271,19 +283,5 @@ struct MainView: View {
             }
     }
     
-    // MARK: - Pinch Gesture Logic
-    private func calculateColumnsFromScale(_ scale: CGFloat) -> Int {
-        let minColumns = 1
-        let maxColumns = 4
-        
-        // Logique inverse : pinch in (scale < 1) = plus de colonnes, pinch out (scale > 1) = moins de colonnes
-        let baseColumns = 2
-        let sensitivity: CGFloat = 0.3
-        
-        let columnChange = Int((1.0 - scale) / sensitivity)
-        let newColumns = baseColumns + columnChange
-        
-        return max(minColumns, min(maxColumns, newColumns))
-    }
 
 }

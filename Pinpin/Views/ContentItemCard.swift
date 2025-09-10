@@ -10,6 +10,8 @@ import SwiftUI
 struct ContentItemCard: View {
     @ObservedObject var item: ContentItem
     @StateObject private var userPreferences = UserPreferences.shared
+    let cornerRadius: CGFloat
+    let numberOfColumns: Int
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -45,7 +47,7 @@ struct ContentItemCard: View {
                 case .image:
                     ImageContentView(item: item)
                 case .text:
-                    TextContentView(item: item)
+                    TextContentView(item: item, numberOfColumns: numberOfColumns)
                 }
             }
             .blur(radius: item.isHidden ? 15 : 0, opaque: item.isHidden)
@@ -71,7 +73,7 @@ struct ContentItemCard: View {
                     }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
@@ -86,7 +88,7 @@ struct ContentItemCard: View {
             }
         }
         // S'assurer que la zone de toucher ne dépasse pas les limites visuelles avec les coins arrondis
-        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
     
     private func handleContentTap(urlString: String) {
