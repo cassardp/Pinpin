@@ -50,7 +50,9 @@ struct ContentItemContextMenu: View {
     }
     
     private func deleteItem() {
-        contentService.deleteContentItem(item)
+        withAnimation(.easeInOut(duration: 0.4)) {
+            contentService.deleteContentItem(item)
+        }
         onStorageStatsRefresh()
     }
     

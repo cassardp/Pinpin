@@ -187,7 +187,7 @@ struct MainView: View {
         ContentItemCard(item: item, cornerRadius: cornerRadius, numberOfColumns: numberOfColumns)
             .id(item.safeId)
             .allowsHitTesting(!isSwipingHorizontally)
-            .animation(nil, value: filteredItems)
+            .animation(.easeInOut(duration: 0.4), value: filteredItems)
             .onDrag {
                 NSItemProvider(object: item.safeId.uuidString as NSString)
             }
