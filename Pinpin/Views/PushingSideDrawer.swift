@@ -62,8 +62,9 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         
                         // Suivi immédiat avec détection strictement horizontale
                         if dx != 0 || dy != 0 {
-                            // Détection stricte pour éviter l'interférence avec le scroll vertical
-                            if abs(dx) > abs(dy) {
+                            // Détection beaucoup plus stricte : le mouvement horizontal doit être au moins 2x plus important que le vertical
+                            // ET le mouvement vertical ne doit pas dépasser 30 points pour éviter les swipes diagonaux
+                            if abs(dx) > abs(dy) * 2.0 && abs(dy) < 30 {
                                 isDragging = true
                                 
                                 if isOpen {
