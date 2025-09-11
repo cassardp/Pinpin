@@ -428,6 +428,8 @@ class ContentTypeDetector {
             "youtube.com/tv", "dailymotion.com", "vimeo.com/ondemand",
             "twitch.tv", "mixer.com", "facebook.com/watch",
             "imdb.com/tv", "crackle.com", "popcornflix.com",
+            "themoviedb.org", "www.themoviedb.org",
+            "allocine.fr", "www.allocine.fr",
             
             // Plateformes sportives
             "espn.com", "espnplus.com", "nbcsports.com", "foxsports.com",
@@ -561,6 +563,7 @@ class ContentTypeDetector {
             "reverb.", "discogs.", "catawiki.", "chrono24.",
             "vestiairecollective.", "rebag.", "fashionphile.",
             "stockx.", "goat.", "grailed.", "depop.", "vinted.",
+            "leboncoin.fr", "www.leboncoin.fr",
             
             // Autres grandes enseignes
             "wish.", "joom.", "banggood.", "gearbest.", "lightinthebox.",

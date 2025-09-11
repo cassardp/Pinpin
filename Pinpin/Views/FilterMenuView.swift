@@ -127,6 +127,7 @@ struct FilterMenuView: View {
                             .foregroundColor(.gray)
                     }
                     .padding(.horizontal, 24)
+                    .padding(.bottom,24)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .allowsHitTesting(!isSwipingHorizontally)

@@ -426,14 +426,17 @@ class ShareViewController: UIViewController {
         
         // Ajouter le texte
         let label = UILabel()
-        label.text = "Please wait"
+        label.text = "Adding to Pinpin..."
         label.font = UIFont.systemFont(ofSize: 13, weight: .medium)
         label.textColor = UIColor.white
         label.textAlignment = .center
         
         toastView?.addSubview(label)
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.centerXAnchor.constraint(equalTo: (toastView?.centerXAnchor)!).isActive = true
+        
+        // Contraintes pour le label avec padding
+        label.leadingAnchor.constraint(equalTo: (toastView?.leadingAnchor)!, constant: 16).isActive = true
+        label.trailingAnchor.constraint(equalTo: (toastView?.trailingAnchor)!, constant: -16).isActive = true
         label.centerYAnchor.constraint(equalTo: (toastView?.centerYAnchor)!).isActive = true
         
         // Ajouter la vue toast en haut de l'écran
@@ -441,7 +444,6 @@ class ShareViewController: UIViewController {
         toastView?.translatesAutoresizingMaskIntoConstraints = false
         toastView?.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16).isActive = true
         toastView?.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-        toastView?.widthAnchor.constraint(equalToConstant: 110).isActive = true
         toastView?.heightAnchor.constraint(equalToConstant: 32).isActive = true
         
         // Animation d'apparition subtile
