@@ -97,6 +97,7 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                                 // Fermer si swipe gauche > 25% de la largeur OU vitesse rapide
                                 let velocity = value.predictedEndTranslation.width - dx
                                 if dx < -width * 0.25 || velocity < -200 {
+                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                                     isOpen = false
                                 }
                             } else {
