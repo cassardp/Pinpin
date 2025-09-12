@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct MainView: View {
     @StateObject private var contentService = ContentServiceCoreData()
@@ -17,6 +18,13 @@ struct MainView: View {
     @State private var isAboutOpen = false
     @State private var isSwipingHorizontally: Bool = false
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
+
+    private let minColumns: Int = 1
+    private let maxColumns: Int = 4
+    
+    // --- Pinch state (nouveau) ---
+    @State private var pinchScale: CGFloat = 1.0           // échelle en direct pendant le pinch
+    @State private var isPinching: Bool = false            // pour n’appliquer le scale que durant le geste
     
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -77,23 +85,29 @@ struct MainView: View {
 
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack {
-                            // Anchor invisible pour le scroll reset
+                        LazyVStack(spacing: 0) {
+                            // Anchor invisible pour le scroll reset si besoin
                             Color.clear.frame(height: 0).id("top")
                             
                             if filteredItems.isEmpty {
                                 EmptyStateView()
                             } else {
-                                PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
-                                    ForEach(filteredItems, id: \.safeId) { item in
-                                        if let index = filteredItems.firstIndex(of: item) {
-                                            buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
-                                        } else {
-                                            buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
+                                // --- Conteneur zoomable : applique le retour visuel de contraction/expansion ---
+                                VStack(spacing: 0) {
+                                    PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
+                                        ForEach(filteredItems, id: \.safeId) { item in
+                                            if let index = filteredItems.firstIndex(of: item) {
+                                                buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
+                                            } else {
+                                                buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
+                                            }
                                         }
                                     }
+                                    .animation(nil, value: filteredItems)
                                 }
-                                .animation(nil, value: filteredItems)
+                                // Le scale est appliqué uniquement pendant le geste
+                                .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
+                                .animation(.linear(duration: 0.08), value: pinchScale) // réactivité du retour visuel
 
                                 if contentService.isLoadingMore {
                                     HStack {
@@ -113,8 +127,8 @@ struct MainView: View {
                                         selectedContentType: selectedContentType,
                                         filteredItems: filteredItems
                                     )
-                                        .padding(.top, 50)
-                                        .id(storageStatsRefreshTrigger)
+                                    .padding(.top, 50)
+                                    .id(storageStatsRefreshTrigger)
                                 }
 
                                 Color.clear.frame(height: 40)
@@ -122,6 +136,8 @@ struct MainView: View {
                         }
                         .padding(.horizontal, 10)
                         .onChange(of: selectedContentType) {
+                            // On peut remonter au top lors d’un changement de filtre,
+                            // mais on évite de forcer au top lors d’un pinch.
                             withTransaction(Transaction(animation: nil)) {
                                 proxy.scrollTo("top", anchor: .top)
                             }
@@ -132,19 +148,57 @@ struct MainView: View {
                         contentService.loadContentItems()
                     }
                     .scrollDisabled(isMenuOpen || isSettingsOpen)
-                    .onTapGesture(count: 2) {
-                        // Double tap pour cycler entre les nombres de colonnes
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            numberOfColumns = numberOfColumns == 4 ? 1 : numberOfColumns + 1
-                        }
-                        // Remonter en haut de la liste
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            proxy.scrollTo("top", anchor: .top)
-                        }
-                        // Haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                    }
+                    // --- Geste de pincement donné en priorité sur le scroll pour éviter les confusions ---
+                    .highPriorityGesture(
+                        MagnificationGesture(minimumScaleDelta: 0)
+                            .onChanged { newScale in
+                                isPinching = true
+
+                                // Direction du geste
+                                let goesSmaller = newScale < 1.0   // pinch-in => moins de colonnes
+                                let goesBigger  = newScale > 1.0   // pinch-out => plus de colonnes
+
+                                let canZoomIn  = numberOfColumns > minColumns
+                                let canZoomOut = numberOfColumns < maxColumns
+
+                                // Si on est en butée et que le geste va dans la mauvaise direction,
+                                // on "lock" le feedback visuel à 1.0 (aucun effet).
+                                if (goesSmaller && !canZoomIn) || (goesBigger && !canZoomOut) {
+                                    pinchScale = 1.0
+                                    return
+                                }
+
+                                // Sinon, on applique un retour visuel doux (clamp resserré)
+                                // 0.9–1.1 par défaut (tu peux ajuster)
+                                let clamped = max(0.9, min(newScale, 1.1))
+                                pinchScale = clamped
+                            }
+                            .onEnded { finalScale in
+                                let canZoomIn  = numberOfColumns > minColumns
+                                let canZoomOut = numberOfColumns < maxColumns
+
+                                var newColumns = numberOfColumns
+
+                                // Seuils inchangés, mais on vérifie la possibilité
+                                if finalScale > 1.08, canZoomOut {
+                                    newColumns = min(numberOfColumns + 1, maxColumns)
+                                } else if finalScale < 0.92, canZoomIn {
+                                    newColumns = max(numberOfColumns - 1, minColumns)
+                                }
+
+                                if newColumns != numberOfColumns {
+                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.9, blendDuration: 0.15)) {
+                                        numberOfColumns = newColumns
+                                    }
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                }
+
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    pinchScale = 1.0
+                                    isPinching = false
+                                }
+                            }
+                    )
                 }
             }
         } drawer: {
@@ -205,10 +259,7 @@ struct MainView: View {
                 )
             }
     }
-    
-
 }
-
 
 #Preview {
     MainView()
