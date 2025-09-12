@@ -10,71 +10,46 @@ import SwiftUI
 struct SettingsView: View {
     @Binding var isSwipingHorizontally: Bool
     @StateObject private var userPreferences = UserPreferences.shared
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
             ScrollView {
                 LazyVStack(spacing: 20) {
-                    // Switch pour afficher les URLs
-                    
                     Spacer()
                     
                     VStack(spacing: 0) {
+                        SettingsToggleRow(
+                            title: "Show Cards URLs",
+                            subtitle: "",
+                            isOn: $userPreferences.showURLs
+                        )
                         
-
+                        // Ligne de séparation
+                        Divider()
+                            .background(Color.gray.opacity(0.1))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
                         
-                        HStack {
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                
-                                Text("Show URLs")
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                                
-                                Text("Under each item")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-
-                            }
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $userPreferences.showURLs)
-                                .labelsHidden()
-                                .tint(.primary)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                        SettingsToggleRow(
+                            title: "Square Cards",
+                            subtitle: "",
+                            isOn: $userPreferences.disableCornerRadius
+                        )
                         
-                        HStack {
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                
-                                Text("Disable Corner Radius")
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                                
-                                Text("Square cards design")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-
-                            }
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $userPreferences.disableCornerRadius)
-                                .labelsHidden()
-                                .tint(.primary)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                        // Ligne de séparation
+                        Divider()
+                            .background(Color.gray.opacity(0.1))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                        
+                        SettingsToggleRow(
+                            title: "Force Dark mode",
+                            subtitle: "",
+                            isOn: $userPreferences.forceDarkMode
+                        )
                         
                         Spacer()
-                        
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -85,6 +60,42 @@ struct SettingsView: View {
             .scrollIndicators(.hidden)
             .disabled(isSwipingHorizontally)
         }
+    }
+}
+
+struct SettingsToggleRow: View {
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .onTapGesture {
+                isOn.toggle()
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(.primary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .cornerRadius(12)
     }
 }
 
