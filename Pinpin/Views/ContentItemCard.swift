@@ -15,46 +15,49 @@ struct ContentItemCard: View {
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Conteneur pour limiter la zone de toucher
-            Color.clear
-                .contentShape(Rectangle())
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // Contenu principal
-            Group {
-                switch item.contentTypeEnum {
-                case .article:
-                    ArticleContentView(item: item)
-                case .video:
-                    VideoContentView(item: item)
-                case .product:
-                    ProductContentView(item: item)
-                case .social:
-                    SocialContentView(item: item)
-                case .webpage:
-                    WebpageContentView(item: item)
-                case .app:
-                    AppContentView(item: item)
-                case .music:
-                    MusicContentView(item: item)
-                case .book:
-                    BookContentView(item: item)
-                case .travel:
-                    TravelContentView(item: item)
-                case .podcast:
-                    PodcastContentView(item: item)
-                case .show:
-                    ShowContentView(item: item)
-                case .image:
-                    ImageContentView(item: item)
-                case .text:
-                    TextContentView(item: item, numberOfColumns: numberOfColumns)
+            // Couche de contenu (avec fond noir quand masqué pour éviter le carré blanc)
+            ZStack {
+                if item.isHidden {
+                    Color.black
+                }
+                Group {
+                    switch item.contentTypeEnum {
+                    case .article:
+                        ArticleContentView(item: item)
+                    case .video:
+                        VideoContentView(item: item)
+                    case .product:
+                        ProductContentView(item: item)
+                    case .social:
+                        SocialContentView(item: item)
+                    case .webpage:
+                        WebpageContentView(item: item)
+                    case .app:
+                        AppContentView(item: item)
+                    case .music:
+                        MusicContentView(item: item)
+                    case .book:
+                        BookContentView(item: item)
+                    case .travel:
+                        TravelContentView(item: item)
+                    case .podcast:
+                        PodcastContentView(item: item)
+                    case .show:
+                        ShowContentView(item: item)
+                    case .image:
+                        ImageContentView(item: item)
+                    case .text:
+                        TextContentView(item: item, numberOfColumns: numberOfColumns)
+                    }
                 }
             }
-            .blur(radius: item.isHidden ? 15 : 0, opaque: item.isHidden)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .compositingGroup()
+            .blur(radius: item.isHidden ? 15 : 0)
             .clipped()
             
             // URL en overlay dans le coin bas gauche
-            if userPreferences.showURLs, let url = item.url, !url.isEmpty {
+            if userPreferences.showURLs, let url = item.url, !url.isEmpty, !item.isHidden {
                 Text(shortenURL(url))
                     .font(.caption2)
                     .fontWeight(.medium)

@@ -8,33 +8,41 @@
 import SwiftUI
 
 struct TextDetailModal: View {
-    let text: String
+    let item: ContentItem
+    let onSave: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var editableText: String = ""
+    @StateObject private var contentService = ContentServiceCoreData()
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(text)
-                        .font(.body)
-                        .multilineTextAlignment(.leading)
-                        .textSelection(.enabled)
-                        .padding()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 0) {
+                TextEditor(text: $editableText)
+                    .font(.body)
+                    .scrollContentBackground(.hidden)
+                    .padding()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
+            .onDisappear {
+                saveChanges()
+                onSave()
             }
         }
+        .onAppear {
+            editableText = item.metadataDict["best_description"] ?? item.itemDescription ?? ""
+        }
+    }
+    
+    private func saveChanges() {
+        item.itemDescription = editableText
+        item.updatedAt = Date()
+        contentService.updateContentItem(item)
     }
 }
 
 #Preview {
-    TextDetailModal(text: "Exemple de texte long qui sera affiché dans la modal...")
+    TextDetailModal(item: ContentItem()) {
+        // Preview callback
+    }
 }
