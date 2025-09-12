@@ -16,6 +16,7 @@ struct MainView: View {
     @State private var isMenuOpen = false
     @State private var isSettingsOpen = false
     @State private var isAboutOpen = false
+    @State private var settingsDetent: PresentationDetent = .medium
     @State private var isSwipingHorizontally: Bool = false
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
 
@@ -228,7 +229,8 @@ struct MainView: View {
         }
         .sheet(isPresented: $isSettingsOpen) {
             SettingsView(isSwipingHorizontally: $isSwipingHorizontally)
-                .presentationDetents([.large])
+                .presentationDetents([.medium, .large], selection: $settingsDetent)
+                .presentationDragIndicator(.hidden)
         }
     }
 

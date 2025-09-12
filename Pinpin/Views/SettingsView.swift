@@ -14,50 +14,44 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVStack(spacing: 20) {
-                    Spacer()
-                    
-                    VStack(spacing: 0) {
-                        SettingsToggleRow(
-                            title: "Show Cards URLs",
-                            subtitle: "",
-                            isOn: $userPreferences.showURLs
-                        )
-                        
-                        // Ligne de séparation
-                        Divider()
-                            .background(Color.gray.opacity(0.1))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                        
-                        SettingsToggleRow(
-                            title: "Square Cards",
-                            subtitle: "",
-                            isOn: $userPreferences.disableCornerRadius
-                        )
-                        
-                        // Ligne de séparation
-                        Divider()
-                            .background(Color.gray.opacity(0.1))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                        
-                        SettingsToggleRow(
-                            title: "Force Dark mode",
-                            subtitle: "",
-                            isOn: $userPreferences.forceDarkMode
-                        )
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    
-                    Spacer(minLength: 400)
+            VStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    SettingsToggleRow(
+                        title: "Show Cards URLs",
+                        subtitle: "",
+                        isOn: $userPreferences.showURLs
+                    )
+
+                    // Ligne de séparation
+                    Divider()
+                        .background(Color.gray.opacity(0.1))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                    SettingsToggleRow(
+                        title: "Square Cards",
+                        subtitle: "",
+                        isOn: $userPreferences.disableCornerRadius
+                    )
+
+                    // Ligne de séparation
+                    Divider()
+                        .background(Color.gray.opacity(0.1))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                    SettingsToggleRow(
+                        title: "Force Dark mode",
+                        subtitle: "",
+                        isOn: $userPreferences.forceDarkMode
+                    )
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 40)
+
+                Spacer(minLength: 0)
             }
-            .scrollIndicators(.hidden)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .disabled(isSwipingHorizontally)
         }
     }
@@ -94,7 +88,7 @@ struct SettingsToggleRow: View {
                 .tint(.primary)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.vertical, 14)
         .cornerRadius(12)
     }
 }
