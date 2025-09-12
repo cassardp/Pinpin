@@ -8,7 +8,7 @@ struct ContentItemContextMenu: View {
     var body: some View {
         Menu {
             ForEach(ContentType.allCases, id: \.self) { contentType in
-                if contentType != item.contentTypeEnum {
+                if contentType != item.contentTypeEnum && contentType != .text {
                     Button(action: {
                         reclassifyItem(to: contentType)
                     }) {

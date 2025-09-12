@@ -160,7 +160,7 @@ struct MainView: View {
                                 }
 
                                 // Feedback visuel doux
-                                pinchScale = max(0.9, min(newScale, 1.1))
+                                pinchScale = max(0.98, min(newScale, 1.02))
                             }
                             .onEnded { finalScale in
                                 let canZoomIn  = numberOfColumns > minColumns
@@ -236,9 +236,9 @@ struct MainView: View {
     private func buildContentCard(for item: ContentItem, at index: Int, cornerRadius: CGFloat) -> some View {
         ContentItemCard(item: item, cornerRadius: cornerRadius, numberOfColumns: numberOfColumns)
             .id(item.safeId)
-            // Empêche l’interaction sur item si swipe latéral ou pinch en cours
             .allowsHitTesting(!isSwipingHorizontally && !isPinching)
-            .animation(.easeInOut(duration: 0.4), value: filteredItems)
+            // 🔽 ici : pas d’animation si menu ouvert
+            .animation(isMenuOpen ? nil : .easeInOut(duration: 0.4), value: filteredItems)
             .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
             .onAppear {
                 if item == filteredItems.last {

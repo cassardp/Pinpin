@@ -123,7 +123,7 @@ struct FilterMenuView: View {
                 }) {
                     HStack {
                         Text("Settings")
-                            .font(.system(size: 16, weight: .regular))
+                            .font(.system(size: 18, weight: .regular))
                             .foregroundColor(.gray)
                     }
                     .padding(.horizontal, 24)
