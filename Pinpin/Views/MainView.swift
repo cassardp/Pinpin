@@ -19,13 +19,14 @@ struct MainView: View {
     @State private var isSwipingHorizontally: Bool = false
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
 
+    // Bornes de colonnes
     private let minColumns: Int = 1
     private let maxColumns: Int = 4
-    
-    // --- Pinch state (nouveau) ---
-    @State private var pinchScale: CGFloat = 1.0           // échelle en direct pendant le pinch
-    @State private var isPinching: Bool = false            // pour n’appliquer le scale que durant le geste
-    
+
+    // État du pinch (feedback + verrou gestures)
+    @State private var pinchScale: CGFloat = 1.0
+    @State private var isPinching: Bool = false
+
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
         switch numberOfColumns {
@@ -36,11 +37,9 @@ struct MainView: View {
         default: return 10
         }
     }
-    
+
     private var dynamicCornerRadius: CGFloat {
-        if userPreferences.disableCornerRadius {
-            return 0
-        }
+        if userPreferences.disableCornerRadius { return 0 }
         switch numberOfColumns {
         case 1: return 20
         case 2: return 14
@@ -49,30 +48,28 @@ struct MainView: View {
         default: return 14
         }
     }
-    
+
     @State private var selectedContentType: String? = nil
-    
+
     // FetchRequest pour récupérer tous les items
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)],
         animation: nil)
     private var allContentItems: FetchedResults<ContentItem>
-    
+
     // Items filtrés selon le type sélectionné
     private var filteredItems: [ContentItem] {
         let items = Array(allContentItems)
-        guard let selectedType = selectedContentType else {
-            return items
-        }
+        guard let selectedType = selectedContentType else { return items }
         return items.filter { $0.contentType == selectedType }
     }
-    
+
     init() {
         let contentService = ContentServiceCoreData()
         self._contentService = StateObject(wrappedValue: contentService)
         self._sharedContentService = StateObject(wrappedValue: SharedContentService(contentService: contentService))
     }
-    
+
     var body: some View {
         PushingSideDrawer(
             isOpen: $isMenuOpen,
@@ -86,13 +83,12 @@ struct MainView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            // Anchor invisible pour le scroll reset si besoin
                             Color.clear.frame(height: 0).id("top")
-                            
+
                             if filteredItems.isEmpty {
                                 EmptyStateView()
                             } else {
-                                // --- Conteneur zoomable : applique le retour visuel de contraction/expansion ---
+                                // Conteneur de la grille (feedback visuel + verrou taps pendant pinch)
                                 VStack(spacing: 0) {
                                     PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
                                         ForEach(filteredItems, id: \.safeId) { item in
@@ -105,15 +101,14 @@ struct MainView: View {
                                     }
                                     .animation(nil, value: filteredItems)
                                 }
-                                // Le scale est appliqué uniquement pendant le geste
                                 .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
-                                .animation(.linear(duration: 0.08), value: pinchScale) // réactivité du retour visuel
+                                .animation(.linear(duration: 0.08), value: pinchScale)
+                                .allowsHitTesting(!isPinching) // bloque taps/long-press sur la grille pendant le pinch
 
                                 if contentService.isLoadingMore {
                                     HStack {
                                         Spacer()
-                                        ProgressView()
-                                            .scaleEffect(0.8)
+                                        ProgressView().scaleEffect(0.8)
                                         Text("Loading...")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
@@ -136,23 +131,20 @@ struct MainView: View {
                         }
                         .padding(.horizontal, 10)
                         .onChange(of: selectedContentType) {
-                            // On peut remonter au top lors d’un changement de filtre,
-                            // mais on évite de forcer au top lors d’un pinch.
                             withTransaction(Transaction(animation: nil)) {
                                 proxy.scrollTo("top", anchor: .top)
                             }
                         }
                     }
                     .scrollIndicators(.hidden)
-                    .refreshable {
-                        contentService.loadContentItems()
-                    }
+                    .refreshable { contentService.loadContentItems() }
                     .scrollDisabled(isMenuOpen || isSettingsOpen)
-                    // --- Geste de pincement donné en priorité sur le scroll pour éviter les confusions ---
+                    // Pinch prioritaire + verrou en butée + blocage du swipe horizontal pendant pinch
                     .highPriorityGesture(
                         MagnificationGesture(minimumScaleDelta: 0)
                             .onChanged { newScale in
                                 isPinching = true
+                                isSwipingHorizontally = true // neutralise le swipe d'ouverture du menu côté contenu
 
                                 // Direction du geste
                                 let goesSmaller = newScale < 1.0   // pinch-in => moins de colonnes
@@ -161,25 +153,20 @@ struct MainView: View {
                                 let canZoomIn  = numberOfColumns > minColumns
                                 let canZoomOut = numberOfColumns < maxColumns
 
-                                // Si on est en butée et que le geste va dans la mauvaise direction,
-                                // on "lock" le feedback visuel à 1.0 (aucun effet).
+                                // Si en butée et mauvaise direction, on neutralise le feedback (pas de "pump")
                                 if (goesSmaller && !canZoomIn) || (goesBigger && !canZoomOut) {
                                     pinchScale = 1.0
                                     return
                                 }
 
-                                // Sinon, on applique un retour visuel doux (clamp resserré)
-                                // 0.9–1.1 par défaut (tu peux ajuster)
-                                let clamped = max(0.9, min(newScale, 1.1))
-                                pinchScale = clamped
+                                // Feedback visuel doux
+                                pinchScale = max(0.9, min(newScale, 1.1))
                             }
                             .onEnded { finalScale in
                                 let canZoomIn  = numberOfColumns > minColumns
                                 let canZoomOut = numberOfColumns < maxColumns
 
                                 var newColumns = numberOfColumns
-
-                                // Seuils inchangés, mais on vérifie la possibilité
                                 if finalScale > 1.08, canZoomOut {
                                     newColumns = min(numberOfColumns + 1, maxColumns)
                                 } else if finalScale < 0.92, canZoomIn {
@@ -196,22 +183,31 @@ struct MainView: View {
                                 withAnimation(.easeInOut(duration: 0.18)) {
                                     pinchScale = 1.0
                                     isPinching = false
+                                    isSwipingHorizontally = false
                                 }
                             }
                     )
                 }
             }
+            // Bouclier overlay : avale drags & taps pendant le pinch (empêche ouverture menu et taps parasites)
+            .overlay(
+                Group {
+                    if isPinching {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .highPriorityGesture(DragGesture(minimumDistance: 0))
+                            .highPriorityGesture(TapGesture())
+                            .allowsHitTesting(true)
+                    }
+                }
+            )
         } drawer: {
             // Menu latéral
             FilterMenuView(
                 selectedContentType: $selectedContentType,
                 isSwipingHorizontally: $isSwipingHorizontally,
-                onOpenSettings: {
-                    isSettingsOpen = true
-                },
-                onOpenAbout: {
-                    isAboutOpen = true
-                }
+                onOpenSettings: { isSettingsOpen = true },
+                onOpenAbout: { isAboutOpen = true }
             )
         }
         .ignoresSafeArea(.keyboard)
@@ -235,16 +231,15 @@ struct MainView: View {
                 .presentationDetents([.large])
         }
     }
-    
+
     @ViewBuilder
     private func buildContentCard(for item: ContentItem, at index: Int, cornerRadius: CGFloat) -> some View {
         ContentItemCard(item: item, cornerRadius: cornerRadius, numberOfColumns: numberOfColumns)
             .id(item.safeId)
-            .allowsHitTesting(!isSwipingHorizontally)
+            // Empêche l’interaction sur item si swipe latéral ou pinch en cours
+            .allowsHitTesting(!isSwipingHorizontally && !isPinching)
             .animation(.easeInOut(duration: 0.4), value: filteredItems)
-            .onDrag {
-                NSItemProvider(object: item.safeId.uuidString as NSString)
-            }
+            .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
             .onAppear {
                 if item == filteredItems.last {
                     contentService.loadMoreContentItems()
