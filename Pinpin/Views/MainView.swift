@@ -20,7 +20,7 @@ struct MainView: View {
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
 
     // Bornes de colonnes
-    private let minColumns: Int = 1
+    private let minColumns: Int = 2
     private let maxColumns: Int = 4
 
     // État du pinch (feedback + verrou gestures)

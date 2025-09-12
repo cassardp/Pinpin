@@ -16,6 +16,11 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var isDragging: Bool = false
+    
+    // Stricter horizontal swipe detection to avoid diagonal swipes
+    private let horizontalBiasRatio: CGFloat = 3.0         // |dx| must be >= ratio * |dy|
+    private let maxVerticalDeviation: CGFloat = 20.0       // vertical movement must stay under this (pts)
+    private let minHorizontalTrigger: CGFloat = 12.0       // need some horizontal intent before locking
 
     var body: some View {
         GeometryReader { geo in
@@ -60,13 +65,18 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         let dx = value.translation.width
                         let dy = value.translation.height
                         
-                        // Suivi immédiat avec détection strictement horizontale
+                        // Suivi avec verrou directionnel horizontal strict
                         if dx != 0 || dy != 0 {
-                            // Détection beaucoup plus stricte : le mouvement horizontal doit être au moins 2x plus important que le vertical
-                            // ET le mouvement vertical ne doit pas dépasser 30 points pour éviter les swipes diagonaux
-                            if abs(dx) > abs(dy) * 2.0 && abs(dy) < 30 {
+                            // N'activer le drag horizontal que si l'intention est claire
+                            let absDx = abs(dx)
+                            let absDy = abs(dy)
+                            let hasHorizontalIntent = absDx >= minHorizontalTrigger
+                            let isMostlyHorizontal = absDx >= horizontalBiasRatio * absDy
+                            let verticalUnderLimit = absDy <= maxVerticalDeviation
+
+                            if (isDragging || (hasHorizontalIntent && isMostlyHorizontal && verticalUnderLimit)) {
                                 isDragging = true
-                                
+
                                 if isOpen {
                                     // Menu ouvert : suivi immédiat vers la gauche
                                     if dx <= 0 {
