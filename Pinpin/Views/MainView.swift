@@ -134,8 +134,8 @@ struct MainView: View {
                                     }
                                 }) {
                                     Text(isSelectionMode ? "Cancel" : currentCategoryName)
-                                        .font(.system(size: 18, weight: .regular))
-                                        .foregroundColor(.gray)
+                                        .font(.system(size: 20, weight: .regular))
+                                        .foregroundColor(.primary)
                                 }
                                 
                                 Spacer()
@@ -162,6 +162,7 @@ struct MainView: View {
                                     )
                                     .font(.system(size: 18, weight: .regular))
                                     .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
+                                    .padding(.top, 4)
                                 }
                             }
                             .padding(.horizontal, 6)

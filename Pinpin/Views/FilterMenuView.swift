@@ -48,7 +48,7 @@ struct FilterMenuView: View {
                 // Search (discret, même typo que "Settings")
                 HStack {
                     TextField("", text: $searchQuery, prompt: Text("Search").foregroundColor(.gray))
-                        .font(.system(size: 18, weight: .regular))
+                        .font(.system(size: 20, weight: .regular))
                         .foregroundColor(.gray)
                         .textFieldStyle(PlainTextFieldStyle())
                         .autocapitalization(.none)
@@ -59,15 +59,15 @@ struct FilterMenuView: View {
                             // Perdre le focus après reset
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 16))
+                            Image(systemName: "xmark.circle")
+                                .font(.system(size: 20))
                                 .foregroundColor(.gray)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 66) // Safe area top
+                .padding(.top, 67) // Safe area top
                 .allowsHitTesting(!isSwipingHorizontally)
                 
                 Spacer()
@@ -138,7 +138,7 @@ struct FilterMenuView: View {
                 }) {
                     HStack {
                         Text("Settings")
-                            .font(.system(size: 18, weight: .regular))
+                            .font(.system(size: 20, weight: .regular))
                             .foregroundColor(.gray)
                     }
                     .padding(.horizontal, 24)
