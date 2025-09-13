@@ -18,6 +18,7 @@ struct MainView: View {
     @State private var isAboutOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
     @State private var isSwipingHorizontally: Bool = false
+    @State private var searchQuery: String = ""
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
 
     // Bornes de colonnes
@@ -71,11 +72,31 @@ struct MainView: View {
         animation: nil)
     private var allContentItems: FetchedResults<ContentItem>
 
-    // Items filtrés selon le type sélectionné
+    // Items filtrés selon le type sélectionné et la recherche
     private var filteredItems: [ContentItem] {
         let items = Array(allContentItems)
-        guard let selectedType = selectedContentType else { return items }
-        return items.filter { $0.contentType == selectedType }
+        // Filtre par type
+        let typeFiltered: [ContentItem]
+        if let selectedType = selectedContentType {
+            typeFiltered = items.filter { $0.contentType == selectedType }
+        } else {
+            typeFiltered = items
+        }
+
+        // Filtre par requête texte
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return typeFiltered }
+
+        return typeFiltered.filter { item in
+            let title = item.title?.lowercased() ?? ""
+            let description = (item.metadataDict["best_description"] ?? item.itemDescription ?? "").lowercased()
+            let url = item.url?.lowercased() ?? ""
+            let metadataValues = item.metadataDict.values.joined(separator: " ").lowercased()
+            return title.contains(query)
+                || description.contains(query)
+                || url.contains(query)
+                || metadataValues.contains(query)
+        }
     }
 
     init() {
@@ -291,6 +312,7 @@ struct MainView: View {
             // Menu latéral
             FilterMenuView(
                 selectedContentType: $selectedContentType,
+                searchQuery: $searchQuery,
                 isSwipingHorizontally: $isSwipingHorizontally,
                 onOpenSettings: { isSettingsOpen = true },
                 onOpenAbout: { isAboutOpen = true }

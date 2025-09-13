@@ -15,6 +15,7 @@ struct FilterMenuView: View {
     private var contentItems: FetchedResults<ContentItem>
     
     @Binding var selectedContentType: String?
+    @Binding var searchQuery: String
     @Binding var isSwipingHorizontally: Bool
     var onOpenSettings: () -> Void
     var onOpenAbout: () -> Void
@@ -38,21 +39,36 @@ struct FilterMenuView: View {
             // Background
             Color(UIColor.systemBackground)
                 .ignoresSafeArea()
+                .onTapGesture {
+                    // Perdre le focus du TextField
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             
             VStack(alignment: .leading, spacing: 16) {
-
-                
-                Button(action: {
-                    onOpenAbout()
-                }) {
-                    HStack {
-                        Text("")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.gray)
+                // Search (discret, même typo que "Settings")
+                HStack {
+                    TextField("Search", text: $searchQuery)
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.gray)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    
+                    if !searchQuery.isEmpty {
+                        Button(action: {
+                            searchQuery = ""
+                            // Perdre le focus après reset
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .padding(.horizontal, 24)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 24)
+                .padding(.top, 60) // Safe area top
                 .allowsHitTesting(!isSwipingHorizontally)
                 
                 Spacer()
@@ -143,6 +159,7 @@ struct FilterMenuView: View {
 #Preview {
     FilterMenuView(
         selectedContentType: .constant(nil),
+        searchQuery: .constant(""),
         isSwipingHorizontally: .constant(false),
         onOpenSettings: {},
         onOpenAbout: {}
