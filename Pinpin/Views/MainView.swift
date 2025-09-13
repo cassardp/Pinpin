@@ -27,6 +27,10 @@ struct MainView: View {
     // État du pinch (feedback + verrou gestures)
     @State private var pinchScale: CGFloat = 1.0
     @State private var isPinching: Bool = false
+    
+    // Multi-sélection
+    @State private var isSelectionMode: Bool = false
+    @State private var selectedItems: Set<UUID> = []
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -51,6 +55,15 @@ struct MainView: View {
     }
 
     @State private var selectedContentType: String? = nil
+    
+    // Nom de la catégorie actuelle pour affichage
+    private var currentCategoryName: String {
+        guard let selectedType = selectedContentType,
+              let contentType = ContentType(rawValue: selectedType) else {
+            return "All"
+        }
+        return contentType.displayName
+    }
 
     // FetchRequest pour récupérer tous les items
     @FetchRequest(
@@ -85,6 +98,55 @@ struct MainView: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             Color.clear.frame(height: 0).id("top")
+                            
+                            // Barre de navigation en haut
+                            HStack {
+                                // Bouton catégorie à gauche
+                                Button(action: {
+                                    if isSelectionMode {
+                                        // Mode sélection : Cancel
+                                        isSelectionMode = false
+                                        selectedItems.removeAll()
+                                    } else {
+                                        // Mode normal : ouvrir le menu
+                                        isMenuOpen = true
+                                    }
+                                }) {
+                                    Text(isSelectionMode ? "CANCEL" : currentCategoryName)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                        .textCase(.uppercase)
+                                }
+                                
+                                Spacer()
+                                
+                                // Bouton Select/Delete/All à droite
+                                Button(action: {
+                                    if isSelectionMode {
+                                        if selectedItems.isEmpty {
+                                            // Aucun sélectionné -> sélectionner tout
+                                            selectAllItems()
+                                        } else {
+                                            // Supprimer la sélection
+                                            deleteSelectedItems()
+                                        }
+                                    } else {
+                                        // Mode normal : activer la sélection
+                                        isSelectionMode = true
+                                    }
+                                }) {
+                                    Text(
+                                        isSelectionMode
+                                        ? (selectedItems.isEmpty ? "ALL" : "DELETE \(selectedItems.count)")
+                                        : "SELECT"
+                                    )
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
+                                }
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 16)
+                            .background(Color(UIColor.systemBackground))
 
                             if filteredItems.isEmpty {
                                 EmptyStateView()
@@ -95,6 +157,29 @@ struct MainView: View {
                                         ForEach(filteredItems, id: \.safeId) { item in
                                             if let index = filteredItems.firstIndex(of: item) {
                                                 buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
+                                                    .overlay(
+                                                        // Overlay de sélection
+                                                        Group {
+                                                            if isSelectionMode {
+                                                                VStack {
+                                                                    HStack {
+                                                                        Spacer()
+                                                                        Button(action: {
+                                                                            toggleItemSelection(item.safeId)
+                                                                        }) {
+                                                                            Image(systemName: selectedItems.contains(item.safeId) ? "checkmark.circle.fill" : "circle")
+                                                                                .foregroundColor(selectedItems.contains(item.safeId) ? .red : .gray)
+                                                                                .font(.system(size: 20))
+                                                                                .background(Color.white)
+                                                                                .clipShape(Circle())
+                                                                        }
+                                                                        .padding(8)
+                                                                    }
+                                                                    Spacer()
+                                                                }
+                                                            }
+                                                        }
+                                                    )
                                             } else {
                                                 buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
                                             }
@@ -233,13 +318,49 @@ struct MainView: View {
                 .presentationDragIndicator(.hidden)
         }
     }
+    
+    // MARK: - Fonctions de multi-sélection
+    
+    private func toggleItemSelection(_ itemId: UUID) {
+        if selectedItems.contains(itemId) {
+            selectedItems.remove(itemId)
+        } else {
+            selectedItems.insert(itemId)
+        }
+    }
+    
+    private func selectAllItems() {
+        // Select all currently filtered items
+        selectedItems = Set(filteredItems.map { $0.safeId })
+    }
+    
+    private func deleteSelectedItems() {
+        let itemsToDelete = filteredItems.filter { selectedItems.contains($0.safeId) }
+        
+        for item in itemsToDelete {
+            contentService.deleteContentItem(item)
+        }
+        
+        // Réinitialiser la sélection
+        selectedItems.removeAll()
+        isSelectionMode = false
+        
+        // Rafraîchir les stats
+        storageStatsRefreshTrigger += 1
+    }
 
     @ViewBuilder
     private func buildContentCard(for item: ContentItem, at index: Int, cornerRadius: CGFloat) -> some View {
-        ContentItemCard(item: item, cornerRadius: cornerRadius, numberOfColumns: numberOfColumns)
+        ContentItemCard(
+            item: item, 
+            cornerRadius: cornerRadius, 
+            numberOfColumns: numberOfColumns, 
+            isSelectionMode: isSelectionMode,
+            onSelectionTap: { toggleItemSelection(item.safeId) }
+        )
             .id(item.safeId)
             .allowsHitTesting(!isSwipingHorizontally && !isPinching)
-            // 🔽 ici : pas d’animation si menu ouvert
+            // 🔽 ici : pas d'animation si menu ouvert
             .animation(isMenuOpen ? nil : .easeInOut(duration: 0.4), value: filteredItems)
             .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
             .onAppear {
@@ -249,11 +370,13 @@ struct MainView: View {
             }
             .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: cornerRadius))
             .contextMenu {
-                ContentItemContextMenu(
-                    item: item,
-                    contentService: contentService,
-                    onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 }
-                )
+                if !isSelectionMode {
+                    ContentItemContextMenu(
+                        item: item,
+                        contentService: contentService,
+                        onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 }
+                    )
+                }
             }
     }
 }

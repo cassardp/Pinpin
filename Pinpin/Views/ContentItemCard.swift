@@ -12,6 +12,8 @@ struct ContentItemCard: View {
     @StateObject private var userPreferences = UserPreferences.shared
     let cornerRadius: CGFloat
     let numberOfColumns: Int
+    let isSelectionMode: Bool
+    let onSelectionTap: (() -> Void)?
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -85,8 +87,11 @@ struct ContentItemCard: View {
                 }
         )
         .onTapGesture {
-            // Handle tap to open content
-            if let urlString = item.url {
+            if isSelectionMode {
+                // En mode sélection : appeler le callback de sélection
+                onSelectionTap?()
+            } else if let urlString = item.url {
+                // Mode normal : ouvrir le lien
                 handleContentTap(urlString: urlString)
             }
         }
