@@ -107,15 +107,29 @@ final class BackupService: ObservableObject {
     func importBackup(from url: URL) throws {
         let fm = FileManager.default
         let root: URL = url
+        // Autoriser l'accès aux ressources sécurisées (Files app)
+        let didStartAccess = root.startAccessingSecurityScopedResource()
+        defer { if didStartAccess { root.stopAccessingSecurityScopedResource() } }
         // Import dossier uniquement; zip non supporté
         if url.pathExtension.lowercased() == "zip" {
             throw NSError(domain: "BackupService", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP import is not supported. Select the backup folder."])
         }
         
         // items.json doit être à la racine du dossier de sauvegarde
-        let jsonURL = root.appendingPathComponent("items.json")
-        guard fm.fileExists(atPath: jsonURL.path) else {
-            throw NSError(domain: "BackupService", code: 1, userInfo: [NSLocalizedDescriptionKey: "items.json not found at backup root"]) }
+        var jsonURL = root.appendingPathComponent("items.json")
+        if !fm.fileExists(atPath: jsonURL.path) {
+            // Fallback: chercher récursivement si l'utilisateur a sélectionné un dossier parent par erreur
+            if let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: nil),
+               let found = enumerator.compactMap({ $0 as? URL }).first(where: { $0.lastPathComponent == "items.json" }) {
+                jsonURL = found
+            } else {
+                throw NSError(domain: "BackupService", code: 1, userInfo: [NSLocalizedDescriptionKey: "items.json not found at backup root"])
+            }
+        }
+        // iCloud: forcer le téléchargement si nécessaire
+        if fm.isUbiquitousItem(at: jsonURL) {
+            try? fm.startDownloadingUbiquitousItem(at: jsonURL)
+        }
         let data = try Data(contentsOf: jsonURL)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
