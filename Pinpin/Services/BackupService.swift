@@ -1,0 +1,165 @@
+//
+//  BackupService.swift
+//  Pinpin
+//
+//  Simple native backup/export & import for Core Data items + local images
+//
+
+import Foundation
+import CoreData
+import UniformTypeIdentifiers
+
+@MainActor
+final class BackupService: ObservableObject {
+    static let shared = BackupService()
+    private init() {}
+    
+    private let coreData = CoreDataService.shared
+    
+    // MARK: - Backup model
+    private struct BackupItem: Codable {
+        let id: UUID
+        let userId: UUID?
+        let contentType: String
+        let title: String
+        let itemDescription: String?
+        let url: String?
+        let metadata: [String: String]
+        let thumbnailUrl: String?
+        let isHidden: Bool
+        let createdAt: Date?
+        let updatedAt: Date?
+    }
+    
+    private struct BackupFile: Codable {
+        let version: Int
+        let createdAt: Date
+        let items: [BackupItem]
+    }
+    
+    // MARK: - Public API
+    /// Exporte la base dans un dossier temporaire: items.json + fichiers images référencés dans metadata (thumbnail_url, icon_url)
+    func exportBackupZip() throws -> URL {
+        let fm = FileManager.default
+        let tmpRoot = fm.temporaryDirectory
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        let stamp = formatter.string(from: Date())
+        let workingDir = tmpRoot.appendingPathComponent("PinpinBackup_\(stamp)", isDirectory: true)
+        try fm.createDirectory(at: workingDir, withIntermediateDirectories: true)
+        
+        // 1) Export JSON des items
+        let fetch: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+        fetch.sortDescriptors = [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)]
+        let items = try coreData.context.fetch(fetch)
+        
+        let mapped: [BackupItem] = items.map { item in
+            let meta = (item.metadata as? [String: String]) ?? [:]
+            return BackupItem(
+                id: item.id ?? UUID(),
+                userId: item.userId,
+                contentType: item.contentType ?? "webpage",
+                title: item.title ?? "Untitled",
+                itemDescription: item.itemDescription,
+                url: item.url,
+                metadata: meta,
+                thumbnailUrl: item.thumbnailUrl,
+                isHidden: item.isHidden,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt
+            )
+        }
+        let backup = BackupFile(version: 1, createdAt: Date(), items: mapped)
+        let jsonURL = workingDir.appendingPathComponent("items.json")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let jsonData = try encoder.encode(backup)
+        try jsonData.write(to: jsonURL, options: .atomic)
+        
+        // 2) Copier les images locales référencées (si existent)
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
+            for item in mapped {
+                // keys we know we use for local files
+                let keys = ["thumbnail_url", "icon_url"]
+                for key in keys {
+                    if let rel = item.metadata[key], !rel.isEmpty {
+                        let src = containerURL.appendingPathComponent(rel)
+                        if fm.fileExists(atPath: src.path) {
+                            let dst = workingDir.appendingPathComponent(rel)
+                            try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+                            if fm.fileExists(atPath: dst.path) {
+                                try? fm.removeItem(at: dst)
+                            }
+                            try fm.copyItem(at: src, to: dst)
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 3) Retourner le dossier (le partage via Fichiers gère l'enregistrement du paquet)
+        return workingDir
+    }
+    
+    /// Importe un dossier d'export Pinpin: merge par id, copie les images dans le container App Group
+    func importBackup(from url: URL) throws {
+        let fm = FileManager.default
+        let root: URL = url
+        // Import dossier uniquement; zip non supporté
+        if url.pathExtension.lowercased() == "zip" {
+            throw NSError(domain: "BackupService", code: 2, userInfo: [NSLocalizedDescriptionKey: "ZIP import is not supported. Select the backup folder."])
+        }
+        
+        // items.json doit être à la racine du dossier de sauvegarde
+        let jsonURL = root.appendingPathComponent("items.json")
+        guard fm.fileExists(atPath: jsonURL.path) else {
+            throw NSError(domain: "BackupService", code: 1, userInfo: [NSLocalizedDescriptionKey: "items.json not found at backup root"]) }
+        let data = try Data(contentsOf: jsonURL)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let backup = try decoder.decode(BackupFile.self, from: data)
+        
+        // Copier images dans le container partagé
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
+            for item in backup.items {
+                for key in ["thumbnail_url", "icon_url"] {
+                    if let rel = item.metadata[key], !rel.isEmpty {
+                        let src = root.appendingPathComponent(rel)
+                        let dst = containerURL.appendingPathComponent(rel)
+                        // créer le dossier si nécessaire
+                        try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        if fm.fileExists(atPath: dst.path) {
+                            // ne pas écraser si déjà présent
+                        } else if fm.fileExists(atPath: src.path) {
+                            try fm.copyItem(at: src, to: dst)
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Merge Core Data par id
+        for bi in backup.items {
+            let req: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", bi.id as CVarArg)
+            req.fetchLimit = 1
+            let existing = try coreData.context.fetch(req).first
+            let item: ContentItem = existing ?? ContentItem(context: coreData.context)
+            
+            item.id = bi.id
+            item.userId = bi.userId ?? item.userId
+            item.contentType = bi.contentType
+            item.title = bi.title
+            item.itemDescription = bi.itemDescription
+            item.url = bi.url
+            item.metadata = bi.metadata as NSDictionary
+            item.thumbnailUrl = bi.thumbnailUrl
+            item.isHidden = bi.isHidden
+            item.createdAt = bi.createdAt ?? item.createdAt
+            item.updatedAt = Date()
+        }
+        coreData.save()
+    }
+}

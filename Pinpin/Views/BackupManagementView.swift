@@ -1,0 +1,136 @@
+//
+//  BackupManagementView.swift
+//  Pinpin
+//
+//  Vue dédiée à la gestion des sauvegardes (import/export)
+//
+
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct BackupManagementView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingImporter: Bool = false
+    @State private var isSharingExport: Bool = false
+    @State private var exportURL: URL? = nil
+    @State private var alertMessage: String? = nil
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 40) {
+                Text("Backup Management")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.top, 40)
+                
+                Spacer()
+                
+                // Boutons carrés pour import/export
+                HStack(spacing: 30) {
+                    // Bouton Export
+                    Button {
+                        do {
+                            let url = try BackupService.shared.exportBackupZip()
+                            exportURL = url
+                            isSharingExport = true
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
+                        } catch {
+                            alertMessage = "Export failed: \(error.localizedDescription)"
+                        }
+                    } label: {
+                        VStack(spacing: 16) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 40))
+                                .foregroundColor(.primary)
+                            
+                            Text("Export")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(width: 120, height: 120)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(16)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Bouton Import
+                    Button {
+                        showingImporter = true
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                    } label: {
+                        VStack(spacing: 16) {
+                            Image(systemName: "tray.and.arrow.down")
+                                .font(.system(size: 40))
+                                .foregroundColor(.primary)
+                            
+                            Text("Import")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(width: 120, height: 120)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(16)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                Spacer()
+                
+                // Description
+                VStack(spacing: 8) {
+                    Text("Export your pins as a backup file")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Import pins from a backup file")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.bottom, 40)
+            }
+            .padding(.horizontal, 40)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [UTType.folder, UTType.package], allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    do {
+                        try BackupService.shared.importBackup(from: url)
+                        alertMessage = "Import successful."
+                    } catch {
+                        alertMessage = "Import failed: \(error.localizedDescription)"
+                    }
+                }
+            case .failure(let error):
+                alertMessage = "Import failed: \(error.localizedDescription)"
+            }
+        }
+        .sheet(isPresented: $isSharingExport, onDismiss: { exportURL = nil }) {
+            if let url = exportURL {
+                ShareSheet(items: [url])
+            }
+        }
+        .alert("Backup", isPresented: .init(
+            get: { alertMessage != nil },
+            set: { if !$0 { alertMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage ?? "")
+        }
+    }
+}
+
+#Preview {
+    BackupManagementView()
+}

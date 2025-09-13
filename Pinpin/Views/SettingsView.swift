@@ -6,11 +6,14 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+import UIKit
 
 struct SettingsView: View {
     @Binding var isSwipingHorizontally: Bool
     @StateObject private var userPreferences = UserPreferences.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var showingBackupManagement: Bool = false
     
     var body: some View {
         NavigationView {
@@ -45,14 +48,35 @@ struct SettingsView: View {
                         subtitle: "",
                         isOn: $userPreferences.forceDarkMode
                     )
+
+                    // Ligne de séparation
+                    Divider()
+                        .background(Color.gray.opacity(0.1))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 40)
 
+
                 Spacer(minLength: 0)
+                
+                // Lien vers la gestion des sauvegardes
+                Button {
+                    showingBackupManagement = true
+                } label: {
+                    Text("Backup Management")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                }
+                .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .disabled(isSwipingHorizontally)
+            .sheet(isPresented: $showingBackupManagement) {
+                BackupManagementView()
+            }
         }
     }
 }
@@ -91,6 +115,17 @@ struct SettingsToggleRow: View {
         .padding(.vertical, 14)
         .cornerRadius(12)
     }
+}
+
+// Simple UIKit wrapper to present the iOS share sheet
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
