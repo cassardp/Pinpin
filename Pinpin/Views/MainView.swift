@@ -137,14 +137,14 @@ struct MainView: View {
                                 }) {
                                     Text(
                                         isSelectionMode
-                                        ? (selectedItems.isEmpty ? "ALL" : "DELETE \(selectedItems.count)")
+                                        ? (selectedItems.isEmpty ? "ALL" : "DELETE • \(selectedItems.count)")
                                         : "SELECT"
                                     )
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
                                 }
                             }
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, 6)
                             .padding(.bottom, 16)
                             .background(Color(UIColor.systemBackground))
 

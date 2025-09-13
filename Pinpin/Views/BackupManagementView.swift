@@ -9,97 +9,67 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct BackupManagementView: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var showingImporter: Bool = false
     @State private var isSharingExport: Bool = false
     @State private var exportURL: URL? = nil
     @State private var alertMessage: String? = nil
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 40) {
-                Text("Backup Management")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                
-                Spacer()
-                
-                // Boutons carrés pour import/export
-                HStack(spacing: 30) {
-                    // Bouton Export
-                    Button {
-                        do {
-                            let url = try BackupService.shared.exportBackupZip()
-                            exportURL = url
-                            isSharingExport = true
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                            impactFeedback.impactOccurred()
-                        } catch {
-                            alertMessage = "Export failed: \(error.localizedDescription)"
-                        }
-                    } label: {
-                        VStack(spacing: 16) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 40))
-                                .foregroundColor(.primary)
-                            
-                            Text("Export")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(width: 120, height: 120)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(16)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Bouton Import
-                    Button {
-                        showingImporter = true
+        VStack(spacing: 32) {
+            Spacer(minLength: 0)
+            // Boutons carrés pour import/export
+            HStack(spacing: 30) {
+                // Bouton Export
+                Button {
+                    do {
+                        let url = try BackupService.shared.exportBackupZip()
+                        exportURL = url
+                        isSharingExport = true
                         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                         impactFeedback.impactOccurred()
-                    } label: {
-                        VStack(spacing: 16) {
-                            Image(systemName: "tray.and.arrow.down")
-                                .font(.system(size: 40))
-                                .foregroundColor(.primary)
-                            
-                            Text("Import")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(width: 120, height: 120)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(16)
+                    } catch {
+                        alertMessage = "Export failed: \(error.localizedDescription)"
                     }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                
-                Spacer()
-                
-                // Description
-                VStack(spacing: 8) {
-                    Text("Export your pins as a backup file")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Import pins from a backup file")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.bottom, 40)
-            }
-            .padding(.horizontal, 40)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                } label: {
+                    VStack(spacing: 16) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 40))
+                            .foregroundColor(.primary)
+                        
+                        Text("Export")
+                            .font(.headline)
+                            .fontWeight(.semibold)
                     }
+                    .frame(width: 120, height: 120)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(16)
                 }
+                .buttonStyle(PlainButtonStyle())
+                
+                // Bouton Import
+                Button {
+                    showingImporter = true
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                } label: {
+                    VStack(spacing: 16) {
+                        Image(systemName: "tray.and.arrow.down")
+                            .font(.system(size: 40))
+                            .foregroundColor(.primary)
+                        
+                        Text("Import")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(width: 120, height: 120)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(16)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 40)
         .fileImporter(isPresented: $showingImporter, allowedContentTypes: [UTType.folder, UTType.package], allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
