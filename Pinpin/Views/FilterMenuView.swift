@@ -48,7 +48,7 @@ struct FilterMenuView: View {
                 // Search (discret, même typo que "Settings")
                 HStack {
                     TextField("", text: $searchQuery, prompt: Text("Search").foregroundColor(.gray))
-                        .font(.system(size: 20, weight: .regular))
+                        .font(.system(size: 19, weight: .regular))
                         .foregroundColor(.gray)
                         .textFieldStyle(PlainTextFieldStyle())
                         .autocapitalization(.none)
@@ -61,13 +61,13 @@ struct FilterMenuView: View {
                         }) {
                             Image(systemName: "xmark.circle")
                                 .font(.system(size: 20))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.primary)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 67) // Safe area top
+                .padding(.top, 66) // Safe area top
                 .allowsHitTesting(!isSwipingHorizontally)
                 
                 Spacer()
@@ -138,7 +138,7 @@ struct FilterMenuView: View {
                 }) {
                     HStack {
                         Text("Settings")
-                            .font(.system(size: 20, weight: .regular))
+                            .font(.system(size: 18, weight: .regular))
                             .foregroundColor(.gray)
                     }
                     .padding(.horizontal, 24)

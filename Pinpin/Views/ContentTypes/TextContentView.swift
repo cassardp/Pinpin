@@ -48,8 +48,8 @@ struct TextContentView: View {
     
     var body: some View {
         ZStack {
-            // Background opaque pour éviter la compositing blanche pendant le blur
-            Color.black
+            // Background inversé selon le mode
+            Color.primary
             
             VStack(alignment: .leading, spacing: 12) {
                 // Description - utiliser la meilleure disponible
@@ -69,10 +69,10 @@ struct TextContentView: View {
             .padding(.horizontal, dynamicHorizontalPadding)
             .padding(.vertical, dynamicVerticalPadding)
         }
-        // Dégradé overlay: transparent en haut -> fond en bas
+        // Dégradé overlay inversé selon le mode
         .overlay(
             LinearGradient(
-                colors: [Color.clear, Color.black.opacity(0.85)],
+                colors: [Color.clear, Color.primary.opacity(0.85)],
                 startPoint: .top,
                 endPoint: .bottom
             )

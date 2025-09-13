@@ -92,7 +92,7 @@ struct SettingsToggleRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.body)
-                    .fontWeight(.medium)
+                    .fontWeight(.regular)
                 
                 if !subtitle.isEmpty {
                     Text(subtitle)

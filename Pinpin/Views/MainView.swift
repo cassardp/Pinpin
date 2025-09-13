@@ -133,9 +133,9 @@ struct MainView: View {
                                         isMenuOpen = true
                                     }
                                 }) {
-                                    Text(isSelectionMode ? "Cancel" : currentCategoryName)
-                                        .font(.system(size: 20, weight: .regular))
-                                        .foregroundColor(.primary)
+                                    Text(isSelectionMode ? "Cancel" : "")
+                                        .font(.system(size: 18, weight: .regular))
+                                        .foregroundColor(.gray)
                                 }
                                 
                                 Spacer()
@@ -158,11 +158,10 @@ struct MainView: View {
                                     Text(
                                         isSelectionMode
                                         ? (selectedItems.isEmpty ? "All" : "Delete • \(selectedItems.count)")
-                                        : "Select"
+                                        : "Edit"
                                     )
                                     .font(.system(size: 18, weight: .regular))
                                     .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
-                                    .padding(.top, 4)
                                 }
                             }
                             .padding(.horizontal, 6)
