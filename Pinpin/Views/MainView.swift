@@ -133,10 +133,9 @@ struct MainView: View {
                                         isMenuOpen = true
                                     }
                                 }) {
-                                    Text(isSelectionMode ? "CANCEL" : currentCategoryName)
-                                        .font(.system(size: 14, weight: .medium))
+                                    Text(isSelectionMode ? "Cancel" : currentCategoryName)
+                                        .font(.system(size: 18, weight: .regular))
                                         .foregroundColor(.gray)
-                                        .textCase(.uppercase)
                                 }
                                 
                                 Spacer()
@@ -158,15 +157,16 @@ struct MainView: View {
                                 }) {
                                     Text(
                                         isSelectionMode
-                                        ? (selectedItems.isEmpty ? "ALL" : "DELETE • \(selectedItems.count)")
-                                        : "SELECT"
+                                        ? (selectedItems.isEmpty ? "All" : "Delete • \(selectedItems.count)")
+                                        : "Select"
                                     )
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.system(size: 18, weight: .regular))
                                     .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
                                 }
                             }
                             .padding(.horizontal, 6)
                             .padding(.bottom, 16)
+                            .padding(.top, 8)
                             .background(Color(UIColor.systemBackground))
 
                             if filteredItems.isEmpty {

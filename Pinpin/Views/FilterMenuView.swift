@@ -47,13 +47,12 @@ struct FilterMenuView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Search (discret, même typo que "Settings")
                 HStack {
-                    TextField("Search", text: $searchQuery)
+                    TextField("", text: $searchQuery, prompt: Text("Search").foregroundColor(.gray))
                         .font(.system(size: 18, weight: .regular))
                         .foregroundColor(.gray)
                         .textFieldStyle(PlainTextFieldStyle())
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                    
                     if !searchQuery.isEmpty {
                         Button(action: {
                             searchQuery = ""
@@ -68,7 +67,7 @@ struct FilterMenuView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 60) // Safe area top
+                .padding(.top, 66) // Safe area top
                 .allowsHitTesting(!isSwipingHorizontally)
                 
                 Spacer()
