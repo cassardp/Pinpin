@@ -120,8 +120,10 @@ class ShareViewController: UIViewController {
                 
                 // Extraire l'image/icône
                 if let imageProvider = metadata.imageProvider {
-                    // Sauvegarder l'image dans le dossier partagé
-                    self?.saveImageFromProvider(imageProvider) { imagePath in
+                    // Save main image and merge analysis metadata
+                    self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { meta in
+                        for (k, v) in meta { extractedMetadata[k] = v }
+                    }) { imagePath in
                         if let imagePath = imagePath {
                             extractedMetadata["thumbnail_url"] = imagePath
                             extractedMetadata["has_local_image"] = "true"
@@ -129,6 +131,7 @@ class ShareViewController: UIViewController {
                         
                         // Maintenant essayer de capturer l'icône aussi
                         if let iconProvider = metadata.iconProvider {
+                            // Save icon without additional analysis metadata
                             self?.saveImageFromProvider(iconProvider) { iconPath in
                                 if let iconPath = iconPath {
                                     extractedMetadata["icon_url"] = iconPath
@@ -166,6 +169,7 @@ class ShareViewController: UIViewController {
                 
                 // Extraire l'icône si pas d'image principale
                 if let iconProvider = metadata.iconProvider {
+                    // Save icon without additional analysis metadata
                     self?.saveImageFromProvider(iconProvider) { iconPath in
                         if let iconPath = iconPath {
                             extractedMetadata["icon_url"] = iconPath
@@ -248,7 +252,10 @@ class ShareViewController: UIViewController {
                 
                 // Extraire l'image
                 if let imageProvider = metadata.imageProvider {
-                    self?.saveImageFromProvider(imageProvider) { imagePath in
+                    // Save main image and merge analysis metadata
+                    self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { meta in
+                        for (k, v) in meta { extractedMetadata[k] = v }
+                    }) { imagePath in
                         if let imagePath = imagePath {
                             extractedMetadata["thumbnail_url"] = imagePath
                             extractedMetadata["has_local_image"] = "true"
@@ -358,7 +365,9 @@ class ShareViewController: UIViewController {
         }
     }
     
-    private func saveImageFromProvider(_ imageProvider: NSItemProvider, completion: @escaping (String?) -> Void) {
+    private func saveImageFromProvider(_ imageProvider: NSItemProvider,
+                                       extraMetadataHandler: (([String: String]) -> Void)? = nil,
+                                       completion: @escaping (String?) -> Void) {
         // Vérifier si c'est une image
         guard imageProvider.canLoadObject(ofClass: UIImage.self) else {
             completion(nil)
@@ -370,6 +379,17 @@ class ShareViewController: UIViewController {
                   let imageData = image.jpegData(compressionQuality: 0.8) else {
                 completion(nil)
                 return
+            }
+            
+            // Analyze image (Vision + Colors) and pass metadata to caller if needed
+            let analysisMeta = analyzeImage(image)
+            if !analysisMeta.isEmpty {
+                extraMetadataHandler?(analysisMeta)
+            }
+            // Simple main subject (label + dominant color name)
+            let mainMeta = analyzeMainSubject(image)
+            if !mainMeta.isEmpty {
+                extraMetadataHandler?(mainMeta)
             }
             
             // Sauvegarder dans le dossier partagé

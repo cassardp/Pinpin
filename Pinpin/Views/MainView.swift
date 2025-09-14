@@ -58,6 +58,7 @@ struct MainView: View {
     @State private var selectedContentType: String? = nil
     
     // Nom de la catégorie actuelle pour affichage
+    /*
     private var currentCategoryName: String {
         guard let selectedType = selectedContentType,
               let contentType = ContentType(rawValue: selectedType) else {
@@ -65,6 +66,7 @@ struct MainView: View {
         }
         return contentType.displayName
     }
+    */
 
     // FetchRequest pour récupérer tous les items
     @FetchRequest(
