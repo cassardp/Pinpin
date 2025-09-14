@@ -19,6 +19,9 @@ struct MainView: View {
     @State private var settingsDetent: PresentationDetent = .medium
     @State private var isSwipingHorizontally: Bool = false
     @State private var searchQuery: String = ""
+    @State private var showSearchBar: Bool = false
+    @State private var scrollOffset: CGFloat = 0
+    @State private var lastScrollOffset: CGFloat = 0
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
 
     // Bornes de colonnes
@@ -122,54 +125,17 @@ struct MainView: View {
                         LazyVStack(spacing: 0) {
                             Color.clear.frame(height: 0).id("top")
                             
-                            // Barre de navigation en haut
-                            HStack {
-                                // Bouton catégorie à gauche
-                                Button(action: {
-                                    if isSelectionMode {
-                                        // Mode sélection : Cancel
-                                        isSelectionMode = false
-                                        selectedItems.removeAll()
-                                    } else {
-                                        // Mode normal : ouvrir le menu
-                                        isMenuOpen = true
-                                    }
-                                }) {
-                                    Text(isSelectionMode ? "Cancel" : "")
-                                        .font(.system(size: 18, weight: .regular))
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                                
-                                // Bouton Select/Delete/All à droite
-                                Button(action: {
-                                    if isSelectionMode {
-                                        if selectedItems.isEmpty {
-                                            // Aucun sélectionné -> sélectionner tout
-                                            selectAllItems()
-                                        } else {
-                                            // Supprimer la sélection
-                                            deleteSelectedItems()
-                                        }
-                                    } else {
-                                        // Mode normal : activer la sélection
-                                        isSelectionMode = true
-                                    }
-                                }) {
-                                    Text(
-                                        isSelectionMode
-                                        ? (selectedItems.isEmpty ? "All" : "Delete • \(selectedItems.count)")
-                                        : "Edit"
-                                    )
-                                    .font(.system(size: 18, weight: .regular))
-                                    .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
-                                }
-                            }
-                            .padding(.horizontal, 6)
-                            .padding(.bottom, 16)
-                            .padding(.top, 8)
-                            .background(Color(UIColor.systemBackground))
+                            // Barre de navigation combinée
+                            NavigationBarView(
+                                isSelectionMode: $isSelectionMode,
+                                selectedItems: $selectedItems,
+                                searchQuery: $searchQuery,
+                                showSearchBar: $showSearchBar,
+                                isMenuOpen: $isMenuOpen,
+                                onSelectAll: selectAllItems,
+                                onDeleteSelected: deleteSelectedItems,
+                                filteredItemsCount: filteredItems.count
+                            )
 
                             if filteredItems.isEmpty {
                                 EmptyStateView()
@@ -208,8 +174,8 @@ struct MainView: View {
                                             }
                                         }
                                     }
-                                    .animation(nil, value: filteredItems)
                                 }
+                                .id(selectedContentType ?? "all") // Force la recréation lors du changement de filtre
                                 .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
                                 .animation(.linear(duration: 0.08), value: pinchScale)
                                 .allowsHitTesting(!isPinching) // bloque taps/long-press sur la grille pendant le pinch
@@ -235,7 +201,8 @@ struct MainView: View {
                                     .id(storageStatsRefreshTrigger)
                                 }
 
-                                Color.clear.frame(height: 40)
+                                // Padding bottom pour éviter que le contenu soit masqué par la barre flottante
+                                Color.clear.frame(height: 120)
                             }
                         }
                         .padding(.horizontal, 10)
@@ -244,6 +211,7 @@ struct MainView: View {
                                 proxy.scrollTo("top", anchor: .top)
                             }
                         }
+                        .animation(nil, value: selectedContentType) // Désactive toute animation implicite
                     }
                     .scrollIndicators(.hidden)
                     .refreshable { contentService.loadContentItems() }
@@ -297,6 +265,12 @@ struct MainView: View {
                             }
                     )
                 }
+                
+                // Barre de recherche flottante en overlay
+                FloatingSearchBar(
+                    searchQuery: $searchQuery,
+                    showSearchBar: $showSearchBar
+                )
             }
             // Bouclier overlay : avale drags & taps pendant le pinch (empêche ouverture menu et taps parasites)
             .overlay(
@@ -314,7 +288,6 @@ struct MainView: View {
             // Menu latéral
             FilterMenuView(
                 selectedContentType: $selectedContentType,
-                searchQuery: $searchQuery,
                 isSwipingHorizontally: $isSwipingHorizontally,
                 onOpenSettings: { isSettingsOpen = true },
                 onOpenAbout: { isAboutOpen = true }
@@ -322,6 +295,10 @@ struct MainView: View {
         }
         .ignoresSafeArea(.keyboard)
         .onAppear {
+            // Réinitialiser la recherche au démarrage
+            searchQuery = ""
+            showSearchBar = false
+            
             Task {
                 if sharedContentService.hasNewSharedContent() {
                     await sharedContentService.processPendingSharedContents()
@@ -384,8 +361,8 @@ struct MainView: View {
         )
             .id(item.safeId)
             .allowsHitTesting(!isSwipingHorizontally && !isPinching)
-            // 🔽 ici : pas d'animation si menu ouvert
-            .animation(isMenuOpen ? nil : .easeInOut(duration: 0.4), value: filteredItems)
+            // Animation uniquement pour la suppression, pas pour le filtrage
+            .animation(isSelectionMode ? .easeInOut(duration: 0.4) : nil, value: filteredItems)
             .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
             .onAppear {
                 if item == filteredItems.last {
@@ -402,6 +379,14 @@ struct MainView: View {
                     )
                 }
             }
+    }
+}
+
+// MARK: - Preference Key pour le scroll offset
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

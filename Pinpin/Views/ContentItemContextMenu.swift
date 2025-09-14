@@ -23,41 +23,14 @@ struct ContentItemContextMenu: View {
             }
         }
         
-        Button(action: {
-            toggleItemVisibility()
-        }) {
-            Label(item.isHidden ? "Show" : "Hide", 
-                  systemImage: item.isHidden ? "eye" : "eye.slash")
-        }
-        
-        Divider()
-
-        Button(role: .destructive, action: {
-            deleteItem()
-        }) {
-            Label("Delete", systemImage: "trash")
-        }
+        // Context menu trimmed: removed Hide and Delete actions
     }
     
     // MARK: - Actions
     
-    private func toggleItemVisibility() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            item.isHidden.toggle()
-        }
-        
-        // Forcer la notification des changements
-        item.objectWillChange.send()
-        
-        contentService.updateContentItem(item)
-    }
+    // Hide action removed from context menu
     
-    private func deleteItem() {
-        withAnimation(.easeInOut(duration: 0.4)) {
-            contentService.deleteContentItem(item)
-        }
-        onStorageStatsRefresh()
-    }
+    // Delete action removed from context menu
     
     private func reclassifyItem(to newType: ContentType) {
         withAnimation(.easeInOut(duration: 0.3)) {

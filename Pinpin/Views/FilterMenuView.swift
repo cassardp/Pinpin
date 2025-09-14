@@ -15,7 +15,6 @@ struct FilterMenuView: View {
     private var contentItems: FetchedResults<ContentItem>
     
     @Binding var selectedContentType: String?
-    @Binding var searchQuery: String
     @Binding var isSwipingHorizontally: Bool
     var onOpenSettings: () -> Void
     var onOpenAbout: () -> Void
@@ -45,32 +44,10 @@ struct FilterMenuView: View {
                 }
             
             VStack(alignment: .leading, spacing: 16) {
-                // Search (discret, même typo que "Settings")
-                HStack {
-                    TextField("", text: $searchQuery, prompt: Text("Search").foregroundColor(.gray))
-                        .font(.system(size: 19, weight: .regular))
-                        .foregroundColor(.gray)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                    if !searchQuery.isEmpty {
-                        Button(action: {
-                            searchQuery = ""
-                            // Perdre le focus après reset
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        }) {
-                            Image(systemName: "xmark.circle")
-                                .font(.system(size: 20))
-                                .foregroundColor(.primary)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 66) // Safe area top
-                .allowsHitTesting(!isSwipingHorizontally)
-                
                 Spacer()
+                    .frame(height: 66) // Safe area top spacing
+                
+                Spacer() // Spacer pour centrer verticalement
                 
                 // Option "Tout"
                 Button(action: {
@@ -158,7 +135,6 @@ struct FilterMenuView: View {
 #Preview {
     FilterMenuView(
         selectedContentType: .constant(nil),
-        searchQuery: .constant(""),
         isSwipingHorizontally: .constant(false),
         onOpenSettings: {},
         onOpenAbout: {}
