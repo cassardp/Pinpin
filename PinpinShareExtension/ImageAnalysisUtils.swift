@@ -214,7 +214,7 @@ extension UIImage {
 // MARK: - OCR (short)
 private func recognizeText(in uiImage: UIImage, maxChars: Int = 160) -> String {
     let request = VNRecognizeTextRequest()
-    request.recognitionLevel = .fast
+    request.recognitionLevel = .accurate
     request.usesLanguageCorrection = false
     
     let handler: VNImageRequestHandler
