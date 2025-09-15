@@ -32,7 +32,7 @@ struct StorageStatsView: View {
                 let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
                 Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(SharedImageService.shared.formatFileSize(totalSize).uppercased()) • V\(version) (\(build))")
                     .font(.footnote)
-                    .foregroundColor(Color(UIColor.systemGray2))
+                    .foregroundColor(Color(UIColor.systemGray3))
             }
             
             Spacer()

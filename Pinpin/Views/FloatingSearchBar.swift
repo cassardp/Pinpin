@@ -7,6 +7,7 @@ struct FloatingSearchBar: View {
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
     @Binding var showSettings: Bool
+    @Binding var isMenuOpen: Bool
     @FocusState private var isSearchFocused: Bool
 
     // Actions
@@ -32,7 +33,9 @@ struct FloatingSearchBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
+        .opacity(isMenuOpen ? 0 : 1)
         .animation(.spring(response: 0.32, dampingFraction: 0.88), value: showSearchBar)
+        .animation(.easeInOut(duration: 0.3), value: isMenuOpen)
     }
     
     // MARK: - Overlay séparé pour MainView
@@ -48,15 +51,24 @@ struct FloatingSearchBar: View {
     }
 
 
+
     // MARK: - SearchBar
     private var searchBar: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.secondary)
+                .foregroundColor(.white)
 
-            TextField("Search your pins...", text: $searchQuery)
-                .font(.system(size: 17))
+            ZStack(alignment: .leading) {
+                if searchQuery.isEmpty {
+                    Text("Search your pins...")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+                TextField("", text: $searchQuery)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.white)
+            }
                 .focused($isSearchFocused)
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(.never)
@@ -68,7 +80,7 @@ struct FloatingSearchBar: View {
                 Button { searchQuery = "" } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.white)
                 }
             }
         }
@@ -76,12 +88,11 @@ struct FloatingSearchBar: View {
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 28)
-                .fill(.regularMaterial)
+                .fill(.ultraThinMaterial)
                 .overlay(
                     RoundedRectangle(cornerRadius: 28)
-                        .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                        .fill(.black.opacity(0.4))
                 )
-                .shadow(color: .black.opacity(0.2), radius: 25, x: 0, y: 15)
         )
         .padding(.bottom, 12)
     }
@@ -103,17 +114,16 @@ struct FloatingSearchBar: View {
                 }
             }) {
                 Image(systemName: isSelectionMode ? "xmark" : "slider.vertical.3")
-                    .font(.system(size: 18))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(.regularMaterial)
+                            .fill(.ultraThinMaterial)
                             .overlay(
                                 Circle()
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                                    .fill(.black.opacity(0.4))
                             )
-                            .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
                     )
             }
 
@@ -128,21 +138,20 @@ struct FloatingSearchBar: View {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 16))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.white)
                         Text("Search")
                             .font(.system(size: 16))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.white)
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 25)
-                            .fill(.regularMaterial)
+                            .fill(.ultraThinMaterial)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 25)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+                                    .fill(.black.opacity(0.4))
                             )
-                            .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 8)
                     )
                 } else {
                     HStack(spacing: 8) {
@@ -156,7 +165,7 @@ struct FloatingSearchBar: View {
                             .truncationMode(.tail)
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundColor(.white)
                             .onTapGesture {
                                 withAnimation(.easeInOut(duration: 0.2)) { searchQuery = "" }
                             }
@@ -166,7 +175,6 @@ struct FloatingSearchBar: View {
                     .background(
                         RoundedRectangle(cornerRadius: 20)
                             .fill(Color.black)
-                            .shadow(color: .black.opacity(0.3), radius: 15, x: 0, y: 8)
                     )
                 }
             }
@@ -190,34 +198,40 @@ struct FloatingSearchBar: View {
                         if selectedItems.isEmpty {
                             Text("All")
                                 .font(.system(size: 16))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.white)
                         } else {
                             HStack(spacing: 4) {
                                 Text("\(selectedItems.count)")
                                     .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(.red)
+                                    .foregroundColor(.white)
                                 Image(systemName: "trash")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.red)
+                                    .foregroundColor(.white)
                             }
                         }
                     } else {
                         Image(systemName: "trash")
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
                     }
                 }
                 .frame(height: 44)
                 .frame(minWidth: 44)
                 .padding(.horizontal, isSelectionMode ? 8 : 0)
                 .background(
-                    RoundedRectangle(cornerRadius: 22)
-                        .fill(.regularMaterial)
-                        .overlay(
+                    Group {
+                        if isSelectionMode && !selectedItems.isEmpty {
                             RoundedRectangle(cornerRadius: 22)
-                                .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
-                        )
-                        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+                                .fill(Color.red)
+                        } else {
+                            RoundedRectangle(cornerRadius: 22)
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 22)
+                                        .fill(.black.opacity(0.4))
+                                )
+                        }
+                    }
                 )
             }
 

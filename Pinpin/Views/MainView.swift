@@ -152,6 +152,7 @@ struct MainView: View {
                                         filteredItems: filteredItems
                                     )
                                     .padding(.top, 50)
+                                    .padding(.bottom, 30)
                                     .id(storageStatsRefreshTrigger)
                                 }
                             }
@@ -259,6 +260,7 @@ struct MainView: View {
                 isSelectionMode: $isSelectionMode,
                 selectedItems: $selectedItems,
                 showSettings: $isSettingsOpen,
+                isMenuOpen: $isMenuOpen,
                 onSelectAll: {
                     selectedItems = Set(filteredItems.map { $0.safeId })
                 },
