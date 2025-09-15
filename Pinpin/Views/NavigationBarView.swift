@@ -21,52 +21,65 @@ struct NavigationBarView: View {
     let filteredItemsCount: Int
     
     var body: some View {
-        // Barre de navigation principale (sans recherche)
         HStack {
-            // Bouton catégorie/Cancel à gauche
-            Button(action: {
-                if isSelectionMode {
-                    // Mode sélection : Cancel
+            // Bouton Cancel (seulement visible en mode sélection)
+            if isSelectionMode {
+                Button(action: {
                     isSelectionMode = false
                     selectedItems.removeAll()
-                } else {
-                    // Mode normal : ouvrir le menu
-                    isMenuOpen = true
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.gray)
                 }
-            }) {
-                Text(isSelectionMode ? "Cancel" : "")
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(.gray)
             }
-            
             
             Spacer()
             
-            // Bouton Select/Delete/All à droite
+            // Bouton Edit/All/Delete
             Button(action: {
                 if isSelectionMode {
                     if selectedItems.isEmpty {
-                        // Aucun sélectionné -> sélectionner tout
                         onSelectAll()
                     } else {
-                        // Supprimer la sélection
                         onDeleteSelected()
                     }
                 } else {
-                    // Mode normal : activer la sélection
                     isSelectionMode = true
                 }
             }) {
-                Text(
-                    isSelectionMode
-                    ? (selectedItems.isEmpty ? "All" : "Delete • \(selectedItems.count)")
-                    : "Edit"
-                )
-                .font(.system(size: 18, weight: .regular))
-                .foregroundColor(isSelectionMode && !selectedItems.isEmpty ? .red : .gray)
+                HStack(spacing: 4) {
+                    // Edit mode
+                    if !isSelectionMode {
+                        Text("Select")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.gray)
+                        Image(systemName: "circle")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
+                    // Select All mode
+                    else if selectedItems.isEmpty {
+                        Text("All")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.gray)
+                        Image(systemName: "checkmark.circle")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
+                    // Delete mode
+                    else {
+                        Text("\(selectedItems.count)")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.red)
+                        Image(systemName: "trash")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.red)
+                    }
+                }
             }
         }
-        .padding(.horizontal, 0)
+        .padding(.horizontal, 8)
         .padding(.bottom, 16)
         .padding(.top, 8)
         .background(Color(UIColor.systemBackground))

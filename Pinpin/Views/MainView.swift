@@ -211,6 +211,24 @@ struct MainView: View {
                                 proxy.scrollTo("top", anchor: .top)
                             }
                         }
+                        .onChange(of: searchQuery) {
+                            // Remonter en haut quand on effectue une recherche
+                            if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                withTransaction(Transaction(animation: nil)) {
+                                    proxy.scrollTo("top", anchor: .top)
+                                }
+                            }
+                        }
+                        .onChange(of: isMenuOpen) {
+                            // Replier la barre de recherche quand on ouvre le menu
+                            if isMenuOpen {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    showSearchBar = false
+                                }
+                                // Fermer le clavier si nécessaire
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            }
+                        }
                         .animation(nil, value: selectedContentType) // Désactive toute animation implicite
                     }
                     .scrollIndicators(.hidden)

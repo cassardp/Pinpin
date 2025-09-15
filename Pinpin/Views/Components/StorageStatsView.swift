@@ -50,19 +50,17 @@ struct StorageStatsView: View {
             // Recharger les stats quand le nombre d'items filtrés change
             loadStorageStats()
         }
+        .onChange(of: filteredItems.map { $0.safeId }) { oldValue, newValue in
+            // Recharger les stats si la composition change mais pas le nombre
+            loadStorageStats()
+        }
     }
     
     private func loadStorageStats() {
         Task {
-            let stats: (imageCount: Int, totalSize: Int64)
-            
-            if selectedContentType == nil {
-                // Mode "Tout" : calculer les stats de stockage globales
-                stats = SharedImageService.shared.getStorageStats()
-            } else {
-                // Mode filtré : calculer les stats pour les items filtrés
-                stats = SharedImageService.shared.getStorageStatsForItems(filteredItems)
-            }
+            // Toujours refléter le filtrage courant (catégorie + recherche)
+            let stats: (imageCount: Int, totalSize: Int64) =
+                SharedImageService.shared.getStorageStatsForItems(filteredItems)
             
             await MainActor.run {
                 self.imageCount = stats.imageCount
