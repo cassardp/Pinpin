@@ -350,31 +350,37 @@ struct MainView: View {
             .onChanged { newScale in
                 isPinching = true
                 isSwipingHorizontally = true
-                let goesSmaller = newScale < 1.0
-                let goesBigger  = newScale > 1.0
-                let canZoomIn  = numberOfColumns > minColumns
-                let canZoomOut = numberOfColumns < maxColumns
-                if (goesSmaller && !canZoomIn) || (goesBigger && !canZoomOut) {
-                    pinchScale = 1.0
-                    return
-                }
+                // Toujours permettre le pinch, pas de limites
                 pinchScale = max(0.98, min(newScale, 1.02))
             }
             .onEnded { finalScale in
-                let canZoomIn  = numberOfColumns > minColumns
-                let canZoomOut = numberOfColumns < maxColumns
                 var newColumns = numberOfColumns
-                if finalScale > 1.08, canZoomOut {
-                    newColumns = min(numberOfColumns + 1, maxColumns)
-                } else if finalScale < 0.92, canZoomIn {
-                    newColumns = max(numberOfColumns - 1, minColumns)
+                
+                if finalScale > 1.08 {
+                    // Pinch vers l'extérieur (plus de colonnes)
+                    if numberOfColumns < maxColumns {
+                        newColumns = numberOfColumns + 1
+                    } else {
+                        // Boucle : du maximum au minimum
+                        newColumns = minColumns
+                    }
+                } else if finalScale < 0.92 {
+                    // Pinch vers l'intérieur (moins de colonnes)
+                    if numberOfColumns > minColumns {
+                        newColumns = numberOfColumns - 1
+                    } else {
+                        // Boucle : du minimum au maximum
+                        newColumns = maxColumns
+                    }
                 }
+                
                 if newColumns != numberOfColumns {
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.9, blendDuration: 0.15)) {
                         numberOfColumns = newColumns
                     }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 }
+                
                 withAnimation(.easeInOut(duration: 0.18)) {
                     pinchScale = 1.0
                     isPinching = false

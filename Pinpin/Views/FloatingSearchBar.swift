@@ -147,22 +147,22 @@ struct FloatingSearchBar: View {
                 } else {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                             .foregroundColor(.white)
                         Text(searchQuery)
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                             .foregroundColor(.white)
                             .lineLimit(1)
                             .truncationMode(.tail)
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.white.opacity(0.6))
                             .onTapGesture {
                                 withAnimation(.easeInOut(duration: 0.2)) { searchQuery = "" }
                             }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 20)
                             .fill(Color.black)
