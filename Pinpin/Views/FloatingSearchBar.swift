@@ -61,7 +61,7 @@ struct FloatingSearchBar: View {
 
             ZStack(alignment: .leading) {
                 if searchQuery.isEmpty {
-                    Text("Search your pins...")
+                    Text("Search...")
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                 }
@@ -84,7 +84,7 @@ struct FloatingSearchBar: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 28)

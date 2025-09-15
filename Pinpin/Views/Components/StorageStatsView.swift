@@ -58,13 +58,16 @@ struct StorageStatsView: View {
     
     private func loadStorageStats() {
         Task {
-            // Toujours refléter le filtrage courant (catégorie + recherche)
-            let stats: (imageCount: Int, totalSize: Int64) =
+            // Compter tous les items filtrés (pas seulement ceux avec images)
+            let totalItemCount = filteredItems.count
+            
+            // Calculer la taille des images uniquement
+            let imageStats: (imageCount: Int, totalSize: Int64) =
                 SharedImageService.shared.getStorageStatsForItems(filteredItems)
             
             await MainActor.run {
-                self.imageCount = stats.imageCount
-                self.totalSize = stats.totalSize
+                self.imageCount = totalItemCount  // Tous les items, pas seulement ceux avec images
+                self.totalSize = imageStats.totalSize  // Taille des images seulement
                 self.isLoading = false
             }
         }
