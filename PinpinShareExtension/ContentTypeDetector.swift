@@ -132,7 +132,9 @@ class ContentTypeDetector {
     private func isMusicURL(_ urlString: String) -> Bool {
         let musicPlatforms = [
             "spotify.com", "music.apple.com", "soundcloud.com",
-            "deezer.com", "tidal.com", "bandcamp.com"
+            "deezer.com", "tidal.com", "bandcamp.com",
+            // Shazam (full + short)
+            "shazam.com", "www.shazam.com", "shz.am"
         ]
         
         return musicPlatforms.contains { urlString.contains($0) }

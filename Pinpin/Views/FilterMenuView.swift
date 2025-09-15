@@ -16,7 +16,6 @@ struct FilterMenuView: View {
     
     @Binding var selectedContentType: String?
     @Binding var isSwipingHorizontally: Bool
-    var onOpenSettings: () -> Void
     var onOpenAbout: () -> Void
     
     // Récupère les types uniques depuis les données
@@ -110,20 +109,6 @@ struct FilterMenuView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    onOpenSettings()
-                }) {
-                    HStack {
-                        Text("Settings")
-                            .font(.system(size: 18, weight: .regular))
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom,24)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .allowsHitTesting(!isSwipingHorizontally)
-                
 
             }
             .padding(.bottom, 32)
@@ -136,7 +121,6 @@ struct FilterMenuView: View {
     FilterMenuView(
         selectedContentType: .constant(nil),
         isSwipingHorizontally: .constant(false),
-        onOpenSettings: {},
         onOpenAbout: {}
     )
 }
