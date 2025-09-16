@@ -81,17 +81,17 @@ struct FloatingSearchBar: View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
 
             ZStack(alignment: .leading) {
                 if searchQuery.isEmpty {
                     Text(placeholderText)
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.primary.opacity(0.5))
                 }
                 TextField("", text: $searchQuery)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white)
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(.primary)
             }
                 .focused($isSearchFocused)
                 .textFieldStyle(.plain)
@@ -104,7 +104,7 @@ struct FloatingSearchBar: View {
                 Button { searchQuery = "" } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                 }
             }
         }
@@ -112,11 +112,7 @@ struct FloatingSearchBar: View {
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 28)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(.black.opacity(0.4))
-                )
+                .fill(.thinMaterial)
                 .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
         )
         .padding(.bottom, 12)
@@ -139,16 +135,12 @@ struct FloatingSearchBar: View {
                 }
             }) {
                 Image(systemName: isSelectionMode ? "xmark" : "slider.vertical.3")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(width: 48, height: 48)
                     .background(
                         Circle()
-                            .fill(.ultraThinMaterial)
-                            .overlay(
-                                Circle()
-                                    .fill(.black.opacity(0.4))
-                            )
+                            .fill(.thinMaterial)
                     )
             }
 
@@ -163,13 +155,13 @@ struct FloatingSearchBar: View {
                 if searchQuery.isEmpty {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
                         Text("Search")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.primary)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.vertical, 12)
                     .contentTransition(.opacity)
                     .transition(.asymmetric(
@@ -178,33 +170,29 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.ultraThinMaterial)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .fill(.black.opacity(0.4))
-                            )
+                            .fill(.thinMaterial)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 } else {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 16))
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(.systemBackground))
                         Text(searchQuery)
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(Color(.systemBackground))
                             .lineLimit(1)
                             .truncationMode(.tail)
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(.systemBackground))
                             .onTapGesture {
                                 withAnimation(.spring(response: 0.32, dampingFraction: 0.86, blendDuration: 0.08)) {
                                     searchQuery = ""
                                 }
                             }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 22)
                     .padding(.vertical, 12)
                     .contentTransition(.opacity)
                     .transition(.asymmetric(
@@ -213,7 +201,7 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(Color.black)
+                            .fill(Color(.label))
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 }
@@ -238,26 +226,27 @@ struct FloatingSearchBar: View {
                     if isSelectionMode {
                         if selectedItems.isEmpty {
                             Text("All")
-                                .font(.system(size: 16))
-                                .foregroundColor(.white)
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(.primary)
                         } else {
                             HStack(spacing: 4) {
                                 Text("\(selectedItems.count)")
-                                    .font(.system(size: 15, weight: .medium))
+                                    .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white)
                                 Image(systemName: "trash")
-                                    .font(.system(size: 16))
+                                    .font(.system(size: 17))
                                     .foregroundColor(.white)
+                                    .padding(.bottom, 1)
                             }
                         }
                     } else {
-                        Image(systemName: "trash")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.primary)
                     }
                 }
-                .frame(height: 44)
-                .frame(minWidth: 44)
+                .frame(height: 48)
+                .frame(minWidth: 48)
                 .padding(.horizontal, isSelectionMode ? 8 : 0)
                 .background(
                     Group {
@@ -266,11 +255,7 @@ struct FloatingSearchBar: View {
                                 .fill(Color.red)
                         } else {
                             RoundedRectangle(cornerRadius: 22)
-                                .fill(.ultraThinMaterial)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 22)
-                                        .fill(.black.opacity(0.4))
-                                )
+                                .fill(.thinMaterial)
                         }
                     }
                 )
