@@ -342,17 +342,19 @@ struct MainView: View {
             if isSelectionMode {
                 VStack {
                     HStack {
-                        Spacer()
+                        
                         Button(action: {
                             toggleItemSelection(item.safeId)
                         }) {
                             Image(systemName: selectedItems.contains(item.safeId) ? "checkmark.circle.fill" : "circle")
                                 .foregroundColor(selectedItems.contains(item.safeId) ? .red : .gray)
-                                .font(.system(size: 20))
-                                .background(Color.white)
+                                .font(.system(size: 22))
+                                .background(Color.white.opacity(0.8))
                                 .clipShape(Circle())
                         }
                         .padding(8)
+                        
+                        Spacer()
                     }
                     Spacer()
                 }

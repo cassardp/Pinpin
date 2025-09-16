@@ -49,9 +49,7 @@ struct FloatingSearchBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
-        .opacity(isMenuOpen ? 0 : 1)
         .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: showSearchBar)
-        .animation(.easeInOut(duration: 0.25), value: isMenuOpen)
         .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: isAnimatingSearchOpen)
     }
     
@@ -135,7 +133,7 @@ struct FloatingSearchBar: View {
                 }
             }) {
                 Image(systemName: isSelectionMode ? "xmark" : "slider.vertical.3")
-                    .font(.system(size: 19, weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.primary)
                     .frame(width: 48, height: 48)
                     .background(
@@ -240,8 +238,8 @@ struct FloatingSearchBar: View {
                             }
                         }
                     } else {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 17, weight: .medium))
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.primary)
                     }
                 }
