@@ -66,7 +66,7 @@ struct MainView: View {
     // FetchRequest CoreData
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)],
-        animation: nil)
+        animation: .default)
     private var allContentItems: FetchedResults<ContentItem>
 
     // Items filtrés
@@ -261,6 +261,7 @@ struct MainView: View {
                 selectedItems: $selectedItems,
                 showSettings: $isSettingsOpen,
                 isMenuOpen: $isMenuOpen,
+                totalPinsCount: filteredItems.count,
                 onSelectAll: {
                     selectedItems = Set(filteredItems.map { $0.safeId })
                 },
@@ -283,12 +284,14 @@ struct MainView: View {
 
     private func deleteSelectedItems() {
         let itemsToDelete = filteredItems.filter { selectedItems.contains($0.safeId) }
-        for item in itemsToDelete {
-            contentService.deleteContentItem(item)
+        withAnimation(.easeInOut(duration: 0.25)) {
+            for item in itemsToDelete {
+                contentService.deleteContentItem(item)
+            }
+            selectedItems.removeAll()
+            isSelectionMode = false
+            storageStatsRefreshTrigger += 1
         }
-        selectedItems.removeAll()
-        isSelectionMode = false
-        storageStatsRefreshTrigger += 1
     }
 
     // MARK: - Card
@@ -303,7 +306,6 @@ struct MainView: View {
         )
         .id(item.safeId)
         .allowsHitTesting(!isSwipingHorizontally && !isPinching)
-        .animation(isSelectionMode ? .easeInOut(duration: 0.4) : nil, value: filteredItems)
         .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
         .onAppear {
             if item == filteredItems.last {
@@ -318,6 +320,18 @@ struct MainView: View {
                     contentService: contentService,
                     onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 }
                 )
+                Button(role: .destructive) {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        contentService.deleteContentItem(item)
+                        if isSelectionMode {
+                            selectedItems.remove(item.safeId)
+                            if selectedItems.isEmpty { isSelectionMode = false }
+                        }
+                        storageStatsRefreshTrigger += 1
+                    }
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
             }
         }
     }

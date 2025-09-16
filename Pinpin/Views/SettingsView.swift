@@ -75,7 +75,9 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .disabled(isSwipingHorizontally)
             .sheet(isPresented: $showingBackupManagement) {
-                BackupManagementView()
+                BackupManagementView(onOperationComplete: {
+                    showingBackupManagement = false
+                })
                     .presentationDetents([.fraction(0.5)])
             }
         }

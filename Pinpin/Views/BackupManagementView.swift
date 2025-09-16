@@ -9,10 +9,12 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct BackupManagementView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var showingImporter: Bool = false
-    @State private var isSharingExport: Bool = false
     @State private var exportURL: URL? = nil
     @State private var alertMessage: String? = nil
+    
+    let onOperationComplete: (() -> Void)?
     
     var body: some View {
         VStack(spacing: 32) {
@@ -24,7 +26,6 @@ struct BackupManagementView: View {
                     do {
                         let url = try BackupService.shared.exportBackupZip()
                         exportURL = url
-                        isSharingExport = true
                         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                         impactFeedback.impactOccurred()
                     } catch {
@@ -76,7 +77,11 @@ struct BackupManagementView: View {
                 if let url = urls.first {
                     do {
                         try BackupService.shared.importBackup(from: url)
-                        alertMessage = "Import successful."
+                        // Fermer les sheets immédiatement après import réussi
+                        DispatchQueue.main.async {
+                            onOperationComplete?() // Fermer settings immédiatement
+                            dismiss() // Fermer backup management en même temps
+                        }
                     } catch {
                         alertMessage = "Import failed: \(error.localizedDescription)"
                     }
@@ -85,7 +90,21 @@ struct BackupManagementView: View {
                 alertMessage = "Import failed: \(error.localizedDescription)"
             }
         }
-        .sheet(isPresented: $isSharingExport, onDismiss: { exportURL = nil }) {
+        .sheet(isPresented: Binding<Bool>(
+            get: { exportURL != nil },
+            set: { isPresented in
+                if !isPresented {
+                    exportURL = nil
+                    // Fermer les sheets après partage
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        onOperationComplete?() // Fermer settings d'abord
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            dismiss() // Puis fermer backup management
+                        }
+                    }
+                }
+            }
+        )) {
             if let url = exportURL {
                 ShareSheet(items: [url])
             }
@@ -102,5 +121,5 @@ struct BackupManagementView: View {
 }
 
 #Preview {
-    BackupManagementView()
+    BackupManagementView(onOperationComplete: nil)
 }

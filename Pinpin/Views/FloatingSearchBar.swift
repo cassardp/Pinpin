@@ -9,6 +9,11 @@ struct FloatingSearchBar: View {
     @Binding var showSettings: Bool
     @Binding var isMenuOpen: Bool
     @FocusState private var isSearchFocused: Bool
+    @Namespace private var searchTransitionNS
+    @State private var isAnimatingSearchOpen: Bool = false
+
+    // Data
+    var totalPinsCount: Int = 0
 
     // Actions
     let onSelectAll: () -> Void
@@ -22,20 +27,32 @@ struct FloatingSearchBar: View {
         ZStack {
             if showSearchBar {
                 searchBar
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .bottom)).combined(with: .move(edge: .bottom)),
+                        removal: .opacity.combined(with: .move(edge: .bottom))
+                    ))
                     .onAppear {
-                        DispatchQueue.main.async { isSearchFocused = true }
+                        // Delay focus slightly so the keyboard appears after the expansion animation
+                        let delay = 0.18
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                            isSearchFocused = true
+                            isAnimatingSearchOpen = false
+                        }
                     }
             } else {
                 controlsRow
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .bottom)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .bottom)).combined(with: .move(edge: .bottom))
+                    ))
             }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
         .opacity(isMenuOpen ? 0 : 1)
-        .animation(.spring(response: 0.32, dampingFraction: 0.88), value: showSearchBar)
-        .animation(.easeInOut(duration: 0.3), value: isMenuOpen)
+        .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: showSearchBar)
+        .animation(.easeInOut(duration: 0.25), value: isMenuOpen)
+        .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: isAnimatingSearchOpen)
     }
     
     // MARK: - Overlay séparé pour MainView
@@ -50,7 +67,14 @@ struct FloatingSearchBar: View {
         }
     }
 
-
+    // MARK: - Placeholder
+    private var placeholderText: String {
+        if totalPinsCount > 0 {
+            return "Search in your \(totalPinsCount) pin\(totalPinsCount > 1 ? "s" : "")..."
+        } else {
+            return "Search in your pins..."
+        }
+    }
 
     // MARK: - SearchBar
     private var searchBar: some View {
@@ -61,7 +85,7 @@ struct FloatingSearchBar: View {
 
             ZStack(alignment: .leading) {
                 if searchQuery.isEmpty {
-                    Text("Search...")
+                    Text(placeholderText)
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                 }
@@ -93,6 +117,7 @@ struct FloatingSearchBar: View {
                     RoundedRectangle(cornerRadius: 28)
                         .fill(.black.opacity(0.4))
                 )
+                .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
         )
         .padding(.bottom, 12)
     }
@@ -129,10 +154,11 @@ struct FloatingSearchBar: View {
 
             // Centre : Search
             Button(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                isAnimatingSearchOpen = true
+                withAnimation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)) {
                     showSearchBar = true
                 }
-                DispatchQueue.main.async { isSearchFocused = true }
+                // Focus will be set in searchBar.onAppear with a slight delay
             }) {
                 if searchQuery.isEmpty {
                     HStack(spacing: 8) {
@@ -145,13 +171,19 @@ struct FloatingSearchBar: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
+                    .contentTransition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
                     .background(
-                        RoundedRectangle(cornerRadius: 25)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(.ultraThinMaterial)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 25)
+                                RoundedRectangle(cornerRadius: 28)
                                     .fill(.black.opacity(0.4))
                             )
+                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 } else {
                     HStack(spacing: 8) {
@@ -167,17 +199,26 @@ struct FloatingSearchBar: View {
                             .font(.system(size: 14))
                             .foregroundColor(.white)
                             .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) { searchQuery = "" }
+                                withAnimation(.spring(response: 0.32, dampingFraction: 0.86, blendDuration: 0.08)) {
+                                    searchQuery = ""
+                                }
                             }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
+                    .contentTransition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(Color.black)
+                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 }
             }
+            .animation(.spring(response: 0.32, dampingFraction: 0.86, blendDuration: 0.08), value: searchQuery)
 
             // Droite : Selection / Delete
             Button(action: {
@@ -244,6 +285,8 @@ struct FloatingSearchBar: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
             showSearchBar = false
             isSearchFocused = false
+            isAnimatingSearchOpen = false
         }
     }
 }
+
