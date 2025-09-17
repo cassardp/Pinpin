@@ -24,30 +24,24 @@ struct FloatingSearchBar: View {
 
     // Insets
     var bottomPadding: CGFloat = 12
+    
+    // Animation unifiée pour synchroniser tous les éléments
+    private let unifiedAnimation = Animation.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)
 
     var body: some View {
         // Seulement la barre de recherche/contrôles pour safeAreaInset
         ZStack {
             if showSearchBar {
                 searchBar
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .bottom)).combined(with: .move(edge: .bottom)),
-                        removal: .opacity.combined(with: .move(edge: .bottom))
-                    ))
+                    .transition(.opacity)
                     .onAppear {
-                        // Delay focus slightly so the keyboard appears after the expansion animation
-                        let delay = 0.18
-                        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                            isSearchFocused = true
-                            isAnimatingSearchOpen = false
-                        }
+                        // Synchronisation parfaite - pas de délai
+                        isSearchFocused = true
+                        isAnimatingSearchOpen = false
                     }
             } else {
                 controlsRow
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .bottom)),
-                        removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .bottom)).combined(with: .move(edge: .bottom))
-                    ))
+                    .transition(.opacity)
             }
         }
         .padding(.horizontal, 16)
@@ -55,8 +49,8 @@ struct FloatingSearchBar: View {
         .opacity(1 - menuSwipeProgress) // Seulement le menu affecte l'opacity
         .scaleEffect(1 - scrollProgress * 0.2) // Scale négatif progressif
         .offset(y: scrollProgress * 30) // Décalage vers le bas
-        .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: showSearchBar)
-        .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: isAnimatingSearchOpen)
+        .animation(unifiedAnimation, value: showSearchBar)
+        .animation(unifiedAnimation, value: isAnimatingSearchOpen)
         .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
     }
     
@@ -163,7 +157,7 @@ struct FloatingSearchBar: View {
                 onRestoreBar()
                 
                 isAnimatingSearchOpen = true
-                withAnimation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)) {
+                withAnimation(unifiedAnimation) {
                     showSearchBar = true
                 }
                 // Focus will be set in searchBar.onAppear with a slight delay
@@ -206,7 +200,7 @@ struct FloatingSearchBar: View {
                                 // Restaurer la barre à sa taille normale
                                 onRestoreBar()
                                 
-                                withAnimation(.spring(response: 0.32, dampingFraction: 0.86, blendDuration: 0.08)) {
+                                withAnimation(unifiedAnimation) {
                                     searchQuery = ""
                                 }
                             }
@@ -225,7 +219,7 @@ struct FloatingSearchBar: View {
                     )
                 }
             }
-            .animation(.spring(response: 0.32, dampingFraction: 0.86, blendDuration: 0.08), value: searchQuery)
+            .animation(unifiedAnimation, value: searchQuery)
 
             // Droite : Selection / Delete
             Button(action: {
@@ -287,7 +281,7 @@ struct FloatingSearchBar: View {
 
     // MARK: - Helper
     private func dismissSearch() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+        withAnimation(unifiedAnimation) {
             showSearchBar = false
             isSearchFocused = false
             isAnimatingSearchOpen = false
