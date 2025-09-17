@@ -2,6 +2,7 @@ import UIKit
 import Vision
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import CoreML
 
 // MARK: - Vision (classification)
 struct VisionClassifier {
@@ -91,6 +92,66 @@ struct ColorAnalyzer {
         }
 
         return top.map(colorFor)
+    }
+}
+
+// MARK: - Object detection (Core ML + YOLO)
+struct YOLODetector {
+    // Lazily load the VNCoreMLModel once
+    private static let vnModel: VNCoreMLModel? = {
+        // Ensure the .mlmodel is added to the Share Extension target membership
+        // so the generated `YOLOv3TinyInt8LUT` symbol is available here.
+        guard let coreMLModel = try? YOLOv3TinyInt8LUT(configuration: MLModelConfiguration()).model else { return nil }
+        return try? VNCoreMLModel(for: coreMLModel)
+    }()
+
+    /// Runs object detection and returns up to maxDetections items.
+    /// - Returns: (label, confidence, boundingBox) where boundingBox is Vision-normalized (origin at bottom-left).
+    static func detect(_ uiImage: UIImage,
+                       maxDetections: Int = 5,
+                       confidenceThreshold: Float = 0.2) -> [(label: String, confidence: Float, boundingBox: CGRect)] {
+        guard let model = vnModel else { return [] }
+
+        // Prefer CGImage for performance and reliability in Vision
+        let handler: VNImageRequestHandler
+        if let cg = uiImage.cgImage {
+            handler = VNImageRequestHandler(cgImage: cg, options: [:])
+        } else if let ci = CIImage(image: uiImage) {
+            handler = VNImageRequestHandler(ciImage: ci, options: [:])
+        } else {
+            return []
+        }
+
+        let request = VNCoreMLRequest(model: model)
+        request.imageCropAndScaleOption = .scaleFit
+
+        do {
+            try handler.perform([request])
+        } catch {
+            return []
+        }
+
+        guard let results = request.results else { return [] }
+
+        // If the model is a proper object detector pipeline with NMS, Vision should emit VNRecognizedObjectObservation.
+        if let objects = results as? [VNRecognizedObjectObservation] {
+            let filtered: [(String, Float, CGRect)] = objects.compactMap { obs in
+                guard let best = obs.labels.first, best.confidence >= confidenceThreshold else { return nil }
+                return (best.identifier, best.confidence, obs.boundingBox)
+            }
+            return Array(filtered.prefix(maxDetections))
+        }
+
+        // Otherwise, we don't attempt manual YOLO decoding here (KISS). Fallback to nothing.
+        return []
+    }
+
+    /// Convert a Vision bbox (normalized, origin at bottom-left) to a UIKit-style normalized rect (origin at top-left)
+    static func toTopLeftNormalized(_ bbox: CGRect) -> CGRect {
+        return CGRect(x: bbox.origin.x,
+                      y: 1.0 - bbox.origin.y - bbox.size.height,
+                      width: bbox.size.width,
+                      height: bbox.size.height)
     }
 }
 
@@ -240,11 +301,32 @@ private func recognizeText(in uiImage: UIImage, maxChars: Int = 160) -> String {
 func analyzeImage(_ image: UIImage) -> [String: String] {
     var meta: [String: String] = [:]
 
-    // Vision classification
-    let labels = VisionClassifier.classify(image, maxLabels: 3)
-    if !labels.isEmpty {
-        let namesOnly = labels.map { $0.label }.joined(separator: ",")
+    // Downscale for faster on-device ML while preserving good enough accuracy
+    let mlImage = image.downscaled(maxSide: 640) ?? image
+
+    // Object detection (YOLO via Core ML)
+    let detections = YOLODetector.detect(mlImage, maxDetections: 12, confidenceThreshold: 0.25)
+    if !detections.isEmpty {
+        // Keep unique labels, most confident first
+        let unique = detections
+            .sorted { $0.confidence > $1.confidence }
+            .reduce(into: [(String, Float)]()) { acc, det in
+                if !acc.contains(where: { $0.0 == det.label }) {
+                    acc.append((det.label, det.confidence))
+                }
+            }
+        let namesOnly = unique.prefix(8).map { $0.0 }.joined(separator: ",")
         meta["detected_labels"] = namesOnly
+        meta["detected_labels_source"] = "yolo"
+        meta["detected_model"] = "YOLOv3TinyInt8LUT"
+    } else {
+        // Fallback to Vision classification if YOLO not available or no detections
+        let labels = VisionClassifier.classify(image, maxLabels: 3)
+        if !labels.isEmpty {
+            let namesOnly = labels.map { $0.label }.joined(separator: ",")
+            meta["detected_labels"] = namesOnly
+            meta["detected_labels_source"] = "vision"
+        }
     }
 
     // OCR (short, on-device)
@@ -260,20 +342,29 @@ func analyzeImage(_ image: UIImage) -> [String: String] {
 // MARK: - Simple main-subject analysis (center crop)
 func analyzeMainSubject(_ image: UIImage) -> [String: String] {
     var meta: [String: String] = [:]
-    // Use a central ROI as a proxy for the main subject (simple and fast)
+    
+    // Try YOLO first: use the most confident detection as the main subject
+    if let best = YOLODetector.detect(image, maxDetections: 1, confidenceThreshold: 0.25).first {
+        meta["main_object_label"] = best.label
+        // Color on detected bbox
+        let topLeftRect = YOLODetector.toTopLeftNormalized(best.boundingBox)
+        let roiImage = image.cropNormalized(topLeftRect) ?? image
+        if let avg = ColorAnalyzer.averageColor(of: roiImage) {
+            meta["main_object_color_name"] = avg.colorNameEN
+            meta["main_object_color_name_fr"] = avg.colorNameFR
+        }
+        return meta
+    }
+
+    // Fallback: central ROI + Vision classification
     let centerROI = CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.6)
     let roiImage = image.cropNormalized(centerROI) ?? image
-
-    // Primary label from ROI
     if let first = VisionClassifier.classify(roiImage, maxLabels: 1).first {
         meta["main_object_label"] = first.label
     }
-
-    // Dominant color name from ROI
     if let avg = ColorAnalyzer.averageColor(of: roiImage) {
         meta["main_object_color_name"] = avg.colorNameEN
         meta["main_object_color_name_fr"] = avg.colorNameFR
     }
-
     return meta
 }
