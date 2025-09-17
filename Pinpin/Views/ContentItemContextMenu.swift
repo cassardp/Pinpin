@@ -5,6 +5,27 @@ struct ContentItemContextMenu: View {
     let contentService: ContentServiceCoreData
     let onStorageStatsRefresh: () -> Void
     
+    // MARK: - Computed Properties
+    
+    private var detectedLabels: [String] {
+        guard let metadata = item.metadata as? [String: String],
+              let labelsString = metadata["detected_labels"],
+              !labelsString.isEmpty else {
+            return []
+        }
+        return labelsString.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+    
+    private var detectionSource: String? {
+        guard let metadata = item.metadata as? [String: String] else { return nil }
+        return metadata["detected_labels_source"]
+    }
+    
+    private var detectionModel: String? {
+        guard let metadata = item.metadata as? [String: String] else { return nil }
+        return metadata["detected_model"]
+    }
+    
     var body: some View {
         // Afficher le menu de reclassification seulement si ce n'est pas un item de type "text"
         if item.contentTypeEnum != .text {
@@ -20,6 +41,38 @@ struct ContentItemContextMenu: View {
                 }
             } label: {
                 Label(item.contentTypeEnum.displayName, systemImage: "folder")
+            }
+        }
+        
+        // Sous-menu Tags (detected_labels)
+        if !detectedLabels.isEmpty {
+            Menu {
+                ForEach(detectedLabels, id: \.self) { tag in
+                    Button(action: {
+                        // Action future: filtrer par tag ou copier
+                    }) {
+                        Label(tag, systemImage: "tag")
+                    }
+                }
+                
+                Divider()
+                
+                // Informations sur la source de détection
+                if let source = detectionSource {
+                    Button(action: {}) {
+                        Label("Source: \(source)", systemImage: "info.circle")
+                    }
+                    .disabled(true)
+                }
+                
+                if let model = detectionModel {
+                    Button(action: {}) {
+                        Label("Modèle: \(model)", systemImage: "cpu")
+                    }
+                    .disabled(true)
+                }
+            } label: {
+                Label("Tags (\(detectedLabels.count))", systemImage: "tag.fill")
             }
         }
         

@@ -3,6 +3,7 @@ import Vision
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreML
+import ImageIO
 
 // MARK: - Vision (classification)
 struct VisionClassifier {
@@ -109,7 +110,7 @@ struct YOLODetector {
     /// - Returns: (label, confidence, boundingBox) where boundingBox is Vision-normalized (origin at bottom-left).
     static func detect(_ uiImage: UIImage,
                        maxDetections: Int = 5,
-                       confidenceThreshold: Float = 0.2) -> [(label: String, confidence: Float, boundingBox: CGRect)] {
+                       confidenceThreshold: Float = 0.15) -> [(label: String, confidence: Float, boundingBox: CGRect)] {
         guard let model = vnModel else { return [] }
 
         // Prefer CGImage for performance and reliability in Vision
@@ -152,6 +153,23 @@ struct YOLODetector {
                       y: 1.0 - bbox.origin.y - bbox.size.height,
                       width: bbox.size.width,
                       height: bbox.size.height)
+    }
+}
+
+// Orientation mapping to ensure Vision gets the correct orientation
+extension CGImagePropertyOrientation {
+    init(_ uiOrientation: UIImage.Orientation) {
+        switch uiOrientation {
+        case .up: self = .up
+        case .down: self = .down
+        case .left: self = .left
+        case .right: self = .right
+        case .upMirrored: self = .upMirrored
+        case .downMirrored: self = .downMirrored
+        case .leftMirrored: self = .leftMirrored
+        case .rightMirrored: self = .rightMirrored
+        @unknown default: self = .up
+        }
     }
 }
 
@@ -279,10 +297,11 @@ private func recognizeText(in uiImage: UIImage, maxChars: Int = 160) -> String {
     request.usesLanguageCorrection = false
     
     let handler: VNImageRequestHandler
+    let orientation = CGImagePropertyOrientation(uiImage.imageOrientation)
     if let cg = uiImage.cgImage {
-        handler = VNImageRequestHandler(cgImage: cg, options: [:])
+        handler = VNImageRequestHandler(cgImage: cg, orientation: orientation, options: [:])
     } else if let ci = CIImage(image: uiImage) {
-        handler = VNImageRequestHandler(ciImage: ci, options: [:])
+        handler = VNImageRequestHandler(ciImage: ci, orientation: orientation, options: [:])
     } else { return "" }
     
     do {
@@ -302,10 +321,10 @@ func analyzeImage(_ image: UIImage) -> [String: String] {
     var meta: [String: String] = [:]
 
     // Downscale for faster on-device ML while preserving good enough accuracy
-    let mlImage = image.downscaled(maxSide: 640) ?? image
+    let mlImage = image.downscaled(maxSide: 768) ?? image
 
     // Object detection (YOLO via Core ML)
-    let detections = YOLODetector.detect(mlImage, maxDetections: 12, confidenceThreshold: 0.25)
+    let detections = YOLODetector.detect(mlImage, maxDetections: 20, confidenceThreshold: 0.15)
     if !detections.isEmpty {
         // Keep unique labels, most confident first
         let unique = detections
@@ -319,6 +338,18 @@ func analyzeImage(_ image: UIImage) -> [String: String] {
         meta["detected_labels"] = namesOnly
         meta["detected_labels_source"] = "yolo"
         meta["detected_model"] = "YOLOv3TinyInt8LUT"
+        // Also expose instance-level diagnostics (duplicates kept)
+        let allLabels = detections.map { $0.label }.joined(separator: ",")
+        meta["detected_labels_all"] = allLabels
+        meta["detected_count"] = String(detections.count)
+        let counts = detections.reduce(into: [String: Int]()) { acc, det in
+            acc[det.label, default: 0] += 1
+        }
+        let countsStr = counts
+            .sorted { $0.value > $1.value }
+            .map { "\($0.key):\($0.value)" }
+            .joined(separator: ",")
+        meta["detected_label_counts"] = countsStr
     } else {
         // Fallback to Vision classification if YOLO not available or no detections
         let labels = VisionClassifier.classify(image, maxLabels: 3)
