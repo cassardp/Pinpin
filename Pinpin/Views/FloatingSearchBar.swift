@@ -7,12 +7,13 @@ struct FloatingSearchBar: View {
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
     @Binding var showSettings: Bool
-    @Binding var isMenuOpen: Bool
+    var menuSwipeProgress: CGFloat
     @FocusState private var isSearchFocused: Bool
     @Namespace private var searchTransitionNS
     @State private var isAnimatingSearchOpen: Bool = false
 
     // Data
+    var selectedContentType: String?
     var totalPinsCount: Int = 0
 
     // Actions
@@ -49,6 +50,7 @@ struct FloatingSearchBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
+        .opacity(1 - menuSwipeProgress)
         .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: showSearchBar)
         .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: isAnimatingSearchOpen)
     }
@@ -67,10 +69,17 @@ struct FloatingSearchBar: View {
 
     // MARK: - Placeholder
     private var placeholderText: String {
-        if totalPinsCount > 0 {
-            return "Search in your \(totalPinsCount) pin\(totalPinsCount > 1 ? "s" : "")..."
+        if let selectedType = selectedContentType {
+            // Catégorie spécifique sélectionnée
+            let categoryName = selectedType.capitalized
+            return "Search in \(categoryName)..."
         } else {
-            return "Search in your pins..."
+            // Catégorie "All"
+            if totalPinsCount > 0 {
+                return "Search in your \(totalPinsCount) pin\(totalPinsCount > 1 ? "s" : "")..."
+            } else {
+                return "Search in your pins..."
+            }
         }
     }
 

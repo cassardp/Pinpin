@@ -14,6 +14,7 @@ struct MainView: View {
     @StateObject private var userPreferences = UserPreferences.shared
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
+    @State private var menuSwipeProgress: CGFloat = 0
     @State private var isSettingsOpen = false
     @State private var isAboutOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
@@ -103,6 +104,7 @@ struct MainView: View {
     var body: some View {
         PushingSideDrawer(
             isOpen: $isMenuOpen,
+            swipeProgress: $menuSwipeProgress,
             width: UIScreen.main.bounds.width * 0.8
         ) {
             // Contenu principal
@@ -260,7 +262,8 @@ struct MainView: View {
                 isSelectionMode: $isSelectionMode,
                 selectedItems: $selectedItems,
                 showSettings: $isSettingsOpen,
-                isMenuOpen: $isMenuOpen,
+                menuSwipeProgress: menuSwipeProgress,
+                selectedContentType: selectedContentType,
                 totalPinsCount: filteredItems.count,
                 onSelectAll: {
                     selectedItems = Set(filteredItems.map { $0.safeId })

@@ -10,6 +10,7 @@ import SwiftUI
 /// Side drawer qui pousse le contenu (depuis la gauche).
 struct PushingSideDrawer<Content: View, Drawer: View>: View {
     @Binding var isOpen: Bool
+    @Binding var swipeProgress: CGFloat
     var width: CGFloat = 320
     @ViewBuilder var content: () -> Content
     @ViewBuilder var drawer: () -> Drawer
@@ -26,7 +27,10 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
         GeometryReader { geo in
             let currentOffset = isOpen ? width : 0
             let totalOffset = currentOffset + dragOffset
-
+            
+            // Calculer la progression du swipe (0.0 = fermé, 1.0 = ouvert)
+            let progress = max(0, min(1, totalOffset / width))
+            
             ZStack {
                 // Le contenu est poussé vers la droite
                 content()
@@ -58,6 +62,9 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                             .frame(width: geo.size.width - width)
                     }
                 }
+            }
+            .onChange(of: progress) {
+                swipeProgress = progress
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 0)
