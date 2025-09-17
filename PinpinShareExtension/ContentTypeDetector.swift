@@ -565,7 +565,7 @@ class ContentTypeDetector {
             "reverb.", "discogs.", "catawiki.", "chrono24.",
             "vestiairecollective.", "rebag.", "fashionphile.",
             "stockx.", "goat.", "grailed.", "depop.", "vinted.",
-            "leboncoin.fr", "www.leboncoin.fr",
+            "leboncoin.fr", "www.leboncoin.fr", "auctionet.com",
             
             // Autres grandes enseignes
             "wish.", "joom.", "banggood.", "gearbest.", "lightinthebox.",

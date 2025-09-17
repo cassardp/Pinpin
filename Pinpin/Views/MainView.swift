@@ -8,6 +8,7 @@
 import SwiftUI
 import UIKit
 
+
 struct MainView: View {
     @StateObject private var contentService = ContentServiceCoreData()
     @StateObject private var sharedContentService: SharedContentService
@@ -15,12 +16,14 @@ struct MainView: View {
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
+    @State private var scrollProgress: CGFloat = 0
     @State private var isSettingsOpen = false
     @State private var isAboutOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
     @State private var isSwipingHorizontally: Bool = false
     @State private var searchQuery: String = ""
     @State private var showSearchBar: Bool = false
+    @State private var showFloatingBar: Bool = true
     @State private var scrollOffset: CGFloat = 0
     @State private var lastScrollOffset: CGFloat = 0
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
@@ -39,6 +42,9 @@ struct MainView: View {
 
     // Hauteur du clavier pour ajuster la barre flottante
     @State private var keyboardHeight: CGFloat = 0
+    
+    // Timer pour masquer la barre automatiquement
+    @State private var hideBarTimer: Timer?
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -61,6 +67,7 @@ struct MainView: View {
         default: return 14
         }
     }
+    
 
     @State private var selectedContentType: String? = nil
 
@@ -110,6 +117,23 @@ struct MainView: View {
             // Contenu principal
             ZStack {
                 Color(UIColor.systemBackground)
+                
+                // Zone invisible en haut pour réafficher la barre
+                if scrollProgress > 0.5 {
+                    VStack {
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 60)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    scrollProgress = 0.0
+                                }
+                            }
+                        Spacer()
+                    }
+                    .ignoresSafeArea(edges: .top)
+                }
 
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -164,6 +188,8 @@ struct MainView: View {
                             withTransaction(Transaction(animation: nil)) {
                                 proxy.scrollTo("top", anchor: .top)
                             }
+                            // Réafficher la barre quand on change de catégorie
+                            scrollProgress = 0.0
                         }
                         .onChange(of: searchQuery) {
                             if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -178,6 +204,11 @@ struct MainView: View {
                                     showSearchBar = false
                                 }
                                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            } else {
+                                // Restaurer la barre à la fermeture du menu
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    scrollProgress = 0.0
+                                }
                             }
                         }
                         .animation(nil, value: selectedContentType)
@@ -186,6 +217,28 @@ struct MainView: View {
                     .refreshable { contentService.loadContentItems() }
                     .scrollDisabled(isMenuOpen || isSettingsOpen)
                     .highPriorityGesture(pinchGesture)
+                    .simultaneousGesture(
+                        DragGesture()
+                            .onChanged { value in
+                                let dy = value.translation.height
+                                if dy < -30 { // Scroll vers le haut (masquer)
+                                    scrollProgress = 1.0
+                                } else if dy > 30 { // Scroll vers le bas (afficher)
+                                    scrollProgress = 0.0
+                                }
+                            }
+                            .onEnded { value in
+                                let dy = value.translation.height
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    if dy < -50 { // Si scroll vers le haut assez fort, garder masqué
+                                        scrollProgress = 1.0
+                                    } else if dy > 50 { // Si scroll vers le bas assez fort, afficher
+                                        scrollProgress = 0.0
+                                    }
+                                    // Sinon, garder l'état actuel
+                                }
+                            }
+                    )
                 }
 
                 // ✅ Overlay pour fermer searchbar
@@ -256,23 +309,33 @@ struct MainView: View {
                 .presentationDragIndicator(.hidden)
         }
         .safeAreaInset(edge: .bottom) {
-            FloatingSearchBar(
-                searchQuery: $searchQuery,
-                showSearchBar: $showSearchBar,
-                isSelectionMode: $isSelectionMode,
-                selectedItems: $selectedItems,
-                showSettings: $isSettingsOpen,
-                menuSwipeProgress: menuSwipeProgress,
-                selectedContentType: selectedContentType,
-                totalPinsCount: filteredItems.count,
-                onSelectAll: {
-                    selectedItems = Set(filteredItems.map { $0.safeId })
-                },
-                onDeleteSelected: {
-                    deleteSelectedItems()
-                },
-                bottomPadding: keyboardHeight > 0 ? 0 : 12
-            )
+            if showFloatingBar {
+                FloatingSearchBar(
+                    searchQuery: $searchQuery,
+                    showSearchBar: $showSearchBar,
+                    isSelectionMode: $isSelectionMode,
+                    selectedItems: $selectedItems,
+                    showSettings: $isSettingsOpen,
+                    menuSwipeProgress: menuSwipeProgress,
+                    scrollProgress: scrollProgress,
+                    selectedContentType: selectedContentType,
+                    totalPinsCount: filteredItems.count,
+                    onSelectAll: {
+                        selectedItems = Set(filteredItems.map { $0.safeId })
+                    },
+                    onDeleteSelected: {
+                        deleteSelectedItems()
+                    },
+                    onRestoreBar: {
+                        scrollProgress = 0.0
+                    },
+                    bottomPadding: keyboardHeight > 0 ? 0 : 12
+                )
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .bottom)),
+                    removal: .opacity.combined(with: .move(edge: .bottom))
+                ))
+            }
         }
     }
 
@@ -411,13 +474,6 @@ struct MainView: View {
     }
 }
 
-// MARK: - ScrollOffsetPreferenceKey
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
 
 #Preview {
     MainView()

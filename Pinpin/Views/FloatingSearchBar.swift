@@ -8,6 +8,7 @@ struct FloatingSearchBar: View {
     @Binding var selectedItems: Set<UUID>
     @Binding var showSettings: Bool
     var menuSwipeProgress: CGFloat
+    var scrollProgress: CGFloat
     @FocusState private var isSearchFocused: Bool
     @Namespace private var searchTransitionNS
     @State private var isAnimatingSearchOpen: Bool = false
@@ -19,6 +20,7 @@ struct FloatingSearchBar: View {
     // Actions
     let onSelectAll: () -> Void
     let onDeleteSelected: () -> Void
+    let onRestoreBar: () -> Void
 
     // Insets
     var bottomPadding: CGFloat = 12
@@ -50,9 +52,12 @@ struct FloatingSearchBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
-        .opacity(1 - menuSwipeProgress)
+        .opacity(1 - menuSwipeProgress) // Seulement le menu affecte l'opacity
+        .scaleEffect(1 - scrollProgress * 0.2) // Scale négatif progressif
+        .offset(y: scrollProgress * 30) // Décalage vers le bas
         .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: showSearchBar)
         .animation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08), value: isAnimatingSearchOpen)
+        .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
     }
     
     // MARK: - Overlay séparé pour MainView
@@ -150,9 +155,13 @@ struct FloatingSearchBar: View {
                             .fill(.thinMaterial)
                     )
             }
+            .opacity(scrollProgress < 0.5 ? 1.0 : 0.0) // Disparaît à mi-chemin
 
             // Centre : Search
             Button(action: {
+                // D'abord restaurer la barre à sa taille normale
+                onRestoreBar()
+                
                 isAnimatingSearchOpen = true
                 withAnimation(.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)) {
                     showSearchBar = true
@@ -194,6 +203,9 @@ struct FloatingSearchBar: View {
                             .font(.system(size: 14))
                             .foregroundColor(Color(.systemBackground))
                             .onTapGesture {
+                                // Restaurer la barre à sa taille normale
+                                onRestoreBar()
+                                
                                 withAnimation(.spring(response: 0.32, dampingFraction: 0.86, blendDuration: 0.08)) {
                                     searchQuery = ""
                                 }
@@ -267,6 +279,7 @@ struct FloatingSearchBar: View {
                     }
                 )
             }
+            .opacity(scrollProgress < 0.5 ? 1.0 : 0.0) // Disparaît à mi-chemin
 
             Spacer()
         }
