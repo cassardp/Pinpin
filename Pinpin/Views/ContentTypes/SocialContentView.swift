@@ -20,7 +20,7 @@ struct SocialContentView: View {
         VStack(alignment: .leading) {
             if isTikTokContent {
                 Rectangle()
-                    .aspectRatio(1, contentMode: .fit)
+                    .aspectRatio(9/16, contentMode: .fit)
                     .overlay(
                         SmartAsyncImage(item: item)
                             .aspectRatio(contentMode: .fill)
