@@ -17,49 +17,43 @@ struct ContentItemCard: View {
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Couche de contenu (avec fond noir quand masqué pour éviter le carré blanc)
-            ZStack {
-                if item.isHidden {
-                    Color.black
-                }
-                Group {
-                    switch item.contentTypeEnum {
-                    case .article:
-                        ArticleContentView(item: item)
-                    case .video:
-                        VideoContentView(item: item)
-                    case .product:
-                        ProductContentView(item: item)
-                    case .social:
-                        SocialContentView(item: item)
-                    case .webpage:
-                        WebpageContentView(item: item)
-                    case .app:
-                        AppContentView(item: item)
-                    case .music:
-                        MusicContentView(item: item)
-                    case .book:
-                        BookContentView(item: item)
-                    case .travel:
-                        TravelContentView(item: item)
-                    case .podcast:
-                        PodcastContentView(item: item)
-                    case .show:
-                        ShowContentView(item: item)
-                    case .image:
-                        ImageContentView(item: item)
-                    case .text:
-                        TextContentView(item: item, numberOfColumns: numberOfColumns)
-                    }
+            // Couche de contenu
+            Group {
+                switch item.contentTypeEnum {
+                case .article:
+                    ArticleContentView(item: item)
+                case .video:
+                    VideoContentView(item: item)
+                case .product:
+                    ProductContentView(item: item)
+                case .social:
+                    SocialContentView(item: item)
+                case .webpage:
+                    WebpageContentView(item: item)
+                case .app:
+                    AppContentView(item: item)
+                case .music:
+                    MusicContentView(item: item)
+                case .book:
+                    BookContentView(item: item)
+                case .travel:
+                    TravelContentView(item: item)
+                case .podcast:
+                    PodcastContentView(item: item)
+                case .show:
+                    ShowContentView(item: item)
+                case .image:
+                    ImageContentView(item: item)
+                case .text:
+                    TextContentView(item: item, numberOfColumns: numberOfColumns)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .compositingGroup()
-            .blur(radius: item.isHidden ? 15 : 0)
             .clipped()
             
             // URL en overlay dans le coin bas gauche
-            if userPreferences.showURLs, let url = item.url, !url.isEmpty, !item.isHidden {
+            if userPreferences.showURLs, let url = item.url, !url.isEmpty {
                 Text(shortenURL(url))
                     .font(.caption2)
                     .fontWeight(.medium)
@@ -76,9 +70,15 @@ struct ContentItemCard: View {
                         let generator = UIImpactFeedbackGenerator(style: .light)
                         generator.impactOccurred()
                     }
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .move(edge: .bottom)),
+                        removal: .opacity.combined(with: .scale(scale: 0.8))
+                    ))
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: cornerRadius)
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: userPreferences.showURLs)
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
