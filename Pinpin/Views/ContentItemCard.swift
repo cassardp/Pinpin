@@ -17,37 +17,8 @@ struct ContentItemCard: View {
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Couche de contenu
-            Group {
-                switch item.contentTypeEnum {
-                case .article:
-                    ArticleContentView(item: item)
-                case .video:
-                    VideoContentView(item: item)
-                case .product:
-                    ProductContentView(item: item)
-                case .social:
-                    SocialContentView(item: item)
-                case .webpage:
-                    WebpageContentView(item: item)
-                case .app:
-                    AppContentView(item: item)
-                case .music:
-                    MusicContentView(item: item)
-                case .book:
-                    BookContentView(item: item)
-                case .travel:
-                    TravelContentView(item: item)
-                case .podcast:
-                    PodcastContentView(item: item)
-                case .show:
-                    ShowContentView(item: item)
-                case .image:
-                    ImageContentView(item: item)
-                case .text:
-                    TextContentView(item: item, numberOfColumns: numberOfColumns)
-                }
-            }
+            // Vue unifiée pour toutes les catégories
+            unifiedContentView
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .compositingGroup()
             .clipped()
@@ -179,5 +150,54 @@ struct ContentItemCard: View {
         
         // Pour les autres domaines, retourner le host nettoyé
         return cleanHost
+    }
+    
+    // MARK: - Vue unifiée
+    
+    private var unifiedContentView: some View {
+        VStack(alignment: .leading) {
+            SmartAsyncImage(item: item)
+                .frame(maxWidth: .infinity)
+                .aspectRatio(contentMode: .fit)
+        }
+    }
+    
+    // Propriété calculée pour le meilleur titre disponible
+    private var bestTitle: String? {
+        // Priorité : best_title des métadonnées > title > URL nettoyée
+        if let bestTitle = item.metadataDict["best_title"], !bestTitle.isEmpty {
+            return bestTitle
+        }
+        
+        if let title = item.title, !title.isEmpty {
+            return title
+        }
+        
+        // Fallback sur l'URL nettoyée
+        if let url = item.url, !url.isEmpty {
+            return shortenURL(url)
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Computed Properties pour les catégories
+    
+    private var categoryColor: Color {
+        switch item.contentTypeEnum {
+        case .fashion: return .pink
+        case .home: return .brown
+        case .food: return .orange
+        case .travel: return .blue
+        case .nature: return .green
+        case .tech: return .purple
+        case .art: return .indigo
+        case .sports: return .red
+        case .cars: return .gray
+        case .beauty: return .pink
+        case .media: return .cyan
+        case .kids: return .yellow
+        case .misc: return .secondary
+        }
     }
 }

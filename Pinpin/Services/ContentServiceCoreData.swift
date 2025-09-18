@@ -146,6 +146,6 @@ extension ContentItem {
     
     // Enum pour le type de contenu
     var contentTypeEnum: ContentType {
-        return ContentType(rawValue: contentType ?? "webpage") ?? .webpage
+        return ContentType(rawValue: contentType ?? "misc") ?? .misc
     }
 }

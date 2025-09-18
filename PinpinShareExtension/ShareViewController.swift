@@ -94,11 +94,8 @@ class ShareViewController: UIViewController {
     }
     
     private func handleURL(_ url: URL, completion: @escaping () -> Void) {
-        let contentType = ContentTypeDetector.shared.detectContentType(from: url)
-        
-        // Debug: Logger l'URL et le type détecté
+        // Debug: Logger l'URL
         print("[ShareExtension] URL reçue: \(url.absoluteString)")
-        print("[ShareExtension] Type détecté: \(contentType)")
         
         // Utiliser LinkPresentation pour obtenir les métadonnées système (plus fiable)
         let metadataProvider = LPMetadataProvider()
@@ -141,7 +138,6 @@ class ShareViewController: UIViewController {
                                 // Sauvegarder avec les métadonnées LinkPresentation
                                 DispatchQueue.main.async {
                                     self?.saveSharedContent(
-                                        type: contentType,
                                         title: finalTitle,
                                         url: url.absoluteString,
                                         description: finalDescription,
@@ -154,7 +150,6 @@ class ShareViewController: UIViewController {
                             // Pas d'icône, sauvegarder quand même
                             DispatchQueue.main.async {
                                 self?.saveSharedContent(
-                                    type: contentType,
                                     title: finalTitle,
                                     url: url.absoluteString,
                                     description: finalDescription,
@@ -179,7 +174,6 @@ class ShareViewController: UIViewController {
                         // Sauvegarder avec les métadonnées LinkPresentation
                         DispatchQueue.main.async {
                             self?.saveSharedContent(
-                                type: contentType,
                                 title: finalTitle,
                                 url: url.absoluteString,
                                 description: finalDescription,
@@ -195,7 +189,6 @@ class ShareViewController: UIViewController {
             // Si LinkPresentation n'a pas d'image/icône, sauvegarder quand même
             DispatchQueue.main.async {
                 self?.saveSharedContent(
-                    type: contentType,
                     title: finalTitle,
                     url: url.absoluteString,
                     description: finalDescription,
@@ -215,12 +208,8 @@ class ShareViewController: UIViewController {
             // Si on trouve une URL, la traiter avec LinkPresentation
             handleURL(detectedURL, completion: completion)
         } else {
-            // Vérifier si c'est du contenu Apple Books (texte sans URL)
-            let contentType = detectContentTypeFromText(text)
-            
-            // Sinon, traiter comme texte simple
+            // Traiter comme texte simple
             saveSharedContent(
-                type: contentType,
                 title: text,
                 url: nil,
                 description: text,
@@ -235,7 +224,6 @@ class ShareViewController: UIViewController {
     }
     
     private func handleImageURL(_ imageURL: URL, completion: @escaping () -> Void) {
-        let contentType = "image"
         
         // Utiliser LinkPresentation même pour les images
         let metadataProvider = LPMetadataProvider()
@@ -271,7 +259,6 @@ class ShareViewController: UIViewController {
                                 
                                 DispatchQueue.main.async {
                                     self?.saveSharedContent(
-                                        type: contentType,
                                         title: finalTitle,
                                         url: imageURL.absoluteString,
                                         description: finalDescription,
@@ -284,7 +271,6 @@ class ShareViewController: UIViewController {
                             // Pas d'icône, sauvegarder quand même
                             DispatchQueue.main.async {
                                 self?.saveSharedContent(
-                                    type: contentType,
                                     title: finalTitle,
                                     url: imageURL.absoluteString,
                                     description: finalDescription,
@@ -301,7 +287,6 @@ class ShareViewController: UIViewController {
             // Si pas de métadonnées, sauvegarder quand même
             DispatchQueue.main.async {
                 self?.saveSharedContent(
-                    type: contentType,
                     title: finalTitle,
                     url: imageURL.absoluteString,
                     description: finalDescription,
@@ -312,9 +297,15 @@ class ShareViewController: UIViewController {
         }
     }
     
-    private func saveSharedContent(type: String, title: String, url: String?, description: String?, metadata: [String: String]?) {
+    private func saveSharedContent(title: String, url: String?, description: String?, metadata: [String: String]?) {
+        // Utiliser le nouveau système de classification basé sur Vision
+        let finalType = determineFinalContentType(
+            url: url,
+            metadata: metadata
+        )
+        
         let sharedContent: [String: Any] = [
-            "type": type,
+            "type": finalType,
             "title": title,
             "url": url ?? "",
             "description": description ?? "",
@@ -324,9 +315,13 @@ class ShareViewController: UIViewController {
         
         // Debug: Logger le contenu sauvegardé
         print("[ShareExtension] Sauvegarde contenu:")
-        print("  - Type: \(type)")
+        print("  - Type final: \(finalType)")
         print("  - Titre: \(title)")
         print("  - URL: \(url ?? "nil")")
+        if let meta = metadata {
+            print("  - Vision labels: \(meta["main_object_label"] ?? "none")")
+            print("  - Vision alternatives: \(meta["main_object_alternatives"] ?? "none")")
+        }
         
         // Méthode 1: UserDefaults partagés (simplifié)
         if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") {
@@ -341,6 +336,29 @@ class ShareViewController: UIViewController {
         
         // Méthode 2: Fichier partagé (backup)
         saveToSharedFile(content: sharedContent)
+    }
+    
+    /// Détermine le type de contenu final en utilisant Vision + URL
+    private func determineFinalContentType(url: String?, metadata: [String: String]?) -> String {
+        // Extraire les labels Vision des métadonnées
+        let mainLabel = metadata?["main_object_label"]
+        let alternatives = metadata?["main_object_alternatives"]
+        
+        // Utiliser la nouvelle méthode simplifiée du ContentTypeDetector
+        let urlObject = url != nil ? URL(string: url!) : nil
+        let finalType = ContentTypeDetector.shared.detectContentTypeWithFallback(
+            from: urlObject,
+            mainLabel: mainLabel,
+            alternatives: alternatives
+        )
+        
+        print("[ShareExtension] Classification:")
+        print("  - URL: \(url ?? "none")")
+        print("  - Main label: \(mainLabel ?? "none")")
+        print("  - Alternatives: \(alternatives ?? "none")")
+        print("  - Final type: \(finalType)")
+        
+        return finalType
     }
     
     private func saveToSharedFile(content: [String: Any]) {

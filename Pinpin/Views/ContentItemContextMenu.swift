@@ -69,11 +69,11 @@ struct ContentItemContextMenu: View {
     }
     
     var body: some View {
-        // Afficher le menu de reclassification seulement si ce n'est pas un item de type "text"
-        if item.contentTypeEnum != .text {
+        VStack {
+            // Menu de reclassification pour tous les types
             Menu {
                 ForEach(ContentType.allCases, id: \.self) { contentType in
-                    if contentType != item.contentTypeEnum && contentType != .text {
+                    if contentType != item.contentTypeEnum {
                         Button(action: {
                             reclassifyItem(to: contentType)
                         }) {
@@ -84,10 +84,9 @@ struct ContentItemContextMenu: View {
             } label: {
                 Label(item.contentTypeEnum.displayName, systemImage: "folder")
             }
-        }
-        
-        // Sous-menu Vision Analysis (informations détaillées)
-        if !detectedLabels.isEmpty || bestLabel != nil || mainObjectLabel != nil {
+            
+            // Sous-menu Vision Analysis (informations détaillées)
+            if !detectedLabels.isEmpty || bestLabel != nil || mainObjectLabel != nil {
             Menu {
                 // Meilleur label avec confiance
                 if let best = bestLabel, let confidence = bestConfidence {
@@ -189,6 +188,7 @@ struct ContentItemContextMenu: View {
         }
         
         // Context menu trimmed: removed Hide and Delete actions
+        }
     }
     
     // MARK: - Actions
