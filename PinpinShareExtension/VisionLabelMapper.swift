@@ -50,6 +50,71 @@ class VisionLabelMapper {
         return categoryCount.max(by: { $0.value < $1.value })?.key ?? "misc"
     }
     
+    /// Vérifie si un label est trop générique pour être utile à la classification
+    private func isGenericLabel(_ label: String) -> Bool {
+        let genericLabels = [
+            "structure", "wood_processed", "liquid", "water", "water_body"
+        ]
+        
+        let normalizedLabel = label.lowercased()
+        return genericLabels.contains(normalizedLabel)
+    }
+    
+    /// Structure pour représenter un label avec son score de confiance
+    struct LabelWithConfidence {
+        let label: String
+        let confidence: Float
+    }
+    
+    /// Mappe plusieurs labels avec leurs scores de confiance et retourne la catégorie la plus probable
+    /// La classification est pondérée par les scores de confiance
+    func mapLabelsWithConfidenceToCategory(_ labelsWithConfidence: [LabelWithConfidence]) -> String {
+        // Filtrer d'abord les labels trop génériques
+        let filteredLabels = labelsWithConfidence.filter { !isGenericLabel($0.label) }
+        
+        // Si tous les labels sont génériques, utiliser les originaux (fallback)
+        let labelsToAnalyze = filteredLabels.isEmpty ? labelsWithConfidence : filteredLabels
+        
+        // Seuil de confiance très élevée pour classification immédiate
+        let highConfidenceThreshold: Float = 0.85
+        
+        // Vérifier s'il y a un label avec une confiance très élevée
+        for item in labelsToAnalyze {
+            if item.confidence >= highConfidenceThreshold {
+                let category = mapLabelToCategory(item.label)
+                // Si la catégorie n'est pas "misc", l'utiliser immédiatement
+                if category != "misc" {
+                    return category
+                }
+            }
+        }
+        
+        // Seuil minimum de confiance pour éviter le bruit (labels trop incertains)
+        let minimumConfidenceThreshold: Float = 0.3
+        
+        // Filtrer les labels avec une confiance suffisante (sur les labels déjà filtrés)
+        let reliableLabels = labelsToAnalyze.filter { $0.confidence >= minimumConfidenceThreshold }
+        
+        // Si aucun label fiable, utiliser tous les labels filtrés (fallback)
+        let labelsToProcess = reliableLabels.isEmpty ? labelsToAnalyze : reliableLabels
+        
+        // Pondération par score de confiance
+        var categoryScores: [String: Float] = [:]
+        
+        for item in labelsToProcess {
+            let category = mapLabelToCategory(item.label)
+            
+            // Applique une pondération exponentielle pour favoriser les hauts scores
+            // Un score de 0.9 aura beaucoup plus de poids qu'un score de 0.3
+            let weightedScore = pow(item.confidence, 2.0) // Pondération quadratique
+            
+            categoryScores[category, default: 0.0] += weightedScore
+        }
+        
+        // Retourne la catégorie avec le score pondéré le plus élevé
+        return categoryScores.max(by: { $0.value < $1.value })?.key ?? "misc"
+    }
+    
     // MARK: - Private Category Detection Methods
     
     private func isFashionLabel(_ label: String) -> Bool {
@@ -224,7 +289,7 @@ class VisionLabelMapper {
             "nature", "wilderness", "forest", "jungle", "woods", "meadow", "field",
             "mountain", "hill", "valley", "canyon", "cliff", "rock", "stone",
             "beach", "shore", "ocean", "sea", "lake", "river", "stream", "waterfall",
-            "desert", "oasis", "glacier", "iceberg", "volcano", "geyser", "cave",
+            "desert", "oasis", "glacier", "iceberg", "volcano", "geyser", "cave", "outdoor",
             
             // Météo et ciel
             "sky", "cloud", "sun", "moon", "star", "rainbow", "lightning", "storm",

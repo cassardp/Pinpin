@@ -341,22 +341,40 @@ class ShareViewController: UIViewController {
     /// Détermine le type de contenu final en utilisant Vision + URL
     private func determineFinalContentType(url: String?, metadata: [String: String]?) -> String {
         // Extraire les labels Vision des métadonnées
+        let detectedLabels = metadata?["detected_labels"]
+        let confidences = metadata?["detected_confidences"]
         let mainLabel = metadata?["main_object_label"]
         let alternatives = metadata?["main_object_alternatives"]
         
-        // Utiliser la nouvelle méthode simplifiée du ContentTypeDetector
         let urlObject = url != nil ? URL(string: url!) : nil
-        let finalType = ContentTypeDetector.shared.detectContentTypeWithFallback(
-            from: urlObject,
-            mainLabel: mainLabel,
-            alternatives: alternatives
-        )
         
-        print("[ShareExtension] Classification:")
+        // Utiliser la nouvelle méthode avec confiance si disponible
+        let finalType: String
+        if let labels = detectedLabels, !labels.isEmpty, let conf = confidences, !conf.isEmpty {
+            finalType = ContentTypeDetector.shared.detectContentTypeWithConfidenceFallback(
+                from: urlObject,
+                detectedLabels: labels,
+                confidences: conf
+            )
+            print("[ShareExtension] Classification intelligente (URL prioritaire + Vision pondérée):")
+            print("  - Labels détectés: \(labels)")
+            print("  - Scores de confiance: \(conf)")
+        } else {
+            // Fallback vers l'ancienne méthode si pas de données de confiance
+            finalType = ContentTypeDetector.shared.detectContentTypeWithFallback(
+                from: urlObject,
+                mainLabel: mainLabel,
+                alternatives: alternatives
+            )
+            print("[ShareExtension] Classification fallback (URL + Vision simple):")
+            print("  - Main label: \(mainLabel ?? "none")")
+            print("  - Alternatives: \(alternatives ?? "none")")
+        }
+        
+        print("[ShareExtension] Résultat final:")
         print("  - URL: \(url ?? "none")")
-        print("  - Main label: \(mainLabel ?? "none")")
-        print("  - Alternatives: \(alternatives ?? "none")")
-        print("  - Final type: \(finalType)")
+        print("  - Type classifié: \(finalType)")
+        print("  - Méthode: \(urlObject != nil ? "URL prioritaire" : "Vision uniquement")")
         
         return finalType
     }
