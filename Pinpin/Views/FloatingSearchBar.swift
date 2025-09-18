@@ -47,8 +47,8 @@ struct FloatingSearchBar: View {
         .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
         .opacity(1 - menuSwipeProgress) // Seulement le menu affecte l'opacity
-        .scaleEffect(1 - scrollProgress * 0.2) // Scale négatif progressif
-        .offset(y: scrollProgress * 30) // Décalage vers le bas
+        .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2)) // Pas de scale en mode sélection
+        .offset(y: isSelectionMode ? 0 : scrollProgress * 30) // Pas de décalage en mode sélection
         .animation(unifiedAnimation, value: showSearchBar)
         .animation(unifiedAnimation, value: isAnimatingSearchOpen)
         .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
@@ -149,7 +149,7 @@ struct FloatingSearchBar: View {
                             .fill(.thinMaterial)
                     )
             }
-            .opacity(scrollProgress < 0.5 ? 1.0 : 0.0) // Disparaît à mi-chemin
+            .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
 
             // Centre : Search
             Button(action: {
@@ -273,7 +273,7 @@ struct FloatingSearchBar: View {
                     }
                 )
             }
-            .opacity(scrollProgress < 0.5 ? 1.0 : 0.0) // Disparaît à mi-chemin
+            .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
 
             Spacer()
         }

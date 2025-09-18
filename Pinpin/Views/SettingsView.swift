@@ -55,6 +55,12 @@ struct SettingsView: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 8)
 
+                    SettingsToggleRow(
+                        title: "Dev Mode",
+                        subtitle: "Show Vision Analysis in context menu",
+                        isOn: $userPreferences.devMode
+                    )
+
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 40)

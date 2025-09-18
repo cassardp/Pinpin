@@ -4,6 +4,7 @@ struct ContentItemContextMenu: View {
     let item: ContentItem
     let contentService: ContentServiceCoreData
     let onStorageStatsRefresh: () -> Void
+    @StateObject private var userPreferences = UserPreferences.shared
     
     // MARK: - Computed Properties
     
@@ -68,11 +69,23 @@ struct ContentItemContextMenu: View {
         return metadata["ocr_text"]
     }
     
+    // MARK: - Helper Methods
+    
+    /// Vérifie si un label est considéré comme générique (exclu de la classification)
+    private func isGenericLabel(_ label: String) -> Bool {
+        let genericLabels = [
+            "structure", "wood_processed", "liquid", "water", "water_body", "machine"
+        ]
+        
+        let normalizedLabel = label.lowercased()
+        return genericLabels.contains(normalizedLabel)
+    }
+    
     var body: some View {
         VStack {
             // Menu de reclassification pour tous les types
             Menu {
-                ForEach(ContentType.allCases, id: \.self) { contentType in
+                ForEach(ContentType.orderedCases, id: \.self) { contentType in
                     if contentType != item.contentTypeEnum {
                         Button(action: {
                             reclassifyItem(to: contentType)
@@ -85,13 +98,21 @@ struct ContentItemContextMenu: View {
                 Label(item.contentTypeEnum.displayName, systemImage: "folder")
             }
             
-            // Sous-menu Vision Analysis (informations détaillées)
-            if !detectedLabels.isEmpty || bestLabel != nil || mainObjectLabel != nil {
+            // Sous-menu Vision Analysis (informations détaillées) - Affiché seulement en dev mode
+            if userPreferences.devMode && (!detectedLabels.isEmpty || bestLabel != nil || mainObjectLabel != nil) {
             Menu {
                 // Meilleur label avec confiance
                 if let best = bestLabel, let confidence = bestConfidence {
                     Button(action: {}) {
-                        Label("🏆 \(best) (\(confidence))", systemImage: "star.fill")
+                        HStack {
+                            Image(systemName: "star.fill")
+                            if isGenericLabel(best) {
+                                Text("🏆 \(best) (\(confidence)) [EXCLU]")
+                                    .foregroundColor(.red)
+                            } else {
+                                Text("🏆 \(best) (\(confidence))")
+                            }
+                        }
                     }
                     .disabled(true)
                 }
@@ -103,7 +124,15 @@ struct ContentItemContextMenu: View {
                 // Tous les labels avec leurs scores
                 ForEach(Array(zip(detectedLabels, detectedConfidences)), id: \.0) { label, confidence in
                     Button(action: {}) {
-                        Label("\(label) (\(confidence))", systemImage: "tag")
+                        HStack {
+                            Image(systemName: "tag")
+                            if isGenericLabel(label) {
+                                Text("\(label) (\(confidence)) [EXCLU]")
+                                    .foregroundColor(.red)
+                            } else {
+                                Text("\(label) (\(confidence))")
+                            }
+                        }
                     }
                     .disabled(true)
                 }
@@ -115,10 +144,23 @@ struct ContentItemContextMenu: View {
                 // Sujet principal
                 if let mainLabel = mainObjectLabel {
                     Button(action: {}) {
-                        if let confidence = mainObjectConfidence {
-                            Label("🎯 Sujet: \(mainLabel) (\(confidence))", systemImage: "viewfinder")
-                        } else {
-                            Label("🎯 Sujet: \(mainLabel)", systemImage: "viewfinder")
+                        HStack {
+                            Image(systemName: "viewfinder")
+                            if isGenericLabel(mainLabel) {
+                                if let confidence = mainObjectConfidence {
+                                    Text("🎯 Sujet: \(mainLabel) (\(confidence)) [EXCLU]")
+                                        .foregroundColor(.red)
+                                } else {
+                                    Text("🎯 Sujet: \(mainLabel) [EXCLU]")
+                                        .foregroundColor(.red)
+                                }
+                            } else {
+                                if let confidence = mainObjectConfidence {
+                                    Text("🎯 Sujet: \(mainLabel) (\(confidence))")
+                                } else {
+                                    Text("🎯 Sujet: \(mainLabel)")
+                                }
+                            }
                         }
                     }
                     .disabled(true)
@@ -128,7 +170,15 @@ struct ContentItemContextMenu: View {
                 if !mainObjectAlternatives.isEmpty {
                     ForEach(mainObjectAlternatives, id: \.self) { alt in
                         Button(action: {}) {
-                            Label("↳ \(alt)", systemImage: "arrow.turn.down.right")
+                            HStack {
+                                Image(systemName: "arrow.turn.down.right")
+                                if isGenericLabel(alt) {
+                                    Text("↳ \(alt) [EXCLU]")
+                                        .foregroundColor(.red)
+                                } else {
+                                    Text("↳ \(alt)")
+                                }
+                            }
                         }
                         .disabled(true)
                     }
@@ -160,13 +210,87 @@ struct ContentItemContextMenu: View {
                     }
                     .disabled(true)
                 }
+                
+                // Section Core Data
+                if bestLabel != nil || !detectedLabels.isEmpty || detectionSource != nil {
+                    Divider()
+                }
+                
+                // Titre
+                if let title = item.title, !title.isEmpty {
+                    Button(action: {
+                        UIPasteboard.general.string = title
+                    }) {
+                        Text("📝 Title: \(title)")
+                            .lineLimit(nil)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                
+                // Description
+                if let description = item.itemDescription, !description.isEmpty {
+                    Button(action: {
+                        UIPasteboard.general.string = description
+                    }) {
+                        Text("📄 Description: \(description)")
+                            .lineLimit(nil)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                
+                // URL
+                if let url = item.url, !url.isEmpty {
+                    Button(action: {
+                        UIPasteboard.general.string = url
+                    }) {
+                        Text("🔗 URL: \(url)")
+                            .lineLimit(nil)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                
+                // Content Type
+                Button(action: {
+                    UIPasteboard.general.string = item.contentTypeEnum.rawValue
+                }) {
+                    Label("🏷️ Type: \(item.contentTypeEnum.displayName)", systemImage: "tag.fill")
+                }
+                
+                // ID
+                Button(action: {
+                    UIPasteboard.general.string = item.safeId.uuidString
+                }) {
+                    Label("🆔 ID: \(item.safeId.uuidString.prefix(8))...", systemImage: "number")
+                }
+                
+                // Métadonnées complètes
+                if !metadata.isEmpty {
+                    Divider()
+                    
+                    ForEach(Array(metadata.keys.sorted().filter { key in
+                        if let value = metadata[key] {
+                            return !value.isEmpty
+                        }
+                        return false
+                    }), id: \.self) { key in
+                        Button(action: {
+                            UIPasteboard.general.string = "\(key): \(metadata[key] ?? "")"
+                        }) {
+                            let value = metadata[key] ?? ""
+                            Text("🔧 \(key): \(value)")
+                                .lineLimit(nil)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
+                }
+                
             } label: {
                 Label("Vision Analysis (\(detectedLabels.count))", systemImage: "eye.fill")
             }
         }
         
-        // Sous-menu OCR si du texte a été détecté
-        if let ocr = ocrText, !ocr.isEmpty {
+        // Sous-menu OCR si du texte a été détecté - Affiché seulement en dev mode
+        if userPreferences.devMode, let ocr = ocrText, !ocr.isEmpty {
             Menu {
                 Button(action: {
                     UIPasteboard.general.string = ocr

@@ -29,10 +29,17 @@ class UserPreferences: ObservableObject {
         }
     }
     
+    @Published var devMode: Bool {
+        didSet {
+            UserDefaults.standard.set(devMode, forKey: "devMode")
+        }
+    }
+    
     private init() {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
         self.forceDarkMode = UserDefaults.standard.bool(forKey: "forceDarkMode")
+        self.devMode = UserDefaults.standard.bool(forKey: "devMode")
         
         // Appliquer le thème au démarrage
         ThemeManager.shared.handleTheme(forceDarkMode: self.forceDarkMode)

@@ -39,4 +39,10 @@ enum ContentType: String, CaseIterable {
         case .misc: return "Misc"
         }
     }
+    
+    /// Ordre des catégories avec misc forcé en dernier
+    static var orderedCases: [ContentType] {
+        let allCasesExceptMisc = allCases.filter { $0 != .misc }
+        return allCasesExceptMisc + [.misc]
+    }
 }

@@ -53,7 +53,7 @@ class VisionLabelMapper {
     /// Vérifie si un label est trop générique pour être utile à la classification
     private func isGenericLabel(_ label: String) -> Bool {
         let genericLabels = [
-            "structure", "wood_processed", "liquid", "water", "water_body"
+            "structure", "wood_processed", "liquid", "water", "water_body", "machine",
         ]
         
         let normalizedLabel = label.lowercased()

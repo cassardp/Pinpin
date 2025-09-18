@@ -21,7 +21,12 @@ struct FilterMenuView: View {
     // Récupère les types uniques depuis les données
     private var availableTypes: [String] {
         let types = contentItems.compactMap { $0.contentType }
-        return Array(Set(types)).sorted()
+        let uniqueTypes = Set(types)
+        
+        // Utiliser l'ordre défini dans ContentType avec misc en dernier
+        return ContentType.orderedCases
+            .map { $0.rawValue }
+            .filter { uniqueTypes.contains($0) }
     }
     
     // Compte les items par type
