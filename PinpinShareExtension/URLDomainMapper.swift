@@ -43,9 +43,7 @@ class URLDomainMapper {
     private func isMediaDomain(_ urlString: String) -> Bool {
         let mediaDomains = [
             // Vidéo et streaming
-            "youtube.com", "youtu.be", "netflix.com", "twitch.tv", "vimeo.com",
-            "dailymotion.com", "tiktok.com", "instagram.com/reel", "instagram.com/p",
-            "facebook.com/watch", "snapchat.com",
+
             
             // Audio et musique
             "spotify.com", "apple.com/music", "music.apple.com", "deezer.com",

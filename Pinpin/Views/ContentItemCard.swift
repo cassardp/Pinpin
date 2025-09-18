@@ -155,11 +155,7 @@ struct ContentItemCard: View {
     // MARK: - Vue unifiée
     
     private var unifiedContentView: some View {
-        VStack(alignment: .leading) {
-            SmartAsyncImage(item: item)
-                .frame(maxWidth: .infinity)
-                .aspectRatio(contentMode: .fit)
-        }
+        ContentCardView(item: item)
     }
     
     // Propriété calculée pour le meilleur titre disponible
