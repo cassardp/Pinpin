@@ -12,6 +12,7 @@ struct FloatingSearchBar: View {
     @FocusState private var isSearchFocused: Bool
     @Namespace private var searchTransitionNS
     @State private var isAnimatingSearchOpen: Bool = false
+    @State private var showDeleteConfirmation: Bool = false
 
     // Data
     var selectedContentType: String?
@@ -52,6 +53,14 @@ struct FloatingSearchBar: View {
         .animation(unifiedAnimation, value: showSearchBar)
         .animation(unifiedAnimation, value: isAnimatingSearchOpen)
         .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
+        .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                onDeleteSelected()
+            }
+        } message: {
+            Text("Are you sure you want to delete \(selectedItems.count) item\(selectedItems.count > 1 ? "s" : "")? This action cannot be undone.")
+        }
     }
     
     // MARK: - Overlay séparé pour MainView
@@ -227,7 +236,7 @@ struct FloatingSearchBar: View {
                     if selectedItems.isEmpty {
                         onSelectAll()
                     } else {
-                        onDeleteSelected()
+                        showDeleteConfirmation = true
                     }
                 } else {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
