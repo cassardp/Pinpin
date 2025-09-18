@@ -519,26 +519,4 @@ class ShareViewController: UIViewController {
         return nil
     }
     
-    // MARK: - Content Type Detection from Text
-    
-    private func detectContentTypeFromText(_ text: String) -> String {
-        let lowercaseText = text.lowercased()
-        
-        // Détection Apple Books - mots-clés typiques
-        let bookKeywords = [
-            "apple books", "ibooks", "livre", "book", "author", "auteur",
-            "chapter", "chapitre", "page", "isbn", "edition", "édition",
-            "publisher", "éditeur", "novel", "roman", "poetry", "poésie"
-        ]
-        
-        let bookKeywordCount = bookKeywords.filter { lowercaseText.contains($0) }.count
-        
-        // Si plusieurs mots-clés de livre sont présents, c'est probablement un livre
-        if bookKeywordCount >= 2 {
-            return "book"
-        }
-        
-        // Sinon, retourner "text" par défaut
-        return "text"
-    }
 }

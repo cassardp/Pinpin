@@ -60,7 +60,7 @@ final class BackupService: ObservableObject {
             return BackupItem(
                 id: item.id ?? UUID(),
                 userId: item.userId,
-                contentType: item.contentType ?? "webpage",
+                contentType: item.contentType ?? "misc",
                 title: item.title ?? "Untitled",
                 itemDescription: item.itemDescription,
                 url: item.url,
