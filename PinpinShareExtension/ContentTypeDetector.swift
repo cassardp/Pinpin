@@ -27,7 +27,9 @@ class ContentTypeDetector {
         }
         
         if let alts = alternatives, !alts.isEmpty {
-            let altLabels = alts.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            let altLabels = alts.split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .prefix(4) // Limite aux 4 premiers alternatives pour éviter le bruit
             labels.append(contentsOf: altLabels)
         }
         

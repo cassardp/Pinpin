@@ -73,7 +73,13 @@ class VisionLabelMapper {
             "fashion", "style", "runway", "model", "designer", "boutique", "wardrobe"
         ]
         
-        return fashionKeywords.contains { label.contains($0) }
+        return fashionKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isHomeLabel(_ label: String) -> Bool {
@@ -106,7 +112,13 @@ class VisionLabelMapper {
             "stairs", "elevator", "hallway", "corridor", "floor", "ceiling", "wall"
         ]
         
-        return homeKeywords.contains { label.contains($0) }
+        return homeKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isFoodLabel(_ label: String) -> Bool {
@@ -147,7 +159,13 @@ class VisionLabelMapper {
             "mustard", "ketchup", "mayo", "vinegar", "oil"
         ]
         
-        return foodKeywords.contains { label.contains($0) }
+        return foodKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isTravelLabel(_ label: String) -> Bool {
@@ -178,7 +196,13 @@ class VisionLabelMapper {
             "skyline", "street", "avenue", "square", "plaza"
         ]
         
-        return travelKeywords.contains { label.contains($0) }
+        return travelKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isNatureLabel(_ label: String) -> Bool {
@@ -207,7 +231,13 @@ class VisionLabelMapper {
             "rain", "snow", "wind", "fog", "mist", "aurora", "sunset", "sunrise"
         ]
         
-        return natureKeywords.contains { label.contains($0) }
+        return natureKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isTechLabel(_ label: String) -> Bool {
@@ -238,7 +268,13 @@ class VisionLabelMapper {
             "smart", "digital", "virtual", "augmented", "3d_printing"
         ]
         
-        return techKeywords.contains { label.contains($0) }
+        return techKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isArtLabel(_ label: String) -> Bool {
@@ -268,7 +304,13 @@ class VisionLabelMapper {
             "director", "producer", "actor", "scene", "shot", "editing"
         ]
         
-        return artKeywords.contains { label.contains($0) }
+        return artKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isSportsLabel(_ label: String) -> Bool {
@@ -305,13 +347,19 @@ class VisionLabelMapper {
             "jersey", "cleats", "glove", "pad", "goal", "net", "hoop"
         ]
         
-        return sportsKeywords.contains { label.contains($0) }
+        return sportsKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isCarsLabel(_ label: String) -> Bool {
         let carsKeywords = [
             // Véhicules
-            "car", "automobile", "vehicle", "sedan", "coupe", "hatchback", "wagon",
+            "car", "automobile", "vehicle", "machine", "sedan", "coupe", "hatchback", "wagon",
             "suv", "truck", "van", "minivan", "pickup", "convertible", "limousine",
             "sports_car", "race_car", "formula_one", "nascar", "rally",
             
@@ -335,7 +383,13 @@ class VisionLabelMapper {
             "license_plate", "registration", "insurance"
         ]
         
-        return carsKeywords.contains { label.contains($0) }
+        return carsKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isBeautyLabel(_ label: String) -> Bool {
@@ -362,7 +416,13 @@ class VisionLabelMapper {
             "relaxation", "wellness", "beauty_salon", "barber_shop"
         ]
         
-        return beautyKeywords.contains { label.contains($0) }
+        return beautyKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isMediaLabel(_ label: String) -> Bool {
@@ -390,7 +450,13 @@ class VisionLabelMapper {
             "studio", "broadcast", "livestream", "content", "media"
         ]
         
-        return mediaKeywords.contains { label.contains($0) }
+        return mediaKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
     
     private func isKidsLabel(_ label: String) -> Bool {
@@ -422,6 +488,12 @@ class VisionLabelMapper {
             "clown", "magician", "puppet", "costume", "dress_up"
         ]
         
-        return kidsKeywords.contains { label.contains($0) }
+        return kidsKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
     }
 }
