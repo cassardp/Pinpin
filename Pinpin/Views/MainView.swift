@@ -141,7 +141,11 @@ struct MainView: View {
                             Color.clear.frame(height: 0).id("top")
 
                             if filteredItems.isEmpty {
-                                EmptyStateView()
+                                GeometryReader { geometry in
+                                    EmptyStateView()
+                                        .frame(width: geometry.size.width, height: geometry.size.height)
+                                }
+                                .frame(height: UIScreen.main.bounds.height - 150)
                             } else {
                                 VStack(spacing: 0) {
                                     PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
