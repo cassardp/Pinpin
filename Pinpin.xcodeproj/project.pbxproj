@@ -50,7 +50,6 @@
 		4E3E67A32DFC60D900375183 /* Exceptions for "Pinpin" folder in "PinpinShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Models/YOLOv3TinyInt8LUT.mlmodel,
 				Pinpin.xcdatamodeld,
 			);
 			target = 4E19DB772DFC174F00357543 /* PinpinShareExtension */;
