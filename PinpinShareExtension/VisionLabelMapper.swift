@@ -55,8 +55,8 @@ class VisionLabelMapper {
         let genericLabels = [
             "structure", "wood_processed", "liquid", "water", "water_body",
             "material", "container", "object", "item", "thing", "stuff", "conveyance",
-            "housewares", "office_supplies", "tool", "utensil", "equipment", "device",
-            "people", "person", "human", "crowd", "wood_natural", "raw_glass", "textile"
+            "housewares", "office_supplies", "tool", "equipment", "device",
+            "people", "person", "human", "crowd", "wood_natural", "raw_glass", "textile", "adult",
         ]
         
         let normalizedLabel = label.lowercased()
@@ -123,7 +123,7 @@ class VisionLabelMapper {
     private func isFashionLabel(_ label: String) -> Bool {
         let fashionKeywords = [
             // Vêtements
-            "jacket", "jeans", "suit", "dress", "skirt", "hoodie", "coat", "tuxedo", "gown", "robe", "uniform", "apron",
+            "clothing", "jacket", "jeans", "suit", "dress", "skirt", "hoodie", "coat", "tuxedo", "gown", "robe", "uniform", "apron",
             "bathrobe", "kimono", "sari", "kilt", "poncho", "cloak", "leotard", "costume", "wedding_dress",
             "bib", "military_uniform", "lab_coat", "safety_vest", "wetsuit", "swimsuit",
             
@@ -589,7 +589,7 @@ class VisionLabelMapper {
     private func isKidsLabel(_ label: String) -> Bool {
         let kidsKeywords = [
             // Enfants et bébés
-            "baby", "child", "teen", "student", "adult",
+            "baby", "child", "teen", "student",
             
             // Jouets
             "toy", "doll", "blocks", "ball", "balloon", "kite",

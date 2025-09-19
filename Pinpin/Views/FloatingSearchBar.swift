@@ -132,7 +132,7 @@ struct FloatingSearchBar: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(.regularMaterial)
+                    .fill(.thinMaterial)
                     .colorScheme(.dark) // Force le mode sombre pour un look cohérent
                     .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
             )
@@ -231,7 +231,7 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.regularMaterial)
+                            .fill(.thinMaterial)
                             .colorScheme(.dark)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )

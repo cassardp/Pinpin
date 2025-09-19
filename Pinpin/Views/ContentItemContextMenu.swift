@@ -74,7 +74,10 @@ struct ContentItemContextMenu: View {
     /// Vérifie si un label est considéré comme générique (exclu de la classification)
     private func isGenericLabel(_ label: String) -> Bool {
         let genericLabels = [
-            "structure", "wood_processed", "liquid", "water", "water_body", "machine"
+            "structure", "wood_processed", "liquid", "water", "water_body",
+            "material", "container", "object", "item", "thing", "stuff", "conveyance",
+            "housewares", "office_supplies", "tool", "equipment", "device",
+            "people", "person", "human", "crowd", "wood_natural", "raw_glass", "textile", "adult",
         ]
         
         let normalizedLabel = label.lowercased()
