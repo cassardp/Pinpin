@@ -170,12 +170,6 @@ class VisionLabelMapper {
             "curtain", "pillow", "blanket", "decorative_plant",
             "christmas_decoration", "christmas_tree", "light_bulb",
             
-            // Ustensiles et vaisselle
-            "cookware", "pan", "pot", "bowl", "plate", "cup", "mug", "glass", "bottle", "jar",
-            "fork", "knife", "spoon", "chopsticks", "cutting_board", "grater", "whisk",
-            "ladle", "spatula", "corkscrew", "rolling_pin", "steamer_cookware",
-            "tableware", "drinking_glass", "teapot", "cakestand", "decanter",
-            
             // Salle de bain
             "bath", "shower", "bathroom_faucet", "kitchen_faucet", "kitchen_sink", "washbasin", "toilet_seat",
             
@@ -254,7 +248,13 @@ class VisionLabelMapper {
             "spice", "herb", "sugar", "honey", "sauce",
             "mustard", "vinegar", "oil", "condiment", "seasonings",
             "wasabi", "caramel", "sugar_cube", "grain", "quinoa", "wheat", "rice_field",
-            "seaweed", "tapioca_pearls", "taro"
+            "seaweed", "tapioca_pearls", "taro",
+            
+            // Ustensiles et vaisselle de cuisine
+            "cookware", "pan", "pot", "bowl", "plate", "cup", "mug", "glass", "bottle", "jar",
+            "fork", "knife", "spoon", "chopsticks", "cutting_board", "grater", "whisk",
+            "ladle", "spatula", "corkscrew", "rolling_pin", "steamer_cookware",
+            "tableware", "drinking_glass", "teapot", "cakestand", "decanter"
         ]
         
         return foodKeywords.contains { keyword in
