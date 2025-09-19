@@ -6,6 +6,13 @@
 //
 
 import Foundation
+import UIKit
+
+enum ThemeMode: String, CaseIterable {
+    case system = "system"
+    case dark = "dark"
+    case light = "light"
+}
 
 class UserPreferences: ObservableObject {
     static let shared = UserPreferences()
@@ -22,10 +29,23 @@ class UserPreferences: ObservableObject {
         }
     }
     
-    @Published var forceDarkMode: Bool {
+    @Published var themeMode: ThemeMode {
         didSet {
-            UserDefaults.standard.set(forceDarkMode, forKey: "forceDarkMode")
-            ThemeManager.shared.handleTheme(forceDarkMode: forceDarkMode)
+            UserDefaults.standard.set(themeMode.rawValue, forKey: "themeMode")
+            ThemeManager.shared.handleTheme(themeMode: themeMode)
+        }
+    }
+    
+    // Propriété computed pour compatibilité avec l'interface
+    var forceDarkMode: Bool {
+        get { themeMode != .system }
+        set { 
+            if newValue {
+                // Si on active, on détermine le mode à forcer selon le mode système actuel
+                themeMode = getCurrentSystemScheme() == .dark ? .light : .dark
+            } else {
+                themeMode = .system
+            }
         }
     }
     
@@ -38,10 +58,27 @@ class UserPreferences: ObservableObject {
     private init() {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
-        self.forceDarkMode = UserDefaults.standard.bool(forKey: "forceDarkMode")
         self.devMode = UserDefaults.standard.bool(forKey: "devMode")
         
+        // Migration de l'ancien système
+        if let savedTheme = UserDefaults.standard.string(forKey: "themeMode"),
+           let themeMode = ThemeMode(rawValue: savedTheme) {
+            self.themeMode = themeMode
+        } else {
+            // Migration depuis l'ancien forceDarkMode
+            let oldForceDarkMode = UserDefaults.standard.bool(forKey: "forceDarkMode")
+            self.themeMode = oldForceDarkMode ? .dark : .system
+        }
+        
         // Appliquer le thème au démarrage
-        ThemeManager.shared.handleTheme(forceDarkMode: self.forceDarkMode)
+        ThemeManager.shared.handleTheme(themeMode: self.themeMode)
+    }
+    
+    private func getCurrentSystemScheme() -> UIUserInterfaceStyle {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            return window.traitCollection.userInterfaceStyle
+        }
+        return .unspecified
     }
 }

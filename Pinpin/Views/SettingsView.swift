@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Binding var isSwipingHorizontally: Bool
     @StateObject private var userPreferences = UserPreferences.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showingBackupManagement: Bool = false
     
     var body: some View {
@@ -44,7 +45,7 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsToggleRow(
-                        title: "Force Dark mode",
+                        title: colorScheme == .dark ? "Force Light Mode" : "Force Dark Mode",
                         subtitle: "",
                         isOn: $userPreferences.forceDarkMode
                     )
@@ -57,7 +58,7 @@ struct SettingsView: View {
 
                     SettingsToggleRow(
                         title: "Dev Mode",
-                        subtitle: "Show Vision Analysis in context menu",
+                        subtitle: "",
                         isOn: $userPreferences.devMode
                     )
 
