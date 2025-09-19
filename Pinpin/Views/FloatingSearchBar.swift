@@ -45,7 +45,6 @@ struct FloatingSearchBar: View {
                     .transition(.opacity)
             }
         }
-        .padding(.horizontal, 16)
         .padding(.bottom, bottomPadding)
         .opacity(1 - menuSwipeProgress) // Seulement le menu affecte l'opacity
         .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2)) // Pas de scale en mode sélection
@@ -91,46 +90,55 @@ struct FloatingSearchBar: View {
         }
     }
 
+
     // MARK: - SearchBar
     private var searchBar: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.primary)
+        VStack(spacing: 0) {
+            // Capsules de recherche prédéfinies (sans padding horizontal)
+            PredefinedSearchView(searchQuery: $searchQuery, onSearchSelected: dismissSearch)
+            
+            // Barre de recherche principale (avec padding horizontal)
+            HStack(spacing: 12) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
 
-            ZStack(alignment: .leading) {
-                if searchQuery.isEmpty {
-                    Text(placeholderText)
+                ZStack(alignment: .leading) {
+                    if searchQuery.isEmpty {
+                        Text(placeholderText)
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+                    TextField("", text: $searchQuery)
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(.primary.opacity(0.5))
+                        .foregroundColor(.white)
                 }
-                TextField("", text: $searchQuery)
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundColor(.primary)
-            }
-                .focused($isSearchFocused)
-                .textFieldStyle(.plain)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
-                .submitLabel(.search)
-                .onSubmit { dismissSearch() }
+                    .focused($isSearchFocused)
+                    .textFieldStyle(.plain)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .submitLabel(.search)
+                    .onSubmit { dismissSearch() }
 
-            if !searchQuery.isEmpty {
-                Button { searchQuery = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.primary)
+                if !searchQuery.isEmpty {
+                    Button { searchQuery = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                    }
                 }
             }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.regularMaterial)
+                    .colorScheme(.dark) // Force le mode sombre pour un look cohérent
+                    .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
+            )
+            .padding(.bottom, 12)
+            .padding(.horizontal, 16) // Padding pour la barre de recherche seulement
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 28)
-                .fill(.thinMaterial)
-                .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-        )
-        .padding(.bottom, 12)
     }
 
     // MARK: - Row compacte
@@ -196,15 +204,15 @@ struct FloatingSearchBar: View {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 16))
-                            .foregroundColor(Color(.systemBackground))
+                            .foregroundColor(.white)
                         Text(searchQuery)
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(Color(.systemBackground))
+                            .foregroundColor(.white)
                             .lineLimit(1)
                             .truncationMode(.tail)
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(Color(.systemBackground))
+                            .foregroundColor(.white)
                             .onTapGesture {
                                 // Restaurer la barre à sa taille normale
                                 onRestoreBar()
@@ -223,7 +231,8 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(Color(.label))
+                            .fill(.regularMaterial)
+                            .colorScheme(.dark)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 }
@@ -286,6 +295,7 @@ struct FloatingSearchBar: View {
 
             Spacer()
         }
+        .padding(.horizontal, 16) // Padding pour les contrôles seulement
     }
 
     // MARK: - Helper

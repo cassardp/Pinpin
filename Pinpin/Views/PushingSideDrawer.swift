@@ -12,6 +12,7 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
     @Binding var isOpen: Bool
     @Binding var swipeProgress: CGFloat
     var width: CGFloat = 320
+    var isSwipeDisabled: Bool = false // Nouveau paramètre pour désactiver le swipe
     @ViewBuilder var content: () -> Content
     @ViewBuilder var drawer: () -> Drawer
 
@@ -69,6 +70,9 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        // Ne pas traiter le swipe si désactivé
+                        guard !isSwipeDisabled else { return }
+                        
                         let dx = value.translation.width
                         let dy = value.translation.height
                         
@@ -99,6 +103,9 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         }
                     }
                     .onEnded { value in
+                        // Ne pas traiter la fin du swipe si désactivé
+                        guard !isSwipeDisabled else { return }
+                        
                         let dx = value.translation.width
                         
                         defer { 

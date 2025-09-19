@@ -112,7 +112,8 @@ struct MainView: View {
         PushingSideDrawer(
             isOpen: $isMenuOpen,
             swipeProgress: $menuSwipeProgress,
-            width: UIScreen.main.bounds.width * 0.8
+            width: UIScreen.main.bounds.width * 0.8,
+            isSwipeDisabled: showSearchBar // Désactiver le swipe en mode recherche
         ) {
             // Contenu principal
             ZStack {
