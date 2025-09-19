@@ -188,8 +188,8 @@ struct FloatingSearchBar: View {
                             .font(.system(size: 17, weight: .medium))
                             .foregroundColor(.primary)
                     }
+                    .frame(height: 48)
                     .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
                     .contentTransition(.opacity)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.98)),
@@ -222,8 +222,8 @@ struct FloatingSearchBar: View {
                                 }
                             }
                     }
+                    .frame(height: 48)
                     .padding(.horizontal, 22)
-                    .padding(.vertical, 12)
                     .contentTransition(.opacity)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.98)),

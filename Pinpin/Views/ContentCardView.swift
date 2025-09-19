@@ -13,6 +13,8 @@ struct ContentCardView: View {
     var body: some View {
         if isTikTokContent {
             tiktokContentView
+        } else if shouldUseSquareFormat {
+            squareContentView
         } else {
             standardContentView
         }
@@ -24,6 +26,18 @@ struct ContentCardView: View {
         VStack(alignment: .leading) {
             Rectangle()
                 .aspectRatio(9/16, contentMode: .fit)
+                .overlay(
+                    SmartAsyncImage(item: item)
+                        .aspectRatio(contentMode: .fill)
+                        .clipped()
+                )
+        }
+    }
+    
+    private var squareContentView: some View {
+        VStack(alignment: .leading) {
+            Rectangle()
+                .aspectRatio(1.0, contentMode: .fit)
                 .overlay(
                     SmartAsyncImage(item: item)
                         .aspectRatio(contentMode: .fill)
@@ -45,5 +59,9 @@ struct ContentCardView: View {
     private var isTikTokContent: Bool {
         guard let url = item.url else { return false }
         return url.contains("tiktok.com") || url.contains("vm.tiktok.com")
+    }
+    
+    private var shouldUseSquareFormat: Bool {
+        return item.contentTypeEnum == .books || item.contentTypeEnum == .music
     }
 }

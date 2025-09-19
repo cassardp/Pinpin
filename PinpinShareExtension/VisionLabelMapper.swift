@@ -438,7 +438,7 @@ class VisionLabelMapper {
             // Parties de véhicules
             "engine", "tire", "wheel", "rim", "dashboard", "engine_vehicle", "propeller", "car_seat",
             
-            // Transport et circulation
+             // Transport et circulation
             "traffic", "road", "highway", "street", "parking", "garage", "license_plate",
             "traffic_light", "parking_lot", "hydrant", "road_safety_equipment",
             

@@ -75,16 +75,15 @@ class URLDomainMapper {
     private func isShowDomain(_ urlString: String) -> Bool {
         let showDomains = [
             // Vidéo et streaming
-            "youtube.com", "netflix.com", "primevideo.com", "disneyplus.com",
+            "netflix.com", "primevideo.com", "disneyplus.com",
             "hulu.com", "hbo.com", "paramount.com", "peacocktv.com",
-            "twitch.tv", "vimeo.com", "dailymotion.com",
+            "vimeo.com", "themoviedb.org",
             
             // TV et médias audiovisuels
             "tf1.fr", "france.tv", "6play.fr", "canalplus.com",
-            "arte.tv", "bfmtv.com", "lci.fr",
+            "arte.tv", "bfmtv.com", "lci.fr", "canalplus.fr",
             
-            // Gaming et divertissement
-            "steam.com", "epicgames.com", "twitch.tv", "discord.com"
+
         ]
         
         return showDomains.contains { urlString.contains($0) }
