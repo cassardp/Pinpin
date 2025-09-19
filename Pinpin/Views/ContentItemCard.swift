@@ -181,18 +181,19 @@ struct ContentItemCard: View {
     
     private var categoryColor: Color {
         switch item.contentTypeEnum {
-        case .fashion: return .pink
         case .home: return .brown
+        case .fashion: return .pink
         case .food: return .orange
-        case .travel: return .blue
-        case .nature: return .green
         case .tech: return .purple
-        case .art: return .indigo
-        case .sports: return .red
-        case .cars: return .gray
         case .beauty: return .pink
-        case .media: return .cyan
-        case .kids: return .yellow
+        case .books: return .cyan
+        case .music: return .purple
+        case .show: return .indigo
+        case .sports: return .red
+        case .outdoor: return .blue
+        case .animals: return .green
+        case .cars: return .gray
+        case .art: return .indigo
         case .misc: return .secondary
         }
     }

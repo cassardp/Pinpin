@@ -12,7 +12,7 @@ struct PredefinedSearchView: View {
     // Recherches préenregistrées populaires (fallback)
     private let fallbackSearches = [
         "photos", "videos", "articles", "links", "documents", 
-        "recipes", "travel", "shopping", "books", "music",
+        "recipes", "outdoor", "shopping", "books", "music",
         "work", "ideas", "inspiration", "tutorials", "news"
     ]
     

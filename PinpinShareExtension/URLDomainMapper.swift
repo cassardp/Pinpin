@@ -22,51 +22,77 @@ class URLDomainMapper {
         let urlString = url.absoluteString.lowercased()
         
         // Vérifier chaque catégorie dans l'ordre de priorité
-        if isMediaDomain(urlString) { return "media" }
-        if isTravelDomain(urlString) { return "travel" }
-        if isTechDomain(urlString) { return "tech" }
-        if isFashionDomain(urlString) { return "fashion" }
         if isHomeDomain(urlString) { return "home" }
+        if isFashionDomain(urlString) { return "fashion" }
         if isFoodDomain(urlString) { return "food" }
+        if isTechDomain(urlString) { return "tech" }
         if isBeautyDomain(urlString) { return "beauty" }
+        if isBooksDomain(urlString) { return "books" }
+        if isMusicDomain(urlString) { return "music" }
+        if isShowDomain(urlString) { return "show" }
         if isSportsDomain(urlString) { return "sports" }
+        if isOutdoorDomain(urlString) { return "outdoor" }
+        if isAnimalsDomain(urlString) { return "animals" }
         if isCarsDomain(urlString) { return "cars" }
         if isArtDomain(urlString) { return "art" }
-        if isNatureDomain(urlString) { return "nature" }
-        if isKidsDomain(urlString) { return "kids" }
         
         return "misc"
     }
     
     // MARK: - Private Domain Detection Methods
     
-    private func isMediaDomain(_ urlString: String) -> Bool {
-        let mediaDomains = [
-            // Vidéo et streaming
-
-            
-            // Audio et musique
-            "spotify.com", "apple.com/music", "music.apple.com", "deezer.com",
-            "soundcloud.com", "bandcamp.com", "mixcloud.com",
-            
+    private func isBooksDomain(_ urlString: String) -> Bool {
+        let booksDomains = [
             // Livres et lecture
             "books.apple.com", "itunes.apple.com/book", "audible.com",
-            "kindle.amazon", "goodreads.com", "scribd.com",
+            "kindle.amazon", "goodreads.com", "scribd.com", "kobo.com",
+            "fnac.com/livre", "amazon.fr/livres", "decitre.fr", "cultura.com",
+            
+            // News et médias écrits
+            "lemonde.fr", "lefigaro.fr", "liberation.fr", "20minutes.fr",
+            "franceinfo.fr", "bbc.com/news", "cnn.com", "nytimes.com",
+            "theguardian.com", "reuters.com", "apnews.com"
+        ]
+        
+        return booksDomains.contains { urlString.contains($0) }
+    }
+    
+    private func isMusicDomain(_ urlString: String) -> Bool {
+        let musicDomains = [
+            // Audio et musique
+            "spotify.com", "apple.com/music", "music.apple.com", "deezer.com",
+            "soundcloud.com", "bandcamp.com", "mixcloud.com", "tidal.com",
+            "youtube.com/music", "pandora.com", "last.fm",
             
             // Podcasts
             "podcasts.apple.com", "overcast.fm", "pocketcasts.com",
-            
-            // News et médias
-            "lemonde.fr", "lefigaro.fr", "liberation.fr", "20minutes.fr",
-            "franceinfo.fr", "bfmtv.com", "cnn.com", "bbc.com"
+            "anchor.fm", "castbox.fm"
         ]
         
-        return mediaDomains.contains { urlString.contains($0) }
+        return musicDomains.contains { urlString.contains($0) }
     }
     
-    private func isTravelDomain(_ urlString: String) -> Bool {
-        let travelDomains = [
-            // Hébergement
+    private func isShowDomain(_ urlString: String) -> Bool {
+        let showDomains = [
+            // Vidéo et streaming
+            "youtube.com", "netflix.com", "primevideo.com", "disneyplus.com",
+            "hulu.com", "hbo.com", "paramount.com", "peacocktv.com",
+            "twitch.tv", "vimeo.com", "dailymotion.com",
+            
+            // TV et médias audiovisuels
+            "tf1.fr", "france.tv", "6play.fr", "canalplus.com",
+            "arte.tv", "bfmtv.com", "lci.fr",
+            
+            // Gaming et divertissement
+            "steam.com", "epicgames.com", "twitch.tv", "discord.com"
+        ]
+        
+        return showDomains.contains { urlString.contains($0) }
+    }
+    
+    private func isOutdoorDomain(_ urlString: String) -> Bool {
+        let outdoorDomains = [
+            // Hébergement et voyage
             "airbnb.com", "booking.com", "expedia.com", "hotels.com",
             "trivago.com", "agoda.com", "hostelworld.com",
             
@@ -83,10 +109,18 @@ class URLDomainMapper {
             
             // Activités et guides
             "tripadvisor.com", "getyourguide.com", "viator.com",
-            "klook.com", "civitatis.com"
+            "klook.com", "civitatis.com",
+            
+            // Parcs et nature
+            "parcsnationaux.fr", "reserves-naturelles.org",
+            "nationalgeographic.com", "wwf.org",
+            
+            // Activités outdoor
+            "campingfrance.com", "gites-de-france.com", "outdooractive.com",
+            "alltrails.com", "komoot.com"
         ]
         
-        return travelDomains.contains { urlString.contains($0) }
+        return outdoorDomains.contains { urlString.contains($0) }
     }
     
     private func isTechDomain(_ urlString: String) -> Bool {
@@ -114,22 +148,37 @@ class URLDomainMapper {
         let fashionDomains = [
             // Fast fashion
             "zara.com", "hm.com", "uniqlo.com", "mango.com", "gap.com",
+            "cos.com", "weekday.com", "stories.com", "monki.com",
             
             // Sport et streetwear
             "nike.com", "adidas.com", "puma.com", "reebok.com", "vans.com",
-            "converse.com", "newbalance.com",
+            "converse.com", "newbalance.com", "fila.com", "champion.com",
+            "supremenewyork.com", "stussy.com", "kith.com",
             
             // E-commerce mode
             "zalando.com", "asos.com", "boohoo.com", "prettylittlething.com",
-            "shein.com", "aliexpress.com/category/fashion",
+            "shein.com", "aliexpress.com/category/fashion", "aboutyou.com",
+            "farfetch.com", "ssense.com", "net-a-porter.com", "mrporter.com",
+            "matchesfashion.com", "mytheresa.com", "24s.com",
             
             // Seconde main
             "vinted.com", "vestiairecollective.com", "therealreal.com",
-            "rebag.com", "fashionphile.com",
+            "rebag.com", "fashionphile.com", "depop.com", "poshmark.com",
+            "thredup.com", "tradesy.com",
             
             // Mode française
             "galerieslafayette.com", "printemps.com", "3suisses.fr",
-            "laredoute.fr", "kiabi.com"
+            "laredoute.fr", "kiabi.com", "celio.com", "jules.com",
+            "promod.fr", "camaieu.fr", "etam.com", "undiz.com",
+            
+            // Marques de luxe
+            "chanel.com", "dior.com", "louisvuitton.com", "hermes.com",
+            "gucci.com", "prada.com", "versace.com", "armani.com",
+            "balenciaga.com", "bottegaveneta.com", "saintlaurent.com",
+            
+            // Marques contemporaines
+            "cosstores.com", "acnestudios.com", "ganni.com", "staud.clothing",
+            "reformation.com", "everlane.com", "aritzia.com"
         ]
         
         return fashionDomains.contains { urlString.contains($0) }
@@ -139,19 +188,36 @@ class URLDomainMapper {
         let homeDomains = [
             // Ameublement
             "ikea.com", "conforama.com", "but.fr", "maisons-du-monde.com",
-            "westwing.com", "made.com", "habitat.fr",
+            "westwing.com", "made.com", "habitat.fr", "roche-bobois.com",
+            "ligne-roset.com", "poltronesofa.com", "fly.fr", "alinea.com",
+            "la-redoute.fr/maison", "ampm.fr",
             
             // Bricolage et jardinage
             "leroymerlin.com", "castorama.com", "bricomarche.com",
             "truffaut.com", "jardiland.com", "gamm-vert.com",
+            "bricodepot.fr", "pointp.fr", "weldom.fr", "mr-bricolage.fr",
             
             // Décoration
             "ampm.fr", "laredoute.fr/maison", "maisonsdumonde.com",
-            "zarahome.com", "hmhome.com",
+            "zarahome.com", "hmhome.com", "bensimon.com", "am-pm.fr",
+            "petitfurnish.com", "kave.fr", "drawer.fr", "made-in-design.com",
+            "designerbox.com", "madeindesign.com", "silvera.fr",
             
-            // E-commerce maison
+            // Linge de maison
+            "linvosges.com", "descamps.com", "blanc-cerise.com",
+            "tradition-des-vosges.fr", "sylvie-thiriez.com", "lexington.com",
+            
+            // Cuisine et électroménager
+            "darty.com", "boulanger.com", "electrodepot.fr", "ubaldi.com",
+            "cuisinella.com", "schmidt.fr", "ixina.fr", "arthur-bonnet.com",
+            
+            // Luminaires
+            "luminaire.fr", "lampeetlumiere.fr", "lightonline.fr",
+            "keria.com", "artemide.com", "flos.com",
+            
+            // E-commerce maison spécialisé
             "amazon.com/home", "amazon.fr/maison", "cdiscount.com/maison",
-            "fnac.com/maison"
+            "fnac.com/maison", "rue-du-commerce.com/maison"
         ]
         
         return homeDomains.contains { urlString.contains($0) }
@@ -186,17 +252,37 @@ class URLDomainMapper {
         let beautyDomains = [
             // Parfumeries
             "sephora.com", "douglas.fr", "nocibe.fr", "marionnaud.fr",
-            "origines-parfums.com",
+            "origines-parfums.com", "ici-paris-xl.fr", "galimard.com",
+            "fragonard.com", "guerlain.com", "parfumsdemarly.com",
             
-            // Marques beauté
-            "yves-rocher.fr", "loccitane.com", "kiehls.com", "clinique.com",
-            "lancome.com", "chanel.com", "dior.com",
+            // Marques beauté françaises
+            "yves-rocher.fr", "loccitane.com", "nuxe.com", "caudalie.com",
+            "clarins.com", "payot.com", "lierac.com", "vichy.fr",
+            "laroche-posay.fr", "avene.fr", "bioderma.fr",
+            
+            // Marques beauté internationales
+            "kiehls.com", "clinique.com", "lancome.com", "chanel.com", "dior.com",
+            "esteelauder.com", "shiseido.com", "sk-ii.com", "tomford.com",
+            "charlottechampagne.com", "fenty.com", "rarebeauty.com",
+            "glossier.com", "drunk-elephant.com", "theordinary.com",
             
             // Parapharmacie
             "pharmacie-lafayette.com", "pharmasimple.com", "newpharma.fr",
+            "parapharmacie-leclerc.fr", "parapharmacie-monge.com",
+            "pharma-gdd.com", "1001pharmacies.com",
             
-            // Beauté en ligne
-            "feelunique.com", "lookfantastic.com", "beautybay.com"
+            // Beauté en ligne spécialisée
+            "feelunique.com", "lookfantastic.com", "beautybay.com",
+            "cultbeauty.com", "spacenk.com", "beautylish.com",
+            "birchbox.com", "ipsy.com", "glossybox.com",
+            
+            // Coiffure et soins capillaires
+            "kerastase.com", "lorealprofessionnel.com", "schwarzkopf.com",
+            "redken.com", "matrix.com", "wella.com", "olaplex.com",
+            
+            // Parfums de niche
+            "lartisan-parfumeur.com", "diptyqueparis.com", "maisonmargiela.com/fragrances",
+            "creed.com", "tomford.com/beauty", "byredo.com", "lemabo.fr"
         ]
         
         return beautyDomains.contains { urlString.contains($0) }
@@ -252,32 +338,23 @@ class URLDomainMapper {
         return artDomains.contains { urlString.contains($0) }
     }
     
-    private func isNatureDomain(_ urlString: String) -> Bool {
-        let natureDomains = [
-            // Parcs et nature
-            "parcsnationaux.fr", "reserves-naturelles.org",
-            "nationalgeographic.com", "wwf.org",
+    private func isAnimalsDomain(_ urlString: String) -> Bool {
+        let animalsDomains = [
+            // Jardinage et plantes
+            "rustica.fr", "gerbeaud.com", "promessedefleurs.com",
+            "truffaut.com", "jardiland.com", "gamm-vert.com",
             
-            // Jardinage
-            "rustica.fr", "gerbeaud.com", "promessedefleurs.com"
+            // Animaux domestiques
+            "zooplus.fr", "wanimo.com", "animalis.com", "maxi-zoo.fr",
+            "petco.com", "petsmart.com",
+            
+            // Vétérinaire et santé animale
+            "veterinairedegarde.fr", "santevet.com",
+            
+            // Zoos et parcs animaliers
+            "zoobeauval.com", "zoo-vincennes.fr", "parczoologique.fr"
         ]
         
-        return natureDomains.contains { urlString.contains($0) }
-    }
-    
-    private func isKidsDomain(_ urlString: String) -> Bool {
-        let kidsDomains = [
-            // Jouets
-            "toysrus.fr", "king-jouet.com", "oxybul.com", "fnac.com/jeux-jouets",
-            "amazon.fr/jouets",
-            
-            // Vêtements enfants
-            "jacadi.fr", "petit-bateau.fr", "okaidi.fr", "vertbaudet.fr",
-            
-            // Éducation
-            "maxicours.com", "kartable.fr", "schoolmouv.fr"
-        ]
-        
-        return kidsDomains.contains { urlString.contains($0) }
+        return animalsDomains.contains { urlString.contains($0) }
     }
 }

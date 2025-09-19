@@ -2,7 +2,7 @@
 //  VisionLabelMapper.swift
 //  PinpinShareExtension
 //
-//  Mapper intelligent des 1300+ labels Vision vers les nouvelles catégories
+//  Mapper intelligent des 1393 labels Vision vers les nouvelles catégories
 //
 
 import Foundation
@@ -20,18 +20,19 @@ class VisionLabelMapper {
         let normalizedLabel = label.lowercased()
         
         // Ordre de priorité pour éviter les conflits
-        if isFashionLabel(normalizedLabel) { return "fashion" }
         if isHomeLabel(normalizedLabel) { return "home" }
+        if isFashionLabel(normalizedLabel) { return "fashion" }
         if isFoodLabel(normalizedLabel) { return "food" }
-        if isTravelLabel(normalizedLabel) { return "travel" }
-        if isNatureLabel(normalizedLabel) { return "nature" }
         if isTechLabel(normalizedLabel) { return "tech" }
-        if isArtLabel(normalizedLabel) { return "art" }
-        if isSportsLabel(normalizedLabel) { return "sports" }
-        if isCarsLabel(normalizedLabel) { return "cars" }
         if isBeautyLabel(normalizedLabel) { return "beauty" }
-        if isMediaLabel(normalizedLabel) { return "media" }
-        if isKidsLabel(normalizedLabel) { return "kids" }
+        if isBooksLabel(normalizedLabel) { return "books" }
+        if isMusicLabel(normalizedLabel) { return "music" }
+        if isShowLabel(normalizedLabel) { return "show" }
+        if isSportsLabel(normalizedLabel) { return "sports" }
+        if isOutdoorLabel(normalizedLabel) { return "outdoor" }
+        if isAnimalsLabel(normalizedLabel) { return "animals" }
+        if isCarsLabel(normalizedLabel) { return "cars" }
+        if isArtLabel(normalizedLabel) { return "art" }
         
         return "misc" // Fallback
     }
@@ -133,9 +134,14 @@ class VisionLabelMapper {
             
             // Accessoires
             "hat", "beanie", "fedora", "cowboy_hat", "sunhat", "sombrero", "tiara", "helmet",
+            "baseball_hat", "hardhat", "headgear",
             "bag", "purse", "backpack", "briefcase", "suitcase", "luggage", "wallet",
             "jewelry", "watch", "bowtie", "necktie", "scarf", "glove", "mitten", "sock", "earmuffs",
-            "sunglasses", "eyeglasses", "goggles", "mask", "gas_mask"
+            "glove_other", "footwear",
+            "sunglasses", "eyeglasses", "goggles", "mask", "gas_mask",
+            
+            // Mariages et événements
+            "bride", "bridesmaid", "groom"
         ]
         
         return fashionKeywords.contains { keyword in
@@ -168,15 +174,28 @@ class VisionLabelMapper {
             "lamp", "light", "chandelier", "candle", "candlestick", "mirror", "frame",
             "vase", "plant", "flower", "bouquet", "decoration", "ornament", "wreath",
             "curtain", "pillow", "blanket", "decorative_plant",
-            "christmas_decoration", "christmas_tree", "light_bulb",
+            "christmas_decoration", "christmas_tree", "light_bulb", "decoration",
             
             // Salle de bain
             "bath", "shower", "bathroom_faucet", "kitchen_faucet", "kitchen_sink", "washbasin", "toilet_seat",
             
             // Maison générale
             "house", "home", "apartment", "building", "door", "window", "roof", "chimney",
-            "stairs", "elevator", "floor", "ceiling", "wall", "house_single",
-            "domicile", "kitchen_countertop", "fireplace", "mailbox", "manhole"
+            "stairs", "elevator", "escalator", "floor", "ceiling", "wall", "house_single",
+            "domicile", "kitchen_countertop", "fireplace", "mailbox", "manhole",
+            "dining_room", "interior_shop",
+            
+            // Rangement et nettoyage
+            "basket_container", "bedding", "broom", "bucket", "cardboard_box", "clothesline", "clothespin",
+            "crate", "flashlight", "hammock", "mop", "mousetrap", "paper_bag", "pole", "pool",
+            "sack", "shed", "stove", "trash_can", "umbrella", "watering_can", "wheelbarrow",
+            "carton", "sprinkler",
+            
+            // Sécurité et éclairage
+            "extinguisher", "lamppost",
+            
+            // Décoration florale
+            "flower_arrangement"
         ]
         
         return homeKeywords.contains { keyword in
@@ -254,121 +273,15 @@ class VisionLabelMapper {
             "cookware", "pan", "pot", "bowl", "plate", "cup", "mug", "glass", "bottle", "jar",
             "fork", "knife", "spoon", "chopsticks", "cutting_board", "grater", "whisk",
             "ladle", "spatula", "corkscrew", "rolling_pin", "steamer_cookware",
-            "tableware", "drinking_glass", "teapot", "cakestand", "decanter"
+            "tableware", "drinking_glass", "teapot", "cakestand", "decanter", "pot_cooking",
+            
+            // Spécialités culinaires
+            "baklava", "coffee_bean", "keg", "lollipop", "oranges", "pastry", "pickle",
+            "ramen", "rhubarb", "salami", "steak", "straw_drinking", "wine_bottle",
+            "candy_cane", "candy_other"
         ]
         
         return foodKeywords.contains { keyword in
-            // Correspondance exacte ou avec séparateurs
-            label == keyword || 
-            label.hasPrefix(keyword + " ") || 
-            label.hasSuffix(" " + keyword) || 
-            label.contains(" " + keyword + " ")
-        }
-    }
-    
-    private func isTravelLabel(_ label: String) -> Bool {
-        let travelKeywords = [
-            // Transport
-            "airplane", "aircraft", "helicopter",
-            "train", "station", "bus", "taxi",
-            "ship", "boat", "yacht", "sailboat", "speedboat",
-            "car", "highway", "road", "bridge", "tunnel", "airport", "airshow",
-            "train_real", "train_station", "cruise_ship", "barge", "houseboat", "warship",
-            "rickshaw", "streetcar", "tramway", "monorail", "cableway", "chairlift",
-            
-            // Lieux touristiques
-            "landmark", "monument", "castle", "palace", "temple", "church", "cathedral",
-            "museum", "gallery", "theater", "opera", "stadium", "arena", "park",
-            "beach", "island", "mountain", "volcano", "canyon", "desert", "forest",
-            "lake", "river", "waterfall", "glacier", "cave", "shore", "harbour",
-            "lighthouse", "pier", "dock", "belltower", "clock_tower", "tower",
-            "ruins", "megalith", "obelisk", "pyramid", "statue", "gargoyle",
-            
-            // Activités voyage
-            "map", "compass", "binoculars",
-            "camera", "luggage", "suitcase", "backpack", "passport", "ticket",
-            
-            // Villes et pays
-            "city", "town", "village", "skyline", "street", "square", "plaza", "cityscape", "alley",
-            "crosswalk", "sidewalk", "driveway", "path", "trail", "dirt_road", "road_other"
-        ]
-        
-        return travelKeywords.contains { keyword in
-            // Correspondance exacte ou avec séparateurs
-            label == keyword || 
-            label.hasPrefix(keyword + " ") || 
-            label.hasSuffix(" " + keyword) || 
-            label.contains(" " + keyword + " ")
-        }
-    }
-    
-    private func isNatureLabel(_ label: String) -> Bool {
-        let natureKeywords = [
-            // Animaux domestiques
-            "animal", "mammal", "bird", "fish", "reptile", "insect", "spider",
-            "cat", "dog", "horse", "cow", "pig", "sheep", "goat", "rabbit", "deer",
-            "adult_cat", "kitten", "canine", "feline", "poultry",
-            
-            // Races de chiens
-            "australian_shepherd", "basenji", "basset", "beagle", "bernese_mountain", "bichon",
-            "bulldog", "chihuahua", "collie", "corgi", "dachshund", "dalmatian", "doberman",
-            "german_shepherd", "golden_retriever", "greyhound", "husky", "irish_wolfhound",
-            "jack_russell_terrier", "malamute", "malinois", "mastiff", "newfoundland",
-            "pitbull", "pomeranian", "poodle", "pug", "retriever", "rottweiler",
-            "saint_bernard", "schnauzer", "setter", "sheepdog", "spaniel", "terrier",
-            "vizsla", "weimaraner", "hound",
-            
-            // Animaux sauvages
-            "bear", "wolf", "fox", "lion", "tiger", "elephant", "giraffe", "zebra",
-            "monkey", "gorilla", "kangaroo", "koala",
-            "panda", "penguin", "dolphin", "whale", "shark", "turtle", "snake", "lizard",
-            "frog", "toad", "butterfly", "bee", "ant", "dragonfly", "moth",
-            "alligator_crocodile", "bison", "boar", "bobcat", "camel", "caterpillar",
-            "centipede", "chameleon", "cheetah", "chinchilla", "cougar", "coyote_wolf",
-            "donkey", "eagle", "elk", "ferret", "flamingo", "gecko", "gerbil",
-            "hamster", "hedgehog", "heron", "hippopotamus", "hyena", "iguana",
-            "lemur", "leopard", "llama", "lynx", "moose", "ostrich", "otter",
-            "owl", "parakeet", "parrot", "peacock", "pelican", "peregrine", "pigeon",
-            "porcupine", "prairie_dog", "puffin", "python", "raccoon", "rat",
-            "rattlesnake", "raven", "rhinoceros", "scorpion", "seal", "sealion",
-            "skunk", "snake_other", "sparrow", "squirrel", "stork", "swan",
-            "tortoise", "toucan", "vulture", "walrus", "woodpecker",
-            
-            // Animaux marins
-            "cetacean", "cephalopod", "gastropod", "mollusk", "angelfish", "clownfish",
-            "goldfish", "guppy", "koi", "lionfish", "puffer_fish", "seahorse",
-            "starfish", "stingray", "sunfish", "swordfish", "barnacle", "conch",
-            "crab", "jellyfish", "seashell", "urchin", "coral_reef",
-            
-            // Arthropodes et autres
-            "arachnid", "arthropods", "ladybug", "millipede", "scarab", "snail",
-            "spider", "spiderweb", "worm", "ant", "cockroach", "cricket_sport",
-            
-            // Plantes et arbres
-            "plant", "tree", "flower", "grass", "leaf", "branch", "cactus", "fern", "moss",
-            "rose", "tulip", "daisy", "sunflower", "lily", "orchid", "carnation",
-            "oak_tree", "palm_tree", "maple_tree", "eucalyptus_tree", "evergreen",
-            "sequoia", "willow", "bonsai", "ivy", "mangrove", "vegetation", "foliage",
-            "blossom", "clover", "dandelion", "holly", "mistletoe", "poinsettia",
-            "begonia", "chrysanthemum", "cornflower", "daffodil", "dahlia",
-            "marigold", "petunia", "snapdragon", "ferns", "shrub",
-            
-            // Environnement naturel
-            "nature", "wilderness", "forest", "jungle", "field",
-            "mountain", "hill", "canyon", "cliff", "rock", "stone", "rocks",
-            "beach", "shore", "ocean", "sea", "lake", "river", "waterfall",
-            "desert", "glacier", "iceberg", "volcano", "geyser", "cave", "outdoor",
-            "land", "orchard", "vineyard", "wetland", "sand", "sand_dune", "creek",
-            "waterways", "water_body", "underwater", "lava", "embers",
-            
-            // Météo et ciel
-            "sky", "cloud", "sun", "moon", "star", "rainbow", "lightning", "storm",
-            "snow", "aurora", "blue_sky", "night_sky", "celestial_body", "celestial_body_other",
-            "cloudy", "daytime", "haze", "blizzard", "thunderstorm", "tornado",
-            "sunset_sunrise", "ice", "iceberg", "snowball", "snowman"
-        ]
-        
-        return natureKeywords.contains { keyword in
             // Correspondance exacte ou avec séparateurs
             label == keyword || 
             label.hasPrefix(keyword + " ") || 
@@ -399,7 +312,10 @@ class VisionLabelMapper {
             "tachometer", "dial", "gears", "pulley", "ratchet",
             
             // Innovation et futur
-            "robot", "drone", "drone_machine", "solar_panel", "wind_turbine"
+            "robot", "drone", "drone_machine", "solar_panel", "wind_turbine", "rocket",
+            
+            // Outils de calcul et mesure anciens/modernes
+            "abacus", "keypad", "laptop", "megaphone", "spotlight", "syringe", "tripod", "typewriter"
         ]
         
         return techKeywords.contains { keyword in
@@ -419,30 +335,20 @@ class VisionLabelMapper {
             "illustrations", "paintbrush", "stained_glass", "origami", "tattoo",
             "rangoli", "henna", "graffiti",
             
-            // Musique
-            "music", "musical", "instrument", "piano", "guitar", "violin", "drums",
-            "trumpet", "saxophone", "flute", "clarinet", "harp", "organ", "accordion",
-            "concert", "orchestra", "band", "singer", "musician",
-            "musical_instrument", "cello", "trombone", "tuba", "ukulele", "xylophone",
-            "tambourine", "bongo_drum", "brass_music", "string_instrument", "woodwind",
-            "organ_instrument", "karaoke", "deejay", "record", "cassette", "cd",
-            
-            // Spectacle
-            "theater", "theatre", "stage", "performance", "actor", "actress",
-            "drama", "comedy", "play", "musical", "opera", "ballet", "dance",
-            "dancer", "choreography", "costume", "makeup", "mask",
-            "dancing", "ballet_dancer", "bellydance", "breakdancing", "samba",
-            "hula", "entertainer", "clown", "magician", "puppet", "circus",
-            "juggling", "acrobat", "performance",
-            
             // Arts décoratifs
             "craft", "handmade", "artisan", "pottery", "weaving", "embroidery",
-            "jewelry", "design", "pattern", "decoration", "ornament",
+            "jewelry", "design", "pattern", "ornament",
             "sewing", "yarn",
             
             // Photographie et cinéma
             "photography", "photo", "camera", "lens", "film", "movie", "cinema",
-            "screenshot"
+            "screenshot",
+            
+            // Objets d'art et artisanat
+            "anvil", "barrel", "brick", "brick_oven", "coin", "credit_card", "currency", "flame",
+            "hammer", "hourglass", "mallet", "matches", "money", "pipe", "pliers", "podium",
+            "polka_dots", "portal", "porthole", "rowboat", "screwdriver", "skeleton", "skull",
+            "smoking_item", "straw_hay", "stretcher", "toolbox", "utensil", "winch", "wrench", "axe"
         ]
         
         return artKeywords.contains { keyword in
@@ -497,7 +403,13 @@ class VisionLabelMapper {
             // Équipements sportifs
             "ball", "bat", "racket", "club", "stick", "helmet", "uniform",
             "glove", "net", "hoop", "racquet", "sports_equipment", "baseball_bat", "lifejacket",
-            "lifesaver", "flipper", "surfboard", "bodyboard"
+            "lifesaver", "flipper", "surfboard", "bodyboard", "frisbee",
+            
+            // Installations sportives
+            "bleachers",
+            
+            // Sports spécifiques
+            "squash_sport"
         ]
         
         return sportsKeywords.contains { keyword in
@@ -531,7 +443,10 @@ class VisionLabelMapper {
             "traffic_light", "parking_lot", "hydrant", "road_safety_equipment",
             
             // Motorsport
-            "motorsport", "motocross"
+            "motorsport", "motocross",
+            
+            // Transport spécialisé
+            "cart", "parachute", "saddle"
         ]
         
         return carsKeywords.contains { keyword in
@@ -546,7 +461,13 @@ class VisionLabelMapper {
     private func isBeautyLabel(_ label: String) -> Bool {
         let beautyKeywords = [
             // Outils beauté (seuls labels présents dans Vision)
-            "cosmetic_tool", "hair", "brush", "mirror", "scissors", "razor", "spa", "jacuzzi"
+            "cosmetic_tool", "hair", "brush", "mirror", "scissors", "razor", "spa", "jacuzzi",
+            
+            // Accessoires bien-être
+            "hookah",
+            
+            // Objets personnels de santé
+            "crutch", "medicine"
         ]
         
         return beautyKeywords.contains { keyword in
@@ -558,26 +479,56 @@ class VisionLabelMapper {
         }
     }
     
-    private func isMediaLabel(_ label: String) -> Bool {
-        let mediaKeywords = [
-            // Médias traditionnels
-            "book", "magazine", "newspaper", "printed_page",
-            "document", "handwriting", "envelope", "receipt", "coupon",
-            "checkbook", "sticky_note", "calendar", "map", "chart", "diagram",
+    private func isOutdoorLabel(_ label: String) -> Bool {
+        let outdoorKeywords = [
+            // Transport
+            "airplane", "aircraft", "helicopter",
+            "train", "station", "bus", "taxi",
+            "ship", "boat", "yacht", "sailboat", "speedboat",
+            "car", "highway", "road", "bridge", "tunnel", "airport", "airshow",
+            "train_real", "train_station", "cruise_ship", "barge", "houseboat", "warship",
+            "rickshaw", "streetcar", "tramway", "monorail", "cableway", "chairlift",
             
-            // Médias numériques
-            "television", "tv", "radio", "video", "media", "diskette",
+            // Lieux touristiques
+            "landmark", "monument", "castle", "palace", "temple", "church", "cathedral",
+            "museum", "gallery", "theater", "opera", "stadium", "arena", "park",
+            "beach", "island", "mountain", "volcano", "canyon", "desert", "forest",
+            "lake", "river", "waterfall", "glacier", "cave", "shore", "harbour",
+            "lighthouse", "pier", "dock", "belltower", "clock_tower", "tower",
+            "ruins", "megalith", "obelisk", "pyramid", "statue", "gargoyle",
             
-            // Jeux et divertissement
-            "game", "puzzle", "board_game", "chess", "domino", "dice",
-            "videogame", "gamepad", "joystick", "games", "puzzles", "jigsaw",
-            "backgammon", "foosball", "poker", "roulette", "casino", "play_card",
+            // Activités voyage
+            "map", "compass", "binoculars",
+            "camera", "luggage", "suitcase", "backpack", "passport", "ticket",
             
-            // Communication
-            "phone", "smartphone", "tablet", "computer", "microphone"
+            // Villes et pays
+            "city", "town", "village", "skyline", "street", "square", "plaza", "cityscape", "alley",
+            "crosswalk", "sidewalk", "driveway", "path", "trail", "dirt_road", "road_other",
+            
+            // Environnement naturel
+            "nature", "wilderness", "forest", "jungle", "field",
+            "mountain", "hill", "canyon", "cliff", "rock", "stone", "rocks",
+            "beach", "shore", "ocean", "sea", "lake", "river", "waterfall",
+            "desert", "glacier", "iceberg", "volcano", "geyser", "cave", "outdoor",
+            "land", "orchard", "vineyard", "wetland", "sand", "sand_dune", "creek",
+            "waterways", "water_body", "underwater", "lava", "embers",
+            
+            // Météo et ciel
+            "sky", "cloud", "sun", "moon", "star", "rainbow", "lightning", "storm",
+            "snow", "aurora", "blue_sky", "night_sky", "celestial_body", "celestial_body_other",
+            "cloudy", "daytime", "haze", "blizzard", "thunderstorm", "tornado",
+            "sunset_sunrise", "ice", "iceberg", "snowball", "snowman",
+            
+            // Agriculture et structures extérieures
+            "agriculture", "balloon_hotair", "boathouse", "camping", "farm", "fence", "fountain",
+            "garden", "gazebo", "grave", "greenhouse", "hangar", "hospital", "igloo", "library",
+            "pergola", "pylon", "railroad", "restaurant", "sandcastle", "shipyard", "shopping_cart",
+            "silo", "skyscraper", "smokestack", "storefront", "street_sign", "submarine_water",
+            "sunbathing", "sundial", "tent", "track_rail", "wagon", "watercraft", "watermill",
+            "wheelchair", "windmill", "zoo"
         ]
         
-        return mediaKeywords.contains { keyword in
+        return outdoorKeywords.contains { keyword in
             // Correspondance exacte ou avec séparateurs
             label == keyword || 
             label.hasPrefix(keyword + " ") || 
@@ -586,36 +537,151 @@ class VisionLabelMapper {
         }
     }
     
-    private func isKidsLabel(_ label: String) -> Bool {
-        let kidsKeywords = [
-            // Enfants et bébés
-            "baby", "child", "teen", "student",
+    private func isAnimalsLabel(_ label: String) -> Bool {
+        let animalsKeywords = [
+            // Animaux domestiques
+            "animal", "mammal", "bird", "fish", "reptile", "insect", "spider",
+            "cat", "dog", "horse", "cow", "pig", "sheep", "goat", "rabbit", "deer",
+            "adult_cat", "kitten", "canine", "feline", "poultry",
             
-            // Jouets
-            "toy", "doll", "blocks", "ball", "balloon", "kite",
-            "stuffed_animals", "vehicle_toy", "train_toy", "figurine",
+            // Races de chiens
+            "australian_shepherd", "basenji", "basset", "beagle", "bernese_mountain", "bichon",
+            "bulldog", "chihuahua", "collie", "corgi", "dachshund", "dalmatian", "doberman",
+            "german_shepherd", "golden_retriever", "greyhound", "husky", "irish_wolfhound",
+            "jack_russell_terrier", "malamute", "malinois", "mastiff", "newfoundland",
+            "pitbull", "pomeranian", "poodle", "pug", "retriever", "rottweiler",
+            "saint_bernard", "schnauzer", "setter", "sheepdog", "spaniel", "terrier",
+            "vizsla", "weimaraner", "hound",
             
-            // Jeux et activités
-            "playground", "swing", "slide", "seesaw", "trampoline",
-            "swing_playground", "slide_toy", "carnival", "fairground",
-            "carousel", "ferris_wheel", "rollercoaster", "amusement_park",
+            // Animaux sauvages
+            "bear", "wolf", "fox", "lion", "tiger", "elephant", "giraffe", "zebra",
+            "monkey", "gorilla", "kangaroo", "koala",
+            "panda", "penguin", "dolphin", "whale", "shark", "turtle", "snake", "lizard",
+            "frog", "toad", "butterfly", "bee", "ant", "dragonfly", "moth",
+            "alligator_crocodile", "bison", "boar", "bobcat", "camel", "caterpillar",
+            "centipede", "chameleon", "cheetah", "chinchilla", "cougar", "coyote_wolf",
+            "donkey", "eagle", "elk", "ferret", "flamingo", "gecko", "gerbil",
+            "hamster", "hedgehog", "heron", "hippopotamus", "hyena", "iguana",
+            "lemur", "leopard", "llama", "lynx", "moose", "ostrich", "otter",
+            "owl", "parakeet", "parrot", "peacock", "pelican", "peregrine", "pigeon",
+            "porcupine", "prairie_dog", "puffin", "python", "raccoon", "rat",
+            "rattlesnake", "raven", "rhinoceros", "scorpion", "seal", "sealion",
+            "skunk", "snake_other", "sparrow", "squirrel", "stork", "swan",
+            "tortoise", "toucan", "vulture", "walrus", "woodpecker",
             
-            // Éducation
-            "school", "classroom", "student", "book", "pencil", "crayon", "marker",
-            "backpack", "graduation", "auditorium", "chalkboard", "whiteboard",
-            "flipchart", "conference", "cubicle",
+            // Animaux marins
+            "cetacean", "cephalopod", "gastropod", "mollusk", "angelfish", "clownfish",
+            "goldfish", "guppy", "koi", "lionfish", "puffer_fish", "seahorse",
+            "starfish", "stingray", "sunfish", "swordfish", "barnacle", "conch",
+            "crab", "jellyfish", "seashell", "urchin", "coral_reef",
             
-            // Bébé et puériculture
-            "diaper", "bottle", "pacifier", "crib", "stroller", "car_seat", "high_chair", "bib",
+            // Arthropodes et autres
+            "arachnid", "arthropods", "ladybug", "millipede", "scarab", "snail",
+            "spider", "spiderweb", "worm", "ant", "cockroach", "cricket_sport",
             
-            // Fêtes et célébrations enfants
-            "birthday", "party", "cake", "balloon", "clown", "magician", "puppet", "costume",
-            "celebration", "ceremony", "easter_egg", "jack_o_lantern",
-            "santa_claus", "gift", "gift_card", "red_envelope", "parade",
-            "dragon_parade", "piggybank"
+            // Plantes et arbres (restent dans animals car liés à la nature vivante)
+            "plant", "tree", "flower", "grass", "leaf", "branch", "cactus", "fern", "moss",
+            "rose", "tulip", "daisy", "sunflower", "lily", "orchid", "carnation",
+            "oak_tree", "palm_tree", "maple_tree", "eucalyptus_tree", "evergreen",
+            "sequoia", "willow", "bonsai", "ivy", "mangrove", "vegetation", "foliage",
+            "blossom", "clover", "dandelion", "holly", "mistletoe", "poinsettia",
+            "begonia", "chrysanthemum", "cornflower", "daffodil", "dahlia",
+            "marigold", "petunia", "snapdragon", "ferns", "shrub", "acorn", "mushroom",
+            
+            // Habitats et accessoires animaux
+            "aquarium", "beehive", "beekeeping", "birdhouse", "cage", "fishbowl", "fishtank",
+            "leash", "nest", "scarecrow", "terrarium",
+            
+            // Animaux spécifiques supplémentaires
+            "cockatoo", "dinosaur", "dove", "gull", "hummingbird", "marsupial", "monitor_lizard",
+            "raptor", "ridgeback", "rodent", "sandpiper", "ungulates"
         ]
         
-        return kidsKeywords.contains { keyword in
+        return animalsKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
+    }
+    
+    private func isBooksLabel(_ label: String) -> Bool {
+        let booksKeywords = [
+            // Livres et lecture
+            "book", "magazine", "newspaper", "printed_page",
+            "document", "handwriting", "envelope", "receipt", "coupon",
+            "checkbook", "sticky_note", "calendar", "map", "chart", "diagram",
+            
+            // Signalisation et affichage
+            "banner", "billboards", "flag", "flagpole"
+        ]
+        
+        return booksKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
+    }
+    
+    private func isMusicLabel(_ label: String) -> Bool {
+        let musicKeywords = [
+            // Musique et instruments
+            "music", "musical", "instrument", "piano", "guitar", "violin", "drums",
+            "trumpet", "saxophone", "flute", "clarinet", "harp", "organ", "accordion",
+            "concert", "orchestra", "band", "singer", "musician",
+            "musical_instrument", "cello", "trombone", "tuba", "ukulele", "xylophone",
+            "tambourine", "bongo_drum", "brass_music", "string_instrument", "woodwind",
+            "organ_instrument", "karaoke", "deejay", "record", "cassette", "cd",
+            
+            // Équipement audio
+            "radio", "speakers_music", "stereo", "turntable", "diskette",
+            
+            // Ambiance musicale
+            "disco_ball"
+        ]
+        
+        return musicKeywords.contains { keyword in
+            // Correspondance exacte ou avec séparateurs
+            label == keyword || 
+            label.hasPrefix(keyword + " ") || 
+            label.hasSuffix(" " + keyword) || 
+            label.contains(" " + keyword + " ")
+        }
+    }
+    
+    private func isShowLabel(_ label: String) -> Bool {
+        let showKeywords = [
+            // Spectacle et divertissement
+            "theater", "theatre", "stage", "performance", "actor", "actress",
+            "drama", "comedy", "play", "musical", "opera", "ballet", "dance",
+            "dancer", "choreography", "costume", "makeup", "mask",
+            "dancing", "ballet_dancer", "bellydance", "breakdancing", "samba",
+            "hula", "entertainer", "clown", "magician", "puppet", "circus",
+            "juggling", "acrobat", "performance",
+            
+            // Médias audiovisuels
+            "television", "tv", "video", "media",
+            
+            // Jeux et divertissement
+            "game", "puzzle", "board_game", "chess", "domino", "dice",
+            "videogame", "gamepad", "joystick", "games", "puzzles", "jigsaw",
+            "backgammon", "foosball", "poker", "roulette", "casino", "play_card",
+            
+            // Spectacles et événements
+            "bullfighting", "diorama", "fireworks", "kickboxing", "nascar", "nightclub", "paintball",
+            "pyrotechnics", "recreation", "rollerskating", "sparkler", "workout",
+            
+            // Objets de fête et célébration
+            "firecracker",
+            
+            // Accessoires fumeurs
+            "cigar", "cigarette", "lighter"
+        ]
+        
+        return showKeywords.contains { keyword in
             // Correspondance exacte ou avec séparateurs
             label == keyword || 
             label.hasPrefix(keyword + " ") || 
