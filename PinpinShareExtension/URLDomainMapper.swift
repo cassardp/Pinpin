@@ -33,7 +33,7 @@ class URLDomainMapper {
         if isSportsDomain(urlString) { return "sports" }
         if isOutdoorDomain(urlString) { return "outdoor" }
         if isAnimalsDomain(urlString) { return "animals" }
-        if isCarsDomain(urlString) { return "cars" }
+        if isVehiclesDomain(urlString) { return "vehicles" }
         if isArtDomain(urlString) { return "art" }
         
         return "misc"
@@ -304,8 +304,8 @@ class URLDomainMapper {
         return sportsDomains.contains { urlString.contains($0) }
     }
     
-    private func isCarsDomain(_ urlString: String) -> Bool {
-        let carsDomains = [
+    private func isVehiclesDomain(_ urlString: String) -> Bool {
+        let vehiclesDomains = [
             // Vente automobile
             "leboncoin.fr/voitures", "lacentrale.fr", "autoscout24.fr",
             "paruvendu.fr/auto", "automobile.fr",
@@ -318,7 +318,7 @@ class URLDomainMapper {
             "midas.fr", "norauto.fr", "feu-vert.fr", "speedy.fr"
         ]
         
-        return carsDomains.contains { urlString.contains($0) }
+        return vehiclesDomains.contains { urlString.contains($0) }
     }
     
     private func isArtDomain(_ urlString: String) -> Bool {

@@ -16,6 +16,9 @@ class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Essayer de rendre la sheet transparente pour iOS 26+
+        setupTransparentBackground()
+        
         // Afficher le toast de capture
         showCapturingToast()
         
@@ -23,6 +26,11 @@ class ShareViewController: UIViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.processSharedContent()
         }
+    }
+    
+    private func setupTransparentBackground() {
+        // La sheet reste opaque dans iOS 26+, utiliser un fond système adaptatif
+        view.backgroundColor = UIColor.systemBackground
     }
     
     private func processSharedContent() {
@@ -467,20 +475,20 @@ class ShareViewController: UIViewController {
     }
     
     private func showCapturingToast() {
-        // Créer la vue toast discrète
+        // Toast sobre centré
         toastView = UIView()
         toastView?.backgroundColor = UIColor.black.withAlphaComponent(0.9)
         toastView?.layer.cornerRadius = 16
         toastView?.layer.masksToBounds = true
         
-        // Ajouter une ombre subtile
+        // Ombre subtile
         toastView?.layer.shadowColor = UIColor.black.cgColor
         toastView?.layer.shadowOffset = CGSize(width: 0, height: 2)
         toastView?.layer.shadowOpacity = 0.1
         toastView?.layer.shadowRadius = 4
         toastView?.layer.masksToBounds = false
         
-        // Ajouter le texte
+        // Texte simple
         let label = UILabel()
         label.text = "Adding to Pinpin..."
         label.font = UIFont.systemFont(ofSize: 13, weight: .medium)
@@ -490,19 +498,19 @@ class ShareViewController: UIViewController {
         toastView?.addSubview(label)
         label.translatesAutoresizingMaskIntoConstraints = false
         
-        // Contraintes pour le label avec padding
+        // Contraintes pour le label
         label.leadingAnchor.constraint(equalTo: (toastView?.leadingAnchor)!, constant: 16).isActive = true
         label.trailingAnchor.constraint(equalTo: (toastView?.trailingAnchor)!, constant: -16).isActive = true
         label.centerYAnchor.constraint(equalTo: (toastView?.centerYAnchor)!).isActive = true
         
-        // Ajouter la vue toast en haut de l'écran
+        // Centré verticalement et horizontalement
         view.addSubview(toastView!)
         toastView?.translatesAutoresizingMaskIntoConstraints = false
-        toastView?.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16).isActive = true
         toastView?.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        toastView?.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
         toastView?.heightAnchor.constraint(equalToConstant: 32).isActive = true
         
-        // Animation d'apparition subtile
+        // Animation simple
         toastView?.alpha = 0
         toastView?.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
         UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {

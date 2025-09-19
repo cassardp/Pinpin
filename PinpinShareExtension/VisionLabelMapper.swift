@@ -31,7 +31,7 @@ class VisionLabelMapper {
         if isSportsLabel(normalizedLabel) { return "sports" }
         if isOutdoorLabel(normalizedLabel) { return "outdoor" }
         if isAnimalsLabel(normalizedLabel) { return "animals" }
-        if isCarsLabel(normalizedLabel) { return "cars" }
+        if isVehiclesLabel(normalizedLabel) { return "vehicles" }
         if isArtLabel(normalizedLabel) { return "art" }
         
         return "misc" // Fallback
@@ -58,6 +58,7 @@ class VisionLabelMapper {
             "material", "container", "object", "item", "thing", "stuff", "conveyance",
             "housewares", "office_supplies", "tool", "equipment", "device",
             "people", "person", "human", "crowd", "wood_natural", "raw_glass", "textile", "adult",
+            "machine", "dashboard",
         ]
         
         let normalizedLabel = label.lowercased()
@@ -235,7 +236,7 @@ class VisionLabelMapper {
             "bacon", "sausage", "pepperoni", "anchovy", "barracuda", "mackerel", "sardine",
             "seabass", "snapper", "trout", "fried_chicken", "grilled_chicken", "fried_egg",
             "scrambled_eggs", "omelet", "yolk", "meatball", "spareribs", "rotisserie",
-            "shellfish", "shellfish_prepared", "roe",
+            "shellfish", "shellfish_prepared", "roe", "grill",
             
             // Plats préparés
             "pizza", "burger", "hamburger", "sandwich", "salad", "soup", "pasta", "spaghetti", "noodles",
@@ -272,8 +273,8 @@ class VisionLabelMapper {
             // Ustensiles et vaisselle de cuisine
             "cookware", "pan", "pot", "bowl", "plate", "cup", "mug", "glass", "bottle", "jar",
             "fork", "knife", "spoon", "chopsticks", "cutting_board", "grater", "whisk",
-            "ladle", "spatula", "corkscrew", "rolling_pin", "steamer_cookware",
-            "tableware", "drinking_glass", "teapot", "cakestand", "decanter", "pot_cooking",
+            "ladle", "spatula", "corkscrew", "rolling_pin", "steamer_cookware", "food",
+            "tableware", "drinking_glass", "teapot", "cakestand", "decanter", "pot_cooking", "ustensil",
             
             // Spécialités culinaires
             "baklava", "coffee_bean", "keg", "lollipop", "oranges", "pastry", "pickle",
@@ -309,7 +310,7 @@ class VisionLabelMapper {
             // Outils de mesure et calcul
             "calculator", "caliper", "measuring_tape", "microscope", "telescope",
             "stethoscope", "thermometer", "thermostat", "stopwatch", "timepiece",
-            "tachometer", "dial", "gears", "pulley", "ratchet",
+            "tachometer", "gears", "pulley", "ratchet",
             
             // Innovation et futur
             "robot", "drone", "drone_machine", "solar_panel", "wind_turbine", "rocket",
@@ -348,7 +349,7 @@ class VisionLabelMapper {
             "anvil", "barrel", "brick", "brick_oven", "coin", "credit_card", "currency", "flame",
             "hammer", "hourglass", "mallet", "matches", "money", "pipe", "pliers", "podium",
             "polka_dots", "portal", "porthole", "rowboat", "screwdriver", "skeleton", "skull",
-            "smoking_item", "straw_hay", "stretcher", "toolbox", "utensil", "winch", "wrench", "axe"
+            "smoking_item", "straw_hay", "stretcher", "toolbox", "winch", "wrench", "axe"
         ]
         
         return artKeywords.contains { keyword in
@@ -421,8 +422,8 @@ class VisionLabelMapper {
         }
     }
     
-    private func isCarsLabel(_ label: String) -> Bool {
-        let carsKeywords = [
+    private func isVehiclesLabel(_ label: String) -> Bool {
+        let vehiclesKeywords = [
             // Véhicules
             "car", "automobile", "vehicle", "machine", "suv", "truck", "van", "convertible", "limousine",
             "formula_one", "sportscar", "formula_one_car", "grand_prix", "go_kart", "jeep", "motorhome",
@@ -449,7 +450,7 @@ class VisionLabelMapper {
             "cart", "parachute", "saddle"
         ]
         
-        return carsKeywords.contains { keyword in
+        return vehiclesKeywords.contains { keyword in
             // Correspondance exacte ou avec séparateurs
             label == keyword || 
             label.hasPrefix(keyword + " ") || 
@@ -485,7 +486,7 @@ class VisionLabelMapper {
             "airplane", "aircraft", "helicopter",
             "train", "station", "bus", "taxi",
             "ship", "boat", "yacht", "sailboat", "speedboat",
-            "car", "highway", "road", "bridge", "tunnel", "airport", "airshow",
+            "highway", "road", "bridge", "tunnel", "airport", "airshow",
             "train_real", "train_station", "cruise_ship", "barge", "houseboat", "warship",
             "rickshaw", "streetcar", "tramway", "monorail", "cableway", "chairlift",
             

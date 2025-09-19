@@ -192,7 +192,7 @@ struct ContentItemCard: View {
         case .sports: return .red
         case .outdoor: return .blue
         case .animals: return .green
-        case .cars: return .gray
+        case .vehicles: return .gray
         case .art: return .indigo
         case .misc: return .secondary
         }

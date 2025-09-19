@@ -42,7 +42,7 @@ struct PredefinedSearchView: View {
                             .padding(.vertical, 8)
                             .background(
                                 Capsule()
-                                    .fill(.thinMaterial)
+                                    .fill(.ultraThickMaterial)
                                     .colorScheme(.dark) // Force le mode sombre pour un look cohérent
                             )
                             .scaleEffect(searchQuery == searchTerm ? 0.95 : 1.0)

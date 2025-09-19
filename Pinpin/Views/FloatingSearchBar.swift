@@ -93,51 +93,74 @@ struct FloatingSearchBar: View {
 
     // MARK: - SearchBar
     private var searchBar: some View {
-        VStack(spacing: 0) {
-            // Capsules de recherche prédéfinies (sans padding horizontal)
-            PredefinedSearchView(searchQuery: $searchQuery, onSearchSelected: dismissSearch)
-            
-            // Barre de recherche principale (avec padding horizontal)
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
-
-                ZStack(alignment: .leading) {
-                    if searchQuery.isEmpty {
-                        Text(placeholderText)
-                            .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(.white.opacity(0.5))
-                    }
-                    TextField("", text: $searchQuery)
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(.white)
-                }
-                    .focused($isSearchFocused)
-                    .textFieldStyle(.plain)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .submitLabel(.search)
-                    .onSubmit { dismissSearch() }
-
-                if !searchQuery.isEmpty {
-                    Button { searchQuery = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
-                    }
-                }
+        ZStack(alignment: .bottom) {
+            // Overlay dégradé en arrière-plan pour améliorer le contraste
+            VStack {
+                Spacer()
+//                Rectangle()
+//                    .fill(
+//                        LinearGradient(
+//                            gradient: Gradient(colors: [
+//                                Color.black.opacity(0.2),
+//                                Color.black.opacity(0.1),
+//                                Color.clear
+//                            ]),
+//                            startPoint: .bottom,
+//                            endPoint: .top
+//                        )
+//                    )
+//                    .frame(height: 120)
+//                    .ignoresSafeArea(edges: .horizontal)
+//                    .offset(y: 24) // Décalage de 10px vers le bas
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(.thinMaterial)
-                    .colorScheme(.dark) // Force le mode sombre pour un look cohérent
-                    .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-            )
-            .padding(.bottom, 12)
-            .padding(.horizontal, 16) // Padding pour la barre de recherche seulement
+            .allowsHitTesting(false)
+            
+            // Contenu de la barre de recherche au premier plan
+            VStack(spacing: 0) {
+                // Capsules de recherche prédéfinies (sans padding horizontal)
+                PredefinedSearchView(searchQuery: $searchQuery, onSearchSelected: dismissSearch)
+                
+                // Barre de recherche principale (avec padding horizontal)
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.primary)
+
+                    ZStack(alignment: .leading) {
+                        if searchQuery.isEmpty {
+                            Text(placeholderText)
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(.primary.opacity(0.3))
+                        }
+                        TextField("", text: $searchQuery)
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                        .focused($isSearchFocused)
+                        .textFieldStyle(.plain)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .submitLabel(.search)
+                        .onSubmit { dismissSearch() }
+
+                    if !searchQuery.isEmpty {
+                        Button { searchQuery = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(.ultraThickMaterial)
+                        .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
+                )
+                .padding(.bottom, 12)
+                .padding(.horizontal, 16) // Padding pour la barre de recherche seulement
+            }
         }
     }
 
@@ -231,7 +254,7 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.thinMaterial)
+                            .fill(.ultraThickMaterial)
                             .colorScheme(.dark)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
