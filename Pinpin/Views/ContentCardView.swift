@@ -62,6 +62,14 @@ struct ContentCardView: View {
     }
     
     private var shouldUseSquareFormat: Bool {
-        return item.contentTypeEnum == .books || item.contentTypeEnum == .music
+        guard let url = item.url else { return false }
+        
+        // Format carré uniquement pour Apple Music et Apple Books
+        let isAppleMusic = url.contains("music.apple.com")
+        let isAppleBooks = url.contains("books.apple.com") || 
+                          url.contains("itunes.apple.com/book") || 
+                          url.contains("itunes.apple.com/audiobook")
+        
+        return isAppleMusic || isAppleBooks
     }
 }

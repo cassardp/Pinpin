@@ -62,7 +62,7 @@ class URLDomainMapper {
             // Audio et musique
             "spotify.com", "apple.com/music", "music.apple.com", "deezer.com",
             "soundcloud.com", "bandcamp.com", "mixcloud.com", "tidal.com",
-            "youtube.com/music", "pandora.com", "last.fm",
+            "youtube.com/music", "pandora.com", "last.fm", "shazam.com",
             
             // Podcasts
             "podcasts.apple.com", "overcast.fm", "pocketcasts.com",
@@ -77,7 +77,7 @@ class URLDomainMapper {
             // Vidéo et streaming
             "netflix.com", "primevideo.com", "disneyplus.com",
             "hulu.com", "hbo.com", "paramount.com", "peacocktv.com",
-            "vimeo.com", "themoviedb.org",
+            "vimeo.com", "themoviedb.org", "tv.apple.com",
             
             // TV et médias audiovisuels
             "tf1.fr", "france.tv", "6play.fr", "canalplus.com",
