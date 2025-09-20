@@ -26,7 +26,7 @@ struct PredefinedSearchView: View {
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(searchesToDisplay, id: \.self) { searchTerm in
                     Button(action: {
                         // Haptic feedback léger

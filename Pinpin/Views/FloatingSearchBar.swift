@@ -82,11 +82,7 @@ struct FloatingSearchBar: View {
             return "Search in \(categoryName)..."
         } else {
             // Catégorie "All"
-            if totalPinsCount > 0 {
-                return "Search in your \(totalPinsCount) pin\(totalPinsCount > 1 ? "s" : "")..."
-            } else {
-                return "Search in your pins..."
-            }
+            return "Search..."
         }
     }
 
@@ -94,27 +90,6 @@ struct FloatingSearchBar: View {
     // MARK: - SearchBar
     private var searchBar: some View {
         ZStack(alignment: .bottom) {
-            // Overlay dégradé en arrière-plan pour améliorer le contraste
-            VStack {
-                Spacer()
-//                Rectangle()
-//                    .fill(
-//                        LinearGradient(
-//                            gradient: Gradient(colors: [
-//                                Color.black.opacity(0.2),
-//                                Color.black.opacity(0.1),
-//                                Color.clear
-//                            ]),
-//                            startPoint: .bottom,
-//                            endPoint: .top
-//                        )
-//                    )
-//                    .frame(height: 120)
-//                    .ignoresSafeArea(edges: .horizontal)
-//                    .offset(y: 24) // Décalage de 10px vers le bas
-            }
-            .allowsHitTesting(false)
-            
             // Contenu de la barre de recherche au premier plan
             VStack(spacing: 0) {
                 // Capsules de recherche prédéfinies (sans padding horizontal)
@@ -165,7 +140,8 @@ struct FloatingSearchBar: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 28)
-                        .fill(.ultraThickMaterial)
+                        .fill(.thickMaterial)
+                        .stroke(.black.opacity(0.15), lineWidth: 0.5)
                         .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                 )
                 .padding(.bottom, 12)
@@ -201,6 +177,7 @@ struct FloatingSearchBar: View {
                     .background(
                         Circle()
                             .fill(.thinMaterial)
+                            .stroke(.black.opacity(0.15), lineWidth: 0.5)
                     )
             }
             .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
@@ -239,6 +216,7 @@ struct FloatingSearchBar: View {
                     .background(
                         RoundedRectangle(cornerRadius: 28)
                             .fill(.thinMaterial)
+                            .stroke(.black.opacity(0.15), lineWidth: 0.5)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 } else {
@@ -277,6 +255,7 @@ struct FloatingSearchBar: View {
                     .background(
                         RoundedRectangle(cornerRadius: 28)
                             .fill(.ultraThickMaterial)
+                            .stroke(.white.opacity(0.15), lineWidth: 0.5)
                             .colorScheme(.dark)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
@@ -333,9 +312,11 @@ struct FloatingSearchBar: View {
                         if isSelectionMode && !selectedItems.isEmpty {
                             RoundedRectangle(cornerRadius: 22)
                                 .fill(Color.red)
+                                .stroke(.white.opacity(0.3), lineWidth: 0.5)
                         } else {
                             RoundedRectangle(cornerRadius: 22)
                                 .fill(.thinMaterial)
+                                .stroke(.black.opacity(0.15), lineWidth: 0.5)
                         }
                     }
                 )
