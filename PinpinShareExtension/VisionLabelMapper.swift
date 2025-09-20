@@ -58,7 +58,7 @@ class VisionLabelMapper {
             "material", "container", "object", "item", "thing", "stuff", "conveyance",
             "housewares", "office_supplies", "tool", "equipment", "device",
             "people", "person", "human", "crowd", "wood_natural", "raw_glass", "textile", "adult",
-            "dashboard",
+            "dashboard", "machine",
         ]
         
         let normalizedLabel = label.lowercased()

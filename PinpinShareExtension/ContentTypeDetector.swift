@@ -116,11 +116,12 @@ class ContentTypeDetector {
         if let labels = detectedLabels, !labels.isEmpty {
             let visionCategory = detectContentTypeWithConfidence(detectedLabels: labels, confidences: confidences)
             
-            // 3. RÈGLE SPÉCIALE: Filtrer les contenus "people" de TikTok/Instagram vers "misc"
+            // 3. RÈGLE SPÉCIALE: Filtrer les contenus "people" des réseaux sociaux vers "misc"
             let finalCategory = applyContentFilters(
                 category: visionCategory,
                 url: url,
-                detectedLabels: labels
+                detectedLabels: labels,
+                confidences: confidences
             )
             
             // Si Vision donne une catégorie spécifique (pas misc), l'utiliser
@@ -140,10 +141,10 @@ class ContentTypeDetector {
     // MARK: - Content Filters
     
     /// Applique des règles de filtrage spéciales pour certains contenus
-    /// Exemple: contenus "people" de TikTok/Instagram → "misc"
-    private func applyContentFilters(category: String, url: URL?, detectedLabels: String) -> String {
-        // Règle 1: Filtrer les contenus "people" de TikTok/Instagram vers "misc"
-        if shouldFilterSocialMediaPeople(category: category, url: url, detectedLabels: detectedLabels) {
+    /// Exemple: contenus "people" des réseaux sociaux → "misc"
+    private func applyContentFilters(category: String, url: URL?, detectedLabels: String, confidences: String? = nil) -> String {
+        // Règle 1: Filtrer les contenus "people" des réseaux sociaux vers "misc"
+        if shouldFilterSocialMediaPeople(category: category, url: url, detectedLabels: detectedLabels, confidences: confidences) {
             return "misc"
         }
         
@@ -152,28 +153,83 @@ class ContentTypeDetector {
         return category
     }
     
-    /// Vérifie si le contenu doit être filtré comme "people" de réseaux sociaux
-    private func shouldFilterSocialMediaPeople(category: String, url: URL?, detectedLabels: String) -> Bool {
-        // Vérifier si l'URL provient de TikTok ou Instagram
+    /// Vérifie si le contenu doit être filtré comme "people" des réseaux sociaux
+    private func shouldFilterSocialMediaPeople(category: String, url: URL?, detectedLabels: String, confidences: String? = nil) -> Bool {
+        // Vérifier si l'URL provient d'un réseau social
         guard let url = url else { return false }
         
         let urlString = url.absoluteString.lowercased()
         let isSocialMedia = urlString.contains("tiktok.com") || 
                            urlString.contains("instagram.com") ||
+                           urlString.contains("facebook.com") ||
+                           urlString.contains("twitter.com") ||
+                           urlString.contains("x.com") ||
+                           urlString.contains("snapchat.com") ||
+                           urlString.contains("youtube.com") ||
+                           urlString.contains("linkedin.com") ||
+                           urlString.contains("pinterest.com") ||
+                           urlString.contains("reddit.com") ||
+                           urlString.contains("discord.com") ||
+                           urlString.contains("twitch.tv") ||
+                           urlString.contains("telegram.org") ||
+                           urlString.contains("whatsapp.com") ||
                            urlString.contains("tiktok") ||
-                           urlString.contains("instagram")
+                           urlString.contains("instagram") ||
+                           urlString.contains("facebook") ||
+                           urlString.contains("twitter") ||
+                           urlString.contains("snapchat") ||
+                           urlString.contains("youtube") ||
+                           urlString.contains("linkedin") ||
+                           urlString.contains("pinterest") ||
+                           urlString.contains("reddit") ||
+                           urlString.contains("discord") ||
+                           urlString.contains("twitch") ||
+                           urlString.contains("telegram") ||
+                           urlString.contains("whatsapp")
         
         // Si ce n'est pas un réseau social ciblé, pas de filtrage
         guard isSocialMedia else { return false }
         
-        // Vérifier si les labels contiennent "people", "person", "human", etc.
-        let labels = detectedLabels.lowercased()
-        let containsPeople = labels.contains("people") ||
-                            labels.contains("person") ||
-                            labels.contains("human") ||
-                            labels.contains("crowd") ||
-                            labels.contains("adult")
+        // Définir les mots-clés "people"
+        let peopleKeywords = ["people", "person", "human", "crowd", "adult", "child", "man", "woman", "face", "portrait"]
         
-        return containsPeople
+        // Si on a les scores de confiance, vérifier le seuil de 0.3
+        if let confidencesString = confidences, !confidencesString.isEmpty {
+            let labelArray = detectedLabels.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+            let confidenceArray = confidencesString.split(separator: ",").compactMap { Float($0.trimmingCharacters(in: .whitespaces)) }
+            
+            // Vérifier que les arrays ont la même taille
+            guard labelArray.count == confidenceArray.count else {
+                // Fallback vers la méthode sans confiance
+                return checkPeopleLabels(in: detectedLabels, keywords: peopleKeywords)
+            }
+            
+            // Vérifier si un label "people" a une confiance >= 0.3
+            for (index, label) in labelArray.enumerated() {
+                if peopleKeywords.contains(where: { keyword in
+                    label == keyword || 
+                    label.hasPrefix(keyword + " ") || 
+                    label.hasSuffix(" " + keyword) || 
+                    label.contains(" " + keyword + " ")
+                }) {
+                    if confidenceArray[index] >= 0.3 {
+                        return true
+                    }
+                }
+            }
+            
+            return false
+        } else {
+            // Fallback sans scores de confiance
+            return checkPeopleLabels(in: detectedLabels, keywords: peopleKeywords)
+        }
+    }
+    
+    /// Vérifie la présence de mots-clés "people" dans les labels (méthode fallback)
+    private func checkPeopleLabels(in detectedLabels: String, keywords: [String]) -> Bool {
+        let labels = detectedLabels.lowercased()
+        return keywords.contains { keyword in
+            labels.contains(keyword)
+        }
     }
 }
