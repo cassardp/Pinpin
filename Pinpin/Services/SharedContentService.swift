@@ -65,6 +65,12 @@ class SharedContentService: ObservableObject {
                 metadata: metadata,
                 thumbnailUrl: thumbnailUrl
             )
+            
+            // Log pour clarifier le statut des contenus "misc"
+            if typeString == "misc" {
+                let hideMisc = UserPreferences.shared.hideMiscCategory
+                print("[SharedContentService] Contenu 'misc' sauvegardé - Visible: \(!hideMisc)")
+            }
         }
     }
     

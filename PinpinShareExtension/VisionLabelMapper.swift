@@ -390,9 +390,6 @@ class VisionLabelMapper {
             "skydiving", "motocross", "skatepark",
             "hangglider",
             
-            // Cyclisme et vélos
-            "cycling", "bicycle", "tricycle",
-            
             // Sports équestres
             "equestrian", "dressage", "jockey_horse", "horseshoe", "rodeo",
             

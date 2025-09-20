@@ -14,6 +14,7 @@ struct FilterMenuView: View {
         animation: .default)
     private var contentItems: FetchedResults<ContentItem>
     
+    @StateObject private var userPreferences = UserPreferences.shared
     @Binding var selectedContentType: String?
     @Binding var isSwipingHorizontally: Bool
     var onOpenAbout: () -> Void
@@ -24,6 +25,7 @@ struct FilterMenuView: View {
         let uniqueTypes = Set(types)
         
         // Utiliser l'ordre défini dans ContentType avec misc en dernier
+        // Ne jamais masquer "misc" du menu - on veut pouvoir y accéder pour gérer les contenus
         return ContentType.orderedCases
             .map { $0.rawValue }
             .filter { uniqueTypes.contains($0) }
@@ -32,7 +34,12 @@ struct FilterMenuView: View {
     // Compte les items par type
     private func countForType(_ type: String?) -> Int {
         if type == nil {
-            return contentItems.count
+            // Pour "All", exclure "misc" si l'option est activée
+            if userPreferences.hideMiscCategory {
+                return contentItems.filter { $0.contentType != "misc" }.count
+            } else {
+                return contentItems.count
+            }
         }
         return contentItems.filter { $0.contentType == type }.count
     }

@@ -62,6 +62,18 @@ struct SettingsView: View {
                         isOn: $userPreferences.devMode
                     )
 
+                    // Ligne de séparation
+                    Divider()
+                        .background(Color.gray.opacity(0.1))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                    SettingsToggleRow(
+                        title: "Hide Misc Content",
+                        subtitle: "",
+                        isOn: $userPreferences.hideMiscCategory
+                    )
+
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 40)

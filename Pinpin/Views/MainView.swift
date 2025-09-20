@@ -84,7 +84,12 @@ struct MainView: View {
         if let selectedType = selectedContentType {
             typeFiltered = items.filter { $0.contentType == selectedType }
         } else {
-            typeFiltered = items
+            // Vue "All" - appliquer le filtre pour masquer "misc" si activé
+            if userPreferences.hideMiscCategory {
+                typeFiltered = items.filter { $0.contentType != "misc" }
+            } else {
+                typeFiltered = items
+            }
         }
 
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -189,6 +194,7 @@ struct MainView: View {
                             }
                         }
                         .padding(.horizontal, 10)
+                        .padding(.bottom, 70)
                         .onChange(of: selectedContentType) {
                             withTransaction(Transaction(animation: nil)) {
                                 proxy.scrollTo("top", anchor: .top)

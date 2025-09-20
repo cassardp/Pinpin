@@ -75,9 +75,22 @@ class ContentTypeDetector {
         if let main = mainLabel, !main.isEmpty {
             let visionCategory = detectContentType(mainLabel: main, alternatives: alternatives)
             
+            // Construire la chaîne de labels pour le filtrage
+            var allLabels = main
+            if let alts = alternatives, !alts.isEmpty {
+                allLabels += "," + alts
+            }
+            
+            // Appliquer les règles de filtrage
+            let finalCategory = applyContentFilters(
+                category: visionCategory,
+                url: url,
+                detectedLabels: allLabels
+            )
+            
             // Si Vision donne une catégorie spécifique (pas misc), l'utiliser
-            if visionCategory != "misc" {
-                return visionCategory
+            if finalCategory != "misc" {
+                return finalCategory
             }
         }
         
@@ -103,9 +116,16 @@ class ContentTypeDetector {
         if let labels = detectedLabels, !labels.isEmpty {
             let visionCategory = detectContentTypeWithConfidence(detectedLabels: labels, confidences: confidences)
             
+            // 3. RÈGLE SPÉCIALE: Filtrer les contenus "people" de TikTok/Instagram vers "misc"
+            let finalCategory = applyContentFilters(
+                category: visionCategory,
+                url: url,
+                detectedLabels: labels
+            )
+            
             // Si Vision donne une catégorie spécifique (pas misc), l'utiliser
-            if visionCategory != "misc" {
-                return visionCategory
+            if finalCategory != "misc" {
+                return finalCategory
             }
         }
         
@@ -115,5 +135,45 @@ class ContentTypeDetector {
     /// Détection fiable basée sur l'URL (classification à 100% de certitude)
     private func detectFromURL(_ url: URL) -> String {
         return URLDomainMapper.shared.mapURLToCategory(url)
+    }
+    
+    // MARK: - Content Filters
+    
+    /// Applique des règles de filtrage spéciales pour certains contenus
+    /// Exemple: contenus "people" de TikTok/Instagram → "misc"
+    private func applyContentFilters(category: String, url: URL?, detectedLabels: String) -> String {
+        // Règle 1: Filtrer les contenus "people" de TikTok/Instagram vers "misc"
+        if shouldFilterSocialMediaPeople(category: category, url: url, detectedLabels: detectedLabels) {
+            return "misc"
+        }
+        
+        // Autres règles de filtrage peuvent être ajoutées ici
+        
+        return category
+    }
+    
+    /// Vérifie si le contenu doit être filtré comme "people" de réseaux sociaux
+    private func shouldFilterSocialMediaPeople(category: String, url: URL?, detectedLabels: String) -> Bool {
+        // Vérifier si l'URL provient de TikTok ou Instagram
+        guard let url = url else { return false }
+        
+        let urlString = url.absoluteString.lowercased()
+        let isSocialMedia = urlString.contains("tiktok.com") || 
+                           urlString.contains("instagram.com") ||
+                           urlString.contains("tiktok") ||
+                           urlString.contains("instagram")
+        
+        // Si ce n'est pas un réseau social ciblé, pas de filtrage
+        guard isSocialMedia else { return false }
+        
+        // Vérifier si les labels contiennent "people", "person", "human", etc.
+        let labels = detectedLabels.lowercased()
+        let containsPeople = labels.contains("people") ||
+                            labels.contains("person") ||
+                            labels.contains("human") ||
+                            labels.contains("crowd") ||
+                            labels.contains("adult")
+        
+        return containsPeople
     }
 }

@@ -118,7 +118,11 @@ struct FloatingSearchBar: View {
             // Contenu de la barre de recherche au premier plan
             VStack(spacing: 0) {
                 // Capsules de recherche prédéfinies (sans padding horizontal)
-                PredefinedSearchView(searchQuery: $searchQuery, onSearchSelected: dismissSearch)
+                PredefinedSearchView(
+                    searchQuery: $searchQuery, 
+                    selectedContentType: selectedContentType,
+                    onSearchSelected: dismissSearch
+                )
                 
                 // Barre de recherche principale (avec padding horizontal)
                 HStack(spacing: 12) {

@@ -4,6 +4,7 @@ import CoreData
 // MARK: - PredefinedSearchView
 struct PredefinedSearchView: View {
     @Binding var searchQuery: String
+    var selectedContentType: String?
     let onSearchSelected: () -> Void
     
     @StateObject private var contentService = ContentServiceCoreData()
@@ -61,151 +62,77 @@ struct PredefinedSearchView: View {
         .onChange(of: contentService.contentItems) {
             generateDynamicSearches()
         }
+        .onChange(of: selectedContentType) {
+            generateDynamicSearches()
+        }
     }
     
     // MARK: - Dynamic Search Generation
     private func generateDynamicSearches() {
-        let items = contentService.contentItems
+        let allItems = contentService.contentItems
+        guard !allItems.isEmpty else {
+            dynamicSearches = []
+            return
+        }
+        
+        // Filtrer selon la catégorie sélectionnée
+        let items: [ContentItem]
+        if let selectedType = selectedContentType, selectedType != "all" {
+            items = allItems.filter { $0.contentType == selectedType }
+        } else {
+            items = allItems
+        }
+        
         guard !items.isEmpty else {
             dynamicSearches = []
             return
         }
         
-        var keywordFrequency: [String: Int] = [:]
-        var imageUrlKeywords: Set<String> = [] // Mots-clés qui viennent des URLs d'images
+        var labelFrequency: [String: Int] = [:]
         
-        // Analyser les contenus pour extraire des mots-clés pertinents
+        // Analyser uniquement les labels Vision des items de la catégorie
         for item in items {
             
-            // Analyser les titres
-            if let title = item.title {
-                let titleKeywords = extractKeywords(from: title)
-                titleKeywords.forEach { keyword in
-                    keywordFrequency[keyword, default: 0] += 2 // Poids plus élevé pour les titres
-                }
-            }
-            
-            // Analyser les descriptions
-            let description = item.metadataDict["best_description"] ?? item.itemDescription ?? ""
-            if !description.isEmpty {
-                let descKeywords = extractKeywords(from: description)
-                descKeywords.forEach { keyword in
-                    keywordFrequency[keyword, default: 0] += 1
-                }
-            }
-            
-            // Analyser les métadonnées (labels Vision, etc.)
+            // Extraire les labels depuis les métadonnées
             for (key, value) in item.metadataDict {
-                if key.contains("label") || key.contains("tag") {
-                    let metaKeywords = extractKeywords(from: value)
-                    metaKeywords.forEach { keyword in
-                        keywordFrequency[keyword, default: 0] += 1
-                    }
-                }
-            }
-            
-            // Analyser les URLs pour les domaines populaires
-            if let url = item.url {
-                let urlKeywords = extractDomainKeywords(from: url)
-                urlKeywords.forEach { keyword in
-                    keywordFrequency[keyword, default: 0] += 3 // Poids élevé pour les domaines
-                }
-            }
-            
-            // Collecter les mots-clés des URLs d'images pour les exclure
-            for (key, value) in item.metadataDict {
-                if key.contains("url") && (key.contains("image") || key.contains("thumbnail") || key.contains("icon")) {
-                    let imgUrlKeywords = extractKeywords(from: value)
-                    imgUrlKeywords.forEach { keyword in
-                        imageUrlKeywords.insert(keyword)
+                if key.contains("label") && !value.isEmpty {
+                    // Traiter les labels (peuvent être séparés par des virgules)
+                    let labels = value.components(separatedBy: ",")
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty }
+                    
+                    for label in labels {
+                        let cleanLabel = label.lowercased()
+                            .replacingOccurrences(of: "_", with: " ")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        // Filtrer les labels pertinents (3-15 caractères, pas de labels techniques)
+                        if cleanLabel.count >= 3 && 
+                           cleanLabel.count <= 15 && 
+                           !excludedLabels.contains(cleanLabel) {
+                            labelFrequency[cleanLabel, default: 0] += 1
+                        }
                     }
                 }
             }
         }
         
         // Trier par fréquence et prendre les 15 plus populaires
-        // Exclure les mots-clés qui proviennent des URLs d'images
-        let sortedKeywords = keywordFrequency
-            .filter { $0.value >= 2 } // Minimum 2 occurrences
-            .filter { !imageUrlKeywords.contains($0.key) } // Exclure les mots-clés des URLs d'images
+        let sortedLabels = labelFrequency
+            .filter { $0.value >= 1 } // Minimum 2 occurrences
             .sorted { $0.value > $1.value }
             .prefix(15)
             .map { $0.key }
         
-        dynamicSearches = Array(sortedKeywords)
+        dynamicSearches = Array(sortedLabels)
     }
     
-    // MARK: - Keyword Extraction
-    private func extractKeywords(from text: String) -> [String] {
-        let cleanText = text.lowercased()
-            .replacingOccurrences(of: "[^a-z0-9\\s]", with: " ", options: .regularExpression)
-        
-        let words = cleanText.components(separatedBy: .whitespacesAndNewlines)
-            .filter { word in
-                word.count >= 3 && // Minimum 3 caractères
-                word.count <= 15 && // Maximum 15 caractères
-                !stopWords.contains(word) // Exclure les mots vides
-            }
-        
-        return Array(Set(words)) // Supprimer les doublons
-    }
     
-    private func extractDomainKeywords(from url: String) -> [String] {
-        guard let urlObj = URL(string: url),
-              let host = urlObj.host else { return [] }
-        
-        let domain = host.replacingOccurrences(of: "www.", with: "")
-        
-        // Mapper les domaines populaires vers des mots-clés pertinents
-        let domainKeywords: [String: [String]] = [
-            "youtube.com": ["videos", "youtube"],
-            "instagram.com": ["photos", "instagram"],
-            "twitter.com": ["tweets", "social"],
-            "x.com": ["tweets", "social"],
-            "github.com": ["code", "development"],
-            "medium.com": ["articles", "blog"],
-            "reddit.com": ["discussions", "reddit"],
-            "pinterest.com": ["inspiration", "photos"],
-            "linkedin.com": ["professional", "work"],
-            "tiktok.com": ["videos", "tiktok"],
-            "amazon.com": ["shopping", "products"],
-            "spotify.com": ["music", "audio"],
-            "apple.com": ["tech", "apple"],
-            "netflix.com": ["movies", "entertainment"]
-        ]
-        
-        return domainKeywords[domain] ?? [domain.components(separatedBy: ".").first ?? domain]
-    }
+    // Labels techniques à exclure (métadonnées non pertinentes pour l'utilisateur)
+    private let excludedLabels: Set<String> = [
+        "vision enhanced", "wood processed", "document", "container", "adult", "structure", "material",
+     ]
     
-    // Mots vides à exclure
-    private let stopWords: Set<String> = [
-        "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
-        "from", "up", "about", "into", "through", "during", "before", "after", "above",
-        "below", "between", "among", "under", "over", "this", "that", "these", "those",
-        "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do",
-        "does", "did", "will", "would", "could", "should", "may", "might", "must",
-        "can", "shall", "get", "got", "make", "made", "take", "took", "come", "came",
-        "go", "went", "see", "saw", "know", "knew", "think", "thought", "say", "said",
-        "tell", "told", "become", "became", "leave", "left", "find", "found", "give",
-        "gave", "use", "used", "work", "worked", "call", "called", "try", "tried",
-        "ask", "asked", "need", "needed", "feel", "felt", "seem", "seemed", "turn",
-        "turned", "start", "started", "show", "showed", "hear", "heard", "play",
-        "played", "run", "ran", "move", "moved", "live", "lived", "believe", "believed",
-        "hold", "held", "bring", "brought", "happen", "happened", "write", "wrote",
-        "provide", "provided", "sit", "sat", "stand", "stood", "lose", "lost", "pay",
-        "paid", "meet", "met", "include", "included", "continue", "continued", "set",
-        "learn", "learned", "change", "changed", "lead", "led", "understand", "understood",
-        "watch", "watched", "follow", "followed", "stop", "stopped", "create", "created",
-        "speak", "spoke", "read", "allow", "allowed", "add", "added", "spend", "spent",
-        "grow", "grew", "open", "opened", "walk", "walked", "win", "won", "offer",
-        "offered", "remember", "remembered", "love", "loved", "consider", "considered",
-        "appear", "appeared", "buy", "bought", "wait", "waited", "serve", "served",
-        "die", "died", "send", "sent", "expect", "expected", "build", "built", "stay",
-        "stayed", "fall", "fell", "cut", "reach", "reached", "kill", "killed", "remain",
-        "remained", "suggest", "suggested", "raise", "raised", "pass", "passed", "sell",
-        "sold", "require", "required", "report", "reported", "decide", "decided", "pull",
-        "pulled", "structure", "nich", "sur", "pin", "vision", "enhanced", "processed", "material", "img"
-    ]
 }
 
 // MARK: - Custom Button Style
