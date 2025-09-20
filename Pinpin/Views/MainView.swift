@@ -203,7 +203,6 @@ struct MainView: View {
                             }
                         }
                         .padding(.horizontal, 10)
-                        .padding(.bottom, 70)
                         .onChange(of: selectedContentType) {
                             withTransaction(Transaction(animation: nil)) {
                                 proxy.scrollTo("top", anchor: .top)
