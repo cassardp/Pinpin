@@ -184,7 +184,7 @@ struct FloatingSearchBar: View {
                     showSettings = true
                 }
             }) {
-                Image(systemName: isSelectionMode ? "xmark" : "slider.vertical.3")
+                Image(systemName: isSelectionMode ? "xmark" : "gearshape")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.primary)
                     .frame(width: 48, height: 48)
