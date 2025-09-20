@@ -54,116 +54,110 @@ struct FilterMenuView: View {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 }
             
-            // ScrollView avec effet de fondu
-            ZStack {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Spacer initial pour le safe area
-                        Spacer()
-                            .frame(height: 130)
-                        
-                        // Option "Tout"
-                        Button(action: {
-                            let generator = UIImpactFeedbackGenerator(style: .light)
-                            generator.impactOccurred()
-                            withAnimation(.easeInOut) {
-                                selectedContentType = nil
-                            }
-                        }) {
-                            HStack(spacing: 12) {
-                                if selectedContentType == nil {
-                                    Circle()
-                                        .fill(Color.primary)
-                                        .frame(width: 8, height: 8)
-                                        .transition(.move(edge: .leading).combined(with: .opacity))
-                                }
-
-                                Text("All")
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.primary)
-
-                                Spacer()
-                            }
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .allowsHitTesting(!isSwipingHorizontally)
-                        
-                        // Types dynamiques
-                        ForEach(availableTypes, id: \.self) { type in
-                            Button(action: {
-                                let generator = UIImpactFeedbackGenerator(style: .light)
-                                generator.impactOccurred()
-                                // Toggle : si le type est déjà sélectionné, on désélectionne
-                                withAnimation(.easeInOut) {
-                                    selectedContentType = (selectedContentType == type) ? nil : type
-                                }
-                            }) {
-                                HStack(spacing: 12) {
-                                    if selectedContentType == type {
-                                        Circle()
-                                            .fill(Color.primary)
-                                            .frame(width: 8, height: 8)
-                                            .transition(.move(edge: .leading).combined(with: .opacity))
-                                    }
-
-                                    Text(ContentType(rawValue: type)?.displayName ?? type.capitalized)
-                                        .font(.largeTitle)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.primary)
-
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 32)
-                                .padding(.vertical, 8)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .allowsHitTesting(!isSwipingHorizontally)
-                        }
-                        
-                        // Spacer final pour permettre le scroll
-                        Spacer()
-                            .frame(height: 300)
+            // VStack centré verticalement
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer()
+                
+                // Option "Tout"
+                CategoryButton(
+                    isSelected: selectedContentType == nil,
+                    title: "All",
+                    isSwipingHorizontally: isSwipingHorizontally
+                ) {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                    withAnimation(.easeInOut) {
+                        selectedContentType = nil
                     }
                 }
                 
-                // Effet de fondu en haut
-                VStack {
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color(UIColor.systemBackground), location: 0.0),
-                            .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.3),
-                            .init(color: Color.clear, location: 1.0)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 120)
-                    .allowsHitTesting(false)
-                    
-                    Spacer()
+                // Types dynamiques
+                ForEach(availableTypes, id: \.self) { type in
+                    CategoryButton(
+                        isSelected: selectedContentType == type,
+                        title: ContentType(rawValue: type)?.displayName ?? type.capitalized,
+                        isSwipingHorizontally: isSwipingHorizontally
+                    ) {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
+                        withAnimation(.easeInOut) {
+                            selectedContentType = (selectedContentType == type) ? nil : type
+                        }
+                    }
                 }
                 
-                // Effet de fondu en bas
-                VStack {
-                    Spacer()
-                    
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color.clear, location: 0.0),
-                            .init(color: Color(UIColor.systemBackground).opacity(0.8), location: 0.7),
-                            .init(color: Color(UIColor.systemBackground), location: 1.0)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 120)
-                    .allowsHitTesting(false)
-                }
+                Spacer()
+            }
+            
+            // Effet de fondu en haut - en dehors de la ScrollView
+            VStack {
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: Color(UIColor.systemBackground), location: 0.0),
+                        .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.3),
+                        .init(color: Color.clear, location: 1.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 120)
+                .allowsHitTesting(false)
+                
+                Spacer()
+            }
+            
+            // Effet de fondu en bas - en dehors de la ScrollView
+            VStack {
+                Spacer()
+                
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: Color.clear, location: 0.0),
+                        .init(color: Color(UIColor.systemBackground).opacity(0.8), location: 0.7),
+                        .init(color: Color(UIColor.systemBackground), location: 1.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 120)
+                .allowsHitTesting(false)
             }
         }
+    }
+}
+
+// MARK: - CategoryButton Component
+struct CategoryButton: View {
+    let isSelected: Bool
+    let title: String
+    let isSwipingHorizontally: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: action) {
+                HStack(spacing: 12) {
+                    if isSelected {
+                        Circle()
+                            .fill(Color.primary)
+                            .frame(width: 8, height: 8)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
+
+                    Text(title)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                }
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(isSwipingHorizontally)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 32)
     }
 }
 

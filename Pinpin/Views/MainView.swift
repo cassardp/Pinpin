@@ -103,7 +103,12 @@ struct MainView: View {
             let title = item.title?.lowercased() ?? ""
             let description = (item.metadataDict["best_description"] ?? item.itemDescription ?? "").lowercased()
             let url = item.url?.lowercased() ?? ""
-            let metadataValues = item.metadataDict.values.joined(separator: " ").lowercased()
+            // Appliquer la même transformation que dans PredefinedSearchView : _ → espace
+            let metadataValues = item.metadataDict.values
+                .joined(separator: " ")
+                .lowercased()
+                .replacingOccurrences(of: "_", with: " ")
+            
             return title.contains(query)
                 || description.contains(query)
                 || url.contains(query)
