@@ -3,8 +3,9 @@ import Vision
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import ImageIO
+import CoreML
 
-// MARK: - Vision (classification)
+// MARK: - Vision (classification + instance segmentation)
 struct VisionClassifier {
     static func classify(_ uiImage: UIImage, maxLabels: Int = 8) -> [(label: String, confidence: Float)] {
         guard let ciImage = CIImage(image: uiImage) else { return [] }
@@ -14,11 +15,91 @@ struct VisionClassifier {
         do {
             try handler.perform([request])
             let results = request.results ?? []
-            // Retourner plus de résultats pour avoir plus de choix
             return Array(results.prefix(maxLabels)).map { ($0.identifier, $0.confidence) }
         } catch {
             return []
         }
+    }
+}
+
+// MARK: - Foreground Instance Segmentation
+struct ForegroundInstanceSegmentation {
+    struct DetectedInstance {
+        let confidence: Float
+        let boundingBox: CGRect
+        let maskArea: Float
+        let instanceMask: CVPixelBuffer?
+    }
+    
+    static func detectForegroundInstances(in uiImage: UIImage) -> [DetectedInstance] {
+        guard let ciImage = CIImage(image: uiImage) else { return [] }
+        let handler = VNImageRequestHandler(ciImage: ciImage, options: [:])
+        
+        // Utiliser VNGenerateForegroundInstanceMaskRequest pour la segmentation d'instances
+        let request = VNGenerateForegroundInstanceMaskRequest()
+        
+        do {
+            try handler.perform([request])
+            guard let result = request.results?.first else { return [] }
+            
+            var detectedInstances: [DetectedInstance] = []
+            
+            // Parcourir toutes les instances détectées (allInstances est un IndexSet)
+            for instanceIndex in result.allInstances {
+                // Générer le masque pour cette instance
+                let maskedImage = try result.generateMaskedImage(
+                    ofInstances: IndexSet([instanceIndex]),
+                    from: handler,
+                    croppedToInstancesExtent: false
+                )
+                
+                // Calculer l'aire du masque
+                let maskArea = calculateMaskArea(maskedImage)
+                
+                // Pour l'instant, utiliser des valeurs par défaut car IndexSet ne contient que des indices
+                let detectedInstance = DetectedInstance(
+                    confidence: 0.8, // Valeur par défaut, l'API ne fournit pas de confidence par instance
+                    boundingBox: CGRect(x: 0, y: 0, width: 1, height: 1), // Bounding box par défaut
+                    maskArea: maskArea,
+                    instanceMask: maskedImage
+                )
+                detectedInstances.append(detectedInstance)
+            }
+            
+            // Trier par aire du masque (plus grand = plus important)
+            return detectedInstances.sorted { $0.maskArea > $1.maskArea }
+            
+        } catch {
+            print("Foreground instance segmentation failed: \(error)")
+            return []
+        }
+    }
+    
+    private static func calculateMaskArea(_ pixelBuffer: CVPixelBuffer) -> Float {
+        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+        
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        
+        guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else { return 0 }
+        
+        let buffer = baseAddress.assumingMemoryBound(to: UInt8.self)
+        var maskPixels = 0
+        let totalPixels = width * height
+        
+        // Compter les pixels non-transparents (alpha > 0)
+        for y in 0..<height {
+            for x in 0..<width {
+                let pixelIndex = y * bytesPerRow + x * 4 + 3 // Canal alpha
+                if buffer[pixelIndex] > 0 {
+                    maskPixels += 1
+                }
+            }
+        }
+        
+        return Float(maskPixels) / Float(totalPixels)
     }
 }
 
@@ -95,6 +176,67 @@ struct ColorAnalyzer {
 
         return top.map(colorFor)
     }
+    
+    // Couleur dominante basée sur un masque d'instance précis
+    static func averageColorFromInstanceMask(image: UIImage, mask: CVPixelBuffer) -> UIColor? {
+        guard let cgImage = image.cgImage else { return nil }
+        
+        // Redimensionner l'image pour matcher le masque si nécessaire
+        let maskWidth = CVPixelBufferGetWidth(mask)
+        let maskHeight = CVPixelBufferGetHeight(mask)
+        let imageWidth = cgImage.width
+        let imageHeight = cgImage.height
+        
+        // Obtenir les données de l'image
+        guard let imageData = cgImage.dataProvider?.data,
+              let imagePtr = CFDataGetBytePtr(imageData) else { return nil }
+        
+        // Verrouiller le masque
+        CVPixelBufferLockBaseAddress(mask, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(mask, .readOnly) }
+        
+        guard let maskBaseAddress = CVPixelBufferGetBaseAddress(mask) else { return nil }
+        let maskBuffer = maskBaseAddress.assumingMemoryBound(to: UInt8.self)
+        let maskBytesPerRow = CVPixelBufferGetBytesPerRow(mask)
+        
+        var totalR: Int = 0, totalG: Int = 0, totalB: Int = 0, count: Int = 0
+        
+        // Parcourir le masque et accumuler les couleurs correspondantes
+        for y in 0..<maskHeight {
+            for x in 0..<maskWidth {
+                // Index pour le canal alpha du masque (RGBA)
+                let maskIndex = y * maskBytesPerRow + x * 4 + 3
+                
+                // Si ce pixel fait partie du masque (alpha > 0)
+                if maskBuffer[maskIndex] > 0 {
+                    // Convertir les coordonnées du masque vers l'image originale
+                    let imageX = Int(Float(x) * Float(imageWidth) / Float(maskWidth))
+                    let imageY = Int(Float(y) * Float(imageHeight) / Float(maskHeight))
+                    
+                    // Vérifier les limites
+                    if imageX < imageWidth && imageY < imageHeight {
+                        let imageIndex = (imageY * cgImage.bytesPerRow) + (imageX * 4)
+                        
+                        if imageIndex + 2 < CFDataGetLength(imageData) {
+                            totalR += Int(imagePtr[imageIndex])
+                            totalG += Int(imagePtr[imageIndex + 1])
+                            totalB += Int(imagePtr[imageIndex + 2])
+                            count += 1
+                        }
+                    }
+                }
+            }
+        }
+        
+        guard count > 0 else { return nil }
+        
+        let avgR = CGFloat(totalR) / CGFloat(count) / 255.0
+        let avgG = CGFloat(totalG) / CGFloat(count) / 255.0
+        let avgB = CGFloat(totalB) / CGFloat(count) / 255.0
+        
+        return UIColor(red: avgR, green: avgG, blue: avgB, alpha: 1.0)
+    }
+    
 }
 
 
@@ -139,43 +281,28 @@ extension UIColor {
         if b > 0.92 && s < 0.12 { return "white" }
         if s < 0.15 { return "gray" }
         switch h {
-        case ..<15, 345...: return "red"
-        case 15..<35: return "orange"
-        case 35..<50: return "yellow"
-        case 50..<170: return "green"
-        case 170..<200: return "cyan"
-        case 200..<255: return "blue"
-        case 255..<290: return "purple"
-        case 290..<320: return "magenta"
-        case 320..<345: return "pink"
+        case ..<10, 350...: return "red"        // Rouge pur : 0-10° et 350-360°
+        case 10..<40: return "orange"           // Orange : 10-40°
+        case 40..<65: return "yellow"           // Jaune : 40-65°
+        case 65..<170: return "green"           // Vert : 65-170°
+        case 170..<255: return "blue"           // Bleu : 170-255°
+        case 255..<350: return "purple"         // Violet : 255-350°
         default: return "unknown"
         }
     }
 
-    // Extended, bilingual names (simple heuristics, KISS)
+    // Couleurs ultra-simplifiées (KISS maximal)
     var colorNameEN: String {
         guard let hsb = self.hsb else { return "unknown" }
-        let h = hsb.h * 360.0
-        let s = hsb.s
         let b = hsb.b
-        // Grayscale
-        if b < 0.12 { return "black" }
-        if b > 0.92 && s < 0.12 { return "white" }
-        if s < 0.12 {
-            if b > 0.85 { return "silver" }
-            return "gray"
-        }
-        // Warm special cases
-        if (15..<45).contains(h) && b < 0.55 { return "brown" }
-        if (30..<60).contains(h) && s < 0.35 && b > 0.75 { return "beige" }
-        if (45..<60).contains(h) && s > 0.5 && (0.6..<0.9).contains(b) { return "gold" }
-        if (0..<15).contains(h) && b < 0.35 && s > 0.4 { return "maroon" }
-        // Cool special cases
-        if (200..<255).contains(h) && b < 0.35 && s > 0.35 { return "navy" }
-        if (170..<200).contains(h) && s > 0.4 { return "teal" }
-        if (60..<90).contains(h) && (0.25..<0.5).contains(s) && (0.3..<0.65).contains(b) { return "olive" }
-        if (85..<105).contains(h) && s > 0.5 && b > 0.7 { return "lime" }
-        // Fallback to basic buckets
+        let s = hsb.s
+        
+        // Grayscale simple
+        if b < 0.15 { return "black" }
+        if b > 0.85 && s < 0.15 { return "white" }
+        if s < 0.15 { return "gray" }
+        
+        // Couleurs de base uniquement
         return basicColorName
     }
 
@@ -184,24 +311,12 @@ extension UIColor {
         case "black": return "noir"
         case "white": return "blanc"
         case "gray": return "gris"
-        case "silver": return "argent"
         case "red": return "rouge"
-        case "maroon": return "bordeaux"
         case "orange": return "orange"
         case "yellow": return "jaune"
-        case "gold": return "or"
         case "green": return "vert"
-        case "lime": return "vert clair"
-        case "olive": return "olive"
-        case "teal": return "sarcelle"
-        case "cyan": return "cyan"
         case "blue": return "bleu"
-        case "navy": return "bleu marine"
         case "purple": return "violet"
-        case "magenta": return "magenta"
-        case "pink": return "rose"
-        case "brown": return "marron"
-        case "beige": return "beige"
         default: return "inconnu"
         }
     }
@@ -290,31 +405,72 @@ func analyzeImage(_ image: UIImage) -> [String: String] {
     return meta
 }
 
-// MARK: - Simple main-subject analysis (center crop)
+// MARK: - Intelligent main-subject analysis (foreground instance segmentation)
 func analyzeMainSubject(_ image: UIImage) -> [String: String] {
     var meta: [String: String] = [:]
     
-    // Central ROI + Vision classification
-    let centerROI = CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.6)
-    let roiImage = image.cropNormalized(centerROI) ?? image
+    // Essayer d'abord l'instance segmentation avec VNGenerateForegroundInstanceMaskRequest
+    let detectedInstances = ForegroundInstanceSegmentation.detectForegroundInstances(in: image)
     
-    // Classify the main subject avec plus de précision
-    let mainLabels = VisionClassifier.classify(roiImage, maxLabels: 3)
-    if let first = mainLabels.first {
-        meta["main_object_label"] = first.label
-        meta["main_object_confidence"] = String(format: "%.3f", first.confidence)
+    if let mainInstance = detectedInstances.first {
+        // L'instance principale est celle avec la plus grande aire de masque
+        meta["main_object_detection_method"] = "foreground_instance_segmentation"
+        meta["main_object_confidence"] = String(format: "%.3f", mainInstance.confidence)
+        meta["main_object_area"] = String(format: "%.3f", mainInstance.maskArea)
         
-        // Ajouter des labels alternatifs si disponibles
-        if mainLabels.count > 1 {
-            let alternatives = mainLabels.dropFirst().map { $0.label }.joined(separator: ",")
-            meta["main_object_alternatives"] = alternatives
+        // Obtenir le label via classification de la région de l'objet
+        let bbox = mainInstance.boundingBox
+        let normalizedRect = CGRect(
+            x: bbox.origin.x,
+            y: 1.0 - bbox.origin.y - bbox.height, // Vision utilise un système de coordonnées inversé
+            width: bbox.width,
+            height: bbox.height
+        )
+        
+        if let objectImage = image.cropNormalized(normalizedRect) {
+            let objectLabels = VisionClassifier.classify(objectImage, maxLabels: 3)
+            if let first = objectLabels.first {
+                meta["main_object_label"] = first.label
+                meta["main_object_label_confidence"] = String(format: "%.3f", first.confidence)
+                
+                // Labels alternatifs
+                if objectLabels.count > 1 {
+                    let alternatives = objectLabels.dropFirst().map { $0.label }.joined(separator: ",")
+                    meta["main_object_alternatives"] = alternatives
+                }
+            }
         }
-    }
-    
-    // Analyze dominant color in the center region
-    if let avg = ColorAnalyzer.averageColor(of: roiImage) {
-        meta["main_object_color_name"] = avg.colorNameEN
-        meta["main_object_color_name_fr"] = avg.colorNameFR
+        
+        // Couleur dominante basée sur le masque précis de l'instance
+        if let instanceMask = mainInstance.instanceMask,
+           let dominantColor = ColorAnalyzer.averageColorFromInstanceMask(image: image, mask: instanceMask) {
+            meta["main_object_color_name"] = dominantColor.colorNameEN
+            meta["main_object_color_name_fr"] = dominantColor.colorNameFR
+            meta["main_object_color_hex"] = dominantColor.hexRGB
+        }
+        
+    } else {
+        // Fallback vers l'ancienne méthode si l'instance segmentation échoue
+        meta["main_object_detection_method"] = "center_crop_fallback"
+        
+        let centerROI = CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.6)
+        let roiImage = image.cropNormalized(centerROI) ?? image
+        
+        let mainLabels = VisionClassifier.classify(roiImage, maxLabels: 3)
+        if let first = mainLabels.first {
+            meta["main_object_label"] = first.label
+            meta["main_object_confidence"] = String(format: "%.3f", first.confidence)
+            
+            if mainLabels.count > 1 {
+                let alternatives = mainLabels.dropFirst().map { $0.label }.joined(separator: ",")
+                meta["main_object_alternatives"] = alternatives
+            }
+        }
+        
+        if let avg = ColorAnalyzer.averageColor(of: roiImage) {
+            meta["main_object_color_name"] = avg.colorNameEN
+            meta["main_object_color_name_fr"] = avg.colorNameFR
+        }
     }
     
     return meta

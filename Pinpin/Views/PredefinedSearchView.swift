@@ -9,6 +9,7 @@ struct PredefinedSearchView: View {
     
     @StateObject private var contentService = ContentServiceCoreData()
     @State private var dynamicSearches: [String] = []
+    @State private var detectedColors: [String] = []
     
     // Recherches préenregistrées populaires (fallback)
     private let fallbackSearches = [
@@ -17,9 +18,10 @@ struct PredefinedSearchView: View {
         "work", "ideas", "inspiration", "tutorials", "news"
     ]
     
-    // Recherches à afficher (dynamiques ou fallback)
+    // Recherches à afficher (couleurs + dynamiques ou fallback)
     private var searchesToDisplay: [String] {
-        return dynamicSearches.isEmpty ? fallbackSearches : dynamicSearches
+        let baseSearches = dynamicSearches.isEmpty ? fallbackSearches : dynamicSearches
+        return detectedColors + baseSearches
     }
     
     var body: some View {
@@ -36,18 +38,27 @@ struct PredefinedSearchView: View {
                             onSearchSelected()
                         }
                     }) {
-                        Text(searchTerm)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(.ultraThickMaterial)
-                                    .colorScheme(.dark) // Force le mode sombre pour un look cohérent
-                            )
-                            .scaleEffect(searchQuery == searchTerm ? 0.95 : 1.0)
-                            .animation(.easeInOut(duration: 0.15), value: searchQuery)
+                        HStack(spacing: 6) {
+                            // Indicateur de couleur si c'est un tag couleur
+                            if detectedColors.contains(searchTerm) {
+                                Circle()
+                                    .fill(colorForName(searchTerm))
+                                    .frame(width: 12, height: 12)
+                            }
+                            
+                            Text(searchTerm)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(.ultraThickMaterial)
+                                .colorScheme(.dark)
+                        )
+                        .scaleEffect(searchQuery == searchTerm ? 0.95 : 1.0)
+                        .animation(.easeInOut(duration: 0.15), value: searchQuery)
                     }
                     .buttonStyle(PredefinedSearchButtonStyle())
                 }
@@ -58,12 +69,15 @@ struct PredefinedSearchView: View {
         .transition(.move(edge: .top).combined(with: .opacity))
         .onAppear {
             generateDynamicSearches()
+            generateColorTags()
         }
         .onChange(of: contentService.contentItems) {
             generateDynamicSearches()
+            generateColorTags()
         }
         .onChange(of: selectedContentType) {
             generateDynamicSearches()
+            generateColorTags()
         }
     }
     
@@ -127,6 +141,97 @@ struct PredefinedSearchView: View {
         dynamicSearches = Array(sortedLabels)
     }
     
+    // MARK: - Color Tags Generation
+    private func generateColorTags() {
+        let allItems = contentService.contentItems
+        guard !allItems.isEmpty else {
+            detectedColors = []
+            return
+        }
+        
+        // Filtrer selon la catégorie sélectionnée
+        let items: [ContentItem]
+        if let selectedType = selectedContentType, selectedType != "all" {
+            items = allItems.filter { $0.contentType == selectedType }
+        } else {
+            items = allItems
+        }
+        
+        guard !items.isEmpty else {
+            detectedColors = []
+            return
+        }
+        
+        var colorFrequency: [String: Int] = [:]
+        
+        // Extraire les couleurs depuis les métadonnées
+        for item in items {
+            for (key, value) in item.metadataDict {
+                if (key.contains("color_name") || key.contains("color_name_fr")) && !value.isEmpty {
+                    let colorName = value.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    // Utiliser les noms anglais pour l'affichage
+                    let displayColor = key.contains("color_name_fr") ? 
+                                     englishColorName(for: colorName) : colorName
+                    
+                    if supportedColors.contains(displayColor) {
+                        colorFrequency[displayColor, default: 0] += 1
+                    }
+                }
+            }
+        }
+        
+        // Trier par fréquence et prendre les 6 couleurs les plus populaires
+        let sortedColors = colorFrequency
+            .filter { $0.value >= 1 } // Minimum 1 occurrence
+            .sorted { $0.value > $1.value }
+            .prefix(6)
+            .map { $0.key }
+        
+        detectedColors = Array(sortedColors)
+    }
+    
+    // MARK: - Color Utilities
+    private let supportedColors: Set<String> = [
+        "black", "white", "gray", "red", "orange", "yellow", 
+        "green", "cyan", "blue", "purple", "magenta", "pink"
+    ]
+    
+    private func englishColorName(for frenchName: String) -> String {
+        switch frenchName {
+        case "noir": return "black"
+        case "blanc": return "white"
+        case "gris": return "gray"
+        case "rouge": return "red"
+        case "orange": return "orange"
+        case "jaune": return "yellow"
+        case "vert": return "green"
+        case "cyan": return "cyan"
+        case "bleu": return "blue"
+        case "violet": return "purple"
+        case "magenta": return "magenta"
+        case "rose": return "pink"
+        default: return frenchName
+        }
+    }
+    
+    private func colorForName(_ colorName: String) -> Color {
+        switch colorName {
+        case "black": return .black
+        case "white": return .white
+        case "gray": return .gray
+        case "red": return .red
+        case "orange": return .orange
+        case "yellow": return .yellow
+        case "green": return .green
+        case "cyan": return .cyan
+        case "blue": return .blue
+        case "purple": return .purple
+        case "magenta": return .pink
+        case "pink": return .pink
+        default: return .gray
+        }
+    }
     
     // Labels techniques à exclure (métadonnées non pertinentes pour l'utilisateur)
     private let excludedLabels: Set<String> = [
