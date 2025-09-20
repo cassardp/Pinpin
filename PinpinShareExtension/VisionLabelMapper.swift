@@ -58,7 +58,7 @@ class VisionLabelMapper {
             "material", "container", "object", "item", "thing", "stuff", "conveyance",
             "housewares", "office_supplies", "tool", "equipment", "device",
             "people", "person", "human", "crowd", "wood_natural", "raw_glass", "textile", "adult",
-            "machine", "dashboard",
+            "dashboard",
         ]
         
         let normalizedLabel = label.lowercased()
@@ -422,7 +422,7 @@ class VisionLabelMapper {
     private func isVehiclesLabel(_ label: String) -> Bool {
         let vehiclesKeywords = [
             // Véhicules
-            "car", "automobile", "vehicle", "machine", "suv", "truck", "van", "convertible", "limousine",
+            "car", "machine", "automobile", "vehicle", "machine", "suv", "truck", "van", "convertible", "limousine",
             "formula_one", "sportscar", "formula_one_car", "grand_prix", "go_kart", "jeep", "motorhome",
             
             // Motos et véhicules à deux roues

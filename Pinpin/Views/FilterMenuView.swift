@@ -60,7 +60,7 @@ struct FilterMenuView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         // Spacer initial pour le safe area
                         Spacer()
-                            .frame(height: 150)
+                            .frame(height: 130)
                         
                         // Option "Tout"
                         Button(action: {
