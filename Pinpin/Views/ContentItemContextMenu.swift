@@ -4,6 +4,7 @@ struct ContentItemContextMenu: View {
     let item: ContentItem
     let contentService: ContentServiceCoreData
     let onStorageStatsRefresh: () -> Void
+    let onDeleteRequest: () -> Void
     @StateObject private var userPreferences = UserPreferences.shared
     
     // MARK: - Computed Properties
@@ -315,15 +316,19 @@ struct ContentItemContextMenu: View {
             }
         }
         
-        // Context menu trimmed: removed Hide and Delete actions
+            // Séparateur avant l'action de suppression
+            Divider()
+            
+            // Action de suppression avec popup de confirmation
+            Button(role: .destructive) {
+                onDeleteRequest()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
     
     // MARK: - Actions
-    
-    // Hide action removed from context menu
-    
-    // Delete action removed from context menu
     
     private func reclassifyItem(to newType: ContentType) {
         withAnimation(.easeInOut(duration: 0.3)) {
@@ -337,6 +342,7 @@ struct ContentItemContextMenu: View {
         contentService.updateContentItem(item)
     }
     
+    
 
 }
 
@@ -346,6 +352,7 @@ struct ContentItemContextMenu: View {
     ContentItemContextMenu(
         item: ContentItem(),
         contentService: ContentServiceCoreData(),
-        onStorageStatsRefresh: {}
+        onStorageStatsRefresh: {},
+        onDeleteRequest: {}
     )
 }

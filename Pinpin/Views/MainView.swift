@@ -39,6 +39,10 @@ struct MainView: View {
     // Multi-sélection
     @State private var isSelectionMode: Bool = false
     @State private var selectedItems: Set<UUID> = []
+    
+    // Confirmation de suppression individuelle
+    @State private var showDeleteConfirmation: Bool = false
+    @State private var itemToDelete: ContentItem?
 
     // Hauteur du clavier pour ajuster la barre flottante
     @State private var keyboardHeight: CGFloat = 0
@@ -348,6 +352,22 @@ struct MainView: View {
                 ))
             }
         }
+        .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { 
+                itemToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let item = itemToDelete {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        contentService.deleteContentItem(item)
+                        storageStatsRefreshTrigger += 1
+                    }
+                }
+                itemToDelete = nil
+            }
+        } message: {
+            Text("Are you sure you want to delete this item? This action cannot be undone.")
+        }
     }
 
     // MARK: - Sélection
@@ -395,20 +415,12 @@ struct MainView: View {
                 ContentItemContextMenu(
                     item: item,
                     contentService: contentService,
-                    onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 }
-                )
-                Button(role: .destructive) {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        contentService.deleteContentItem(item)
-                        if isSelectionMode {
-                            selectedItems.remove(item.safeId)
-                            if selectedItems.isEmpty { isSelectionMode = false }
-                        }
-                        storageStatsRefreshTrigger += 1
+                    onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 },
+                    onDeleteRequest: {
+                        itemToDelete = item
+                        showDeleteConfirmation = true
                     }
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
+                )
             }
         }
     }
