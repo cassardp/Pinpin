@@ -18,10 +18,10 @@ struct PredefinedSearchView: View {
         "work", "ideas", "inspiration", "tutorials", "news"
     ]
     
-    // Recherches à afficher (couleurs + dynamiques ou fallback)
+    // Recherches à afficher (dynamiques ou fallback + couleurs)
     private var searchesToDisplay: [String] {
         let baseSearches = dynamicSearches.isEmpty ? fallbackSearches : dynamicSearches
-        return detectedColors + baseSearches
+        return baseSearches + detectedColors
     }
     
     var body: some View {
@@ -29,6 +29,10 @@ struct PredefinedSearchView: View {
             HStack(spacing: 8) {
                 ForEach(searchesToDisplay, id: \.self) { searchTerm in
                     Button(action: {
+                        // Haptic feedback léger
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                        
                         withAnimation(.easeInOut(duration: 0.2)) {
                             searchQuery = searchTerm
                         }

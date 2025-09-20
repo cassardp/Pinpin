@@ -133,27 +133,41 @@ struct CategoryButton: View {
     let isSwipingHorizontally: Bool
     let action: () -> Void
     
+    @State private var isDragging: Bool = false
+    
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: action) {
-                HStack(spacing: 12) {
-                    if isSelected {
-                        Circle()
-                            .fill(Color.primary)
-                            .frame(width: 8, height: 8)
-                            .transition(.move(edge: .leading).combined(with: .opacity))
-                    }
-
-                    Text(title)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+            HStack(spacing: 12) {
+                if isSelected {
+                    Circle()
+                        .fill(Color.primary)
+                        .frame(width: 8, height: 8)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
                 }
-                .padding(.vertical, 10)
-                .contentShape(Rectangle())
+
+                Text(title)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
             }
-            .buttonStyle(.plain)
-            .disabled(isSwipingHorizontally)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        if !isDragging && (abs(value.translation.width) > 10 || abs(value.translation.height) > 10) {
+                            isDragging = true
+                        }
+                    }
+                    .onEnded { value in
+                        // Si c'est un petit mouvement (tap), exécuter l'action
+                        if !isDragging && abs(value.translation.width) < 10 && abs(value.translation.height) < 10 && !isSwipingHorizontally {
+                            action()
+                        }
+                        
+                        isDragging = false
+                    }
+            )
             
             Spacer()
         }
