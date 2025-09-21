@@ -55,28 +55,34 @@ struct SmartAsyncImage: View {
     }
     
     private func loadLocalImageIfAvailable() {
-        let potentialPaths = [
-            item.metadataDict["thumbnail_url"],
-            item.metadataDict["icon_url"]
-        ].compactMap { $0 }.filter { $0.hasPrefix("images/") }
-
-        for path in potentialPaths {
-            if let potentialURL = SharedImageService.shared.getImageURL(from: path) as URL? {
+        // Utiliser directement thumbnailUrl de l'item
+        guard let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty else { return }
+        
+        if thumbnailUrl.hasPrefix("images/") {
+            // Image locale
+            if let potentialURL = SharedImageService.shared.getImageURL(from: thumbnailUrl) as URL? {
                 let pathString = potentialURL.path
                 if FileManager.default.fileExists(atPath: pathString) {
                     localImageURL = potentialURL
-                    break
                 }
             }
         }
     }
     
     private func getRemoteURL() -> URL? {
-        if let urlString = item.metadataDict["thumbnail_url"],
-           !urlString.hasPrefix("images/"),
-           let url = URL(string: urlString) {
+        // Utiliser directement thumbnailUrl de l'item
+        guard let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty else {
+            // Fallback vers l'URL principale si pas de thumbnail
+            if let urlString = item.url, let url = URL(string: urlString) {
+                return url
+            }
+            return nil
+        }
+        
+        if !thumbnailUrl.hasPrefix("images/"), let url = URL(string: thumbnailUrl) {
             return url
         }
+        
         return nil
     }
 }

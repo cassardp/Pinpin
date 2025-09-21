@@ -13,6 +13,7 @@ struct MainView: View {
     @StateObject private var contentService = ContentServiceCoreData()
     @StateObject private var sharedContentService: SharedContentService
     @StateObject private var userPreferences = UserPreferences.shared
+    @StateObject private var categoryService = CategoryService.shared
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
@@ -88,12 +89,7 @@ struct MainView: View {
         if let selectedType = selectedContentType {
             typeFiltered = items.filter { $0.contentType == selectedType }
         } else {
-            // Vue "All" - appliquer le filtre pour masquer "misc" si activé
-            if userPreferences.hideMiscCategory {
-                typeFiltered = items.filter { $0.contentType != "misc" }
-            } else {
-                typeFiltered = items
-            }
+            typeFiltered = items
         }
 
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

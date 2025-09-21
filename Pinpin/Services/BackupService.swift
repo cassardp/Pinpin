@@ -60,7 +60,7 @@ final class BackupService: ObservableObject {
             return BackupItem(
                 id: item.id ?? UUID(),
                 userId: item.userId,
-                contentType: item.contentType ?? "misc",
+                contentType: item.contentType ?? "",
                 title: item.title ?? "Untitled",
                 itemDescription: item.itemDescription,
                 url: item.url,
@@ -81,19 +81,17 @@ final class BackupService: ObservableObject {
         // 2) Copier les images locales référencées (si existent)
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
             for item in mapped {
-                // keys we know we use for local files
-                let keys = ["thumbnail_url", "icon_url"]
-                for key in keys {
-                    if let rel = item.metadata[key], !rel.isEmpty {
-                        let src = containerURL.appendingPathComponent(rel)
-                        if fm.fileExists(atPath: src.path) {
-                            let dst = workingDir.appendingPathComponent(rel)
-                            try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                            if fm.fileExists(atPath: dst.path) {
-                                try? fm.removeItem(at: dst)
-                            }
-                            try fm.copyItem(at: src, to: dst)
+                // Utiliser uniquement thumbnailUrl (nouveau système simplifié)
+                if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
+                    let src = containerURL.appendingPathComponent(thumbnailUrl)
+                    if fm.fileExists(atPath: src.path) {
+                        let dst = workingDir.appendingPathComponent(thumbnailUrl)
+                        try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        if fm.fileExists(atPath: dst.path) {
+                            try? fm.removeItem(at: dst)
                         }
+                        try fm.copyItem(at: src, to: dst)
+                        print("[BackupService] Image copiée: \(thumbnailUrl)")
                     }
                 }
             }
@@ -138,17 +136,17 @@ final class BackupService: ObservableObject {
         // Copier images dans le container partagé
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
             for item in backup.items {
-                for key in ["thumbnail_url", "icon_url"] {
-                    if let rel = item.metadata[key], !rel.isEmpty {
-                        let src = root.appendingPathComponent(rel)
-                        let dst = containerURL.appendingPathComponent(rel)
-                        // créer le dossier si nécessaire
-                        try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                        if fm.fileExists(atPath: dst.path) {
-                            // ne pas écraser si déjà présent
-                        } else if fm.fileExists(atPath: src.path) {
-                            try fm.copyItem(at: src, to: dst)
-                        }
+                // Utiliser uniquement thumbnailUrl (nouveau système simplifié)
+                if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
+                    let src = root.appendingPathComponent(thumbnailUrl)
+                    let dst = containerURL.appendingPathComponent(thumbnailUrl)
+                    // créer le dossier si nécessaire
+                    try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    if fm.fileExists(atPath: dst.path) {
+                        // ne pas écraser si déjà présent
+                    } else if fm.fileExists(atPath: src.path) {
+                        try fm.copyItem(at: src, to: dst)
+                        print("[BackupService] Image importée: \(thumbnailUrl)")
                     }
                 }
             }

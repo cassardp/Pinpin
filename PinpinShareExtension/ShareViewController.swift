@@ -1,248 +1,144 @@
 //
 //  ShareViewController.swift
-//  NeeedShareExtension
+//  PinpinShareExtension
 //
-//  Share Extension pour l'app Neeed - Partage instantané sans popup
+//  Share Extension simplifiée avec sélection de catégorie
 //
 
 import UIKit
 import UniformTypeIdentifiers
 import LinkPresentation
+import SwiftUI
 
 class ShareViewController: UIViewController {
     
-    private var toastView: UIView?
+    private var sharedContent: SharedContentData?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Essayer de rendre la sheet transparente pour iOS 26+
-        setupTransparentBackground()
-        
-        // Afficher le toast de capture
-        showCapturingToast()
-        
-        // Ajouter un délai pour améliorer la capture des métadonnées
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.processSharedContent()
-        }
-    }
-    
-    private func setupTransparentBackground() {
-        // La sheet reste opaque dans iOS 26+, utiliser un fond système adaptatif
         view.backgroundColor = UIColor.systemBackground
+        
+        // Traiter le contenu partagé
+        processSharedContent()
     }
     
     private func processSharedContent() {
         guard let extensionContext = extensionContext,
               let extensionItem = extensionContext.inputItems.first as? NSExtensionItem,
               let attachments = extensionItem.attachments else {
-            print("[ShareExtension] Aucun attachment trouvé")
             completeRequest()
             return
         }
         
-        // Debug: Logger tous les types d'attachments reçus
-        print("[ShareExtension] \(attachments.count) attachment(s) reçu(s):")
-        for (index, attachment) in attachments.enumerated() {
-            print("  Attachment \(index): \(attachment.registeredTypeIdentifiers)")
-        }
-        
-        // Traiter seulement le premier attachment pertinent (comportement natif)
+        // Traiter le premier attachment pertinent
         for attachment in attachments {
-            // Priorité 1: URLs (le plus important)
+            // Priorité 1: URLs
             if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                 attachment.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] (item, error) in
                     if let url = item as? URL {
-                        self?.handleURL(url) {
-                            self?.completeRequest()
+                        DispatchQueue.main.async {
+                            self?.handleURL(url)
                         }
                     } else {
                         self?.completeRequest()
                     }
                 }
-                return // Traiter seulement le premier URL trouvé
+                return
             }
         }
         
-        // Priorité 2: Texte (si pas d'URL)
+        // Priorité 2: Texte
         for attachment in attachments {
             if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                 attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { [weak self] (item, error) in
                     if let text = item as? String {
-                        self?.handleText(text) {
-                            self?.completeRequest()
+                        DispatchQueue.main.async {
+                            self?.handleText(text)
                         }
                     } else {
                         self?.completeRequest()
                     }
                 }
-                return // Traiter seulement le premier texte trouvé
+                return
             }
         }
         
-        // Priorité 3: Images (si pas d'URL ni texte)
+        // Priorité 3: Images
         for attachment in attachments {
             if attachment.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 attachment.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { [weak self] (item, error) in
                     if let imageURL = item as? URL {
-                        self?.handleImageURL(imageURL) {
-                            self?.completeRequest()
+                        DispatchQueue.main.async {
+                            self?.handleImageURL(imageURL)
                         }
                     } else {
                         self?.completeRequest()
                     }
                 }
-                return // Traiter seulement la première image trouvée
+                return
             }
         }
         
-        // Aucun attachment reconnu
         completeRequest()
     }
     
-    private func handleURL(_ url: URL, completion: @escaping () -> Void) {
-        // Debug: Logger l'URL
-        print("[ShareExtension] URL reçue: \(url.absoluteString)")
-        
-        // Utiliser LinkPresentation pour obtenir les métadonnées système (plus fiable)
+    private func handleURL(_ url: URL) {
+        // Utiliser LinkPresentation pour obtenir les métadonnées de base
         let metadataProvider = LPMetadataProvider()
         metadataProvider.startFetchingMetadata(for: url) { [weak self] (metadata, error) in
-            var extractedMetadata: [String: String] = [:]
-            var finalTitle = url.absoluteString
-            let finalDescription: String? = nil
+            var title = url.absoluteString
+            let description: String? = nil
             
             if let metadata = metadata, error == nil {
-                // Extraire les métadonnées LinkPresentation
-                if let title = metadata.title, !title.isEmpty {
-                    extractedMetadata["best_title"] = title
-                    finalTitle = title
+                if let metadataTitle = metadata.title, !metadataTitle.isEmpty {
+                    title = metadataTitle
                 }
                 
-                if let url = metadata.originalURL?.absoluteString {
-                    extractedMetadata["original_url"] = url
-                }
-                
-                // Extraire l'image/icône
+                // Sauvegarder l'image si disponible (pas d'icônes)
                 if let imageProvider = metadata.imageProvider {
-                    // Save main image and merge analysis metadata
                     self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { meta in
-                        for (k, v) in meta { extractedMetadata[k] = v }
+                        // Pas de métadonnées supplémentaires dans la version simplifiée
                     }) { imagePath in
                         if let imagePath = imagePath {
-                            extractedMetadata["thumbnail_url"] = imagePath
-                            extractedMetadata["has_local_image"] = "true"
-                        }
-                        
-                        // Maintenant essayer de capturer l'icône aussi
-                        if let iconProvider = metadata.iconProvider {
-                            // Save icon without additional analysis metadata
-                            self?.saveImageFromProvider(iconProvider) { iconPath in
-                                if let iconPath = iconPath {
-                                    extractedMetadata["icon_url"] = iconPath
-                                    extractedMetadata["has_local_icon"] = "true"
-                                }
-                                
-                                // Sauvegarder avec les métadonnées LinkPresentation
-                                DispatchQueue.main.async {
-                                    self?.saveSharedContent(
-                                        title: finalTitle,
-                                        url: url.absoluteString,
-                                        description: finalDescription,
-                                        metadata: extractedMetadata
-                                    )
-                                    completion()
-                                }
-                            }
+                            self?.createContentAndShowModal(title: title, url: url.absoluteString, description: description, thumbnailPath: imagePath)
                         } else {
-                            // Pas d'icône, sauvegarder quand même
-                            DispatchQueue.main.async {
-                                self?.saveSharedContent(
-                                    title: finalTitle,
-                                    url: url.absoluteString,
-                                    description: finalDescription,
-                                    metadata: extractedMetadata
-                                )
-                                completion()
-                            }
-                        }
-                    }
-                    return
-                }
-                
-                // Extraire l'icône si pas d'image principale
-                if let iconProvider = metadata.iconProvider {
-                    // Save icon without additional analysis metadata
-                    self?.saveImageFromProvider(iconProvider) { iconPath in
-                        if let iconPath = iconPath {
-                            extractedMetadata["icon_url"] = iconPath
-                            extractedMetadata["has_local_icon"] = "true"
-                        }
-                        
-                        // Sauvegarder avec les métadonnées LinkPresentation
-                        DispatchQueue.main.async {
-                            self?.saveSharedContent(
-                                title: finalTitle,
-                                url: url.absoluteString,
-                                description: finalDescription,
-                                metadata: extractedMetadata
-                            )
-                            completion()
+                            self?.createContentAndShowModal(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
                         }
                     }
                     return
                 }
             }
             
-            // Si LinkPresentation n'a pas d'image/icône, sauvegarder quand même
-            DispatchQueue.main.async {
-                self?.saveSharedContent(
-                    title: finalTitle,
-                    url: url.absoluteString,
-                    description: finalDescription,
-                    metadata: extractedMetadata
-                )
-                completion()
-            }
+            // Pas d'image, créer le contenu sans thumbnail
+            self?.createContentAndShowModal(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
         }
     }
     
-    private func handleText(_ text: String, completion: @escaping () -> Void) {
-        // Debug: Logger le texte reçu
-        print("[ShareExtension] Texte reçu: \(text)")
-        
+    private func handleText(_ text: String) {
         // Détecter les URLs dans le texte
         if let detectedURL = extractURLFromText(text) {
-            // Si on trouve une URL, la traiter avec LinkPresentation
-            handleURL(detectedURL, completion: completion)
+            handleURL(detectedURL)
         } else {
             // Traiter comme texte simple
-            saveSharedContent(
+            let contentData = SharedContentData(
                 title: text,
                 url: nil,
-                description: text,
-                metadata: nil
+                description: text
             )
-            
-            // Appeler completion de manière asynchrone pour s'assurer que la sauvegarde est terminée
-            DispatchQueue.main.async {
-                completion()
-            }
+            showCategorySelection(for: contentData)
         }
     }
     
-    private func handleImageURL(_ imageURL: URL, completion: @escaping () -> Void) {
-        
-        // Utiliser LinkPresentation même pour les images
+    private func handleImageURL(_ imageURL: URL) {
+        // Utiliser LinkPresentation même pour les images (comme dans l'ancienne version)
         let metadataProvider = LPMetadataProvider()
         metadataProvider.startFetchingMetadata(for: imageURL) { [weak self] (metadata, error) in
-            var extractedMetadata: [String: String] = [:]
             var finalTitle = imageURL.lastPathComponent
             let finalDescription: String? = nil
             
             if let metadata = metadata, error == nil {
                 if let title = metadata.title, !title.isEmpty {
-                    extractedMetadata["best_title"] = title
                     finalTitle = title
                 }
                 
@@ -250,42 +146,12 @@ class ShareViewController: UIViewController {
                 if let imageProvider = metadata.imageProvider {
                     // Save main image and merge analysis metadata
                     self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { meta in
-                        for (k, v) in meta { extractedMetadata[k] = v }
+                        // Pas de métadonnées supplémentaires
                     }) { imagePath in
                         if let imagePath = imagePath {
-                            extractedMetadata["thumbnail_url"] = imagePath
-                            extractedMetadata["has_local_image"] = "true"
-                        }
-                        
-                        // Maintenant essayer de capturer l'icône aussi
-                        if let iconProvider = metadata.iconProvider {
-                            self?.saveImageFromProvider(iconProvider) { iconPath in
-                                if let iconPath = iconPath {
-                                    extractedMetadata["icon_url"] = iconPath
-                                    extractedMetadata["has_local_icon"] = "true"
-                                }
-                                
-                                DispatchQueue.main.async {
-                                    self?.saveSharedContent(
-                                        title: finalTitle,
-                                        url: imageURL.absoluteString,
-                                        description: finalDescription,
-                                        metadata: extractedMetadata
-                                    )
-                                    completion()
-                                }
-                            }
+                            self?.createContentAndShowModal(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: imagePath)
                         } else {
-                            // Pas d'icône, sauvegarder quand même
-                            DispatchQueue.main.async {
-                                self?.saveSharedContent(
-                                    title: finalTitle,
-                                    url: imageURL.absoluteString,
-                                    description: finalDescription,
-                                    metadata: extractedMetadata
-                                )
-                                completion()
-                            }
+                            self?.createContentAndShowModal(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
                         }
                     }
                     return
@@ -293,161 +159,118 @@ class ShareViewController: UIViewController {
             }
             
             // Si pas de métadonnées, sauvegarder quand même
-            DispatchQueue.main.async {
-                self?.saveSharedContent(
-                    title: finalTitle,
-                    url: imageURL.absoluteString,
-                    description: finalDescription,
-                    metadata: extractedMetadata
-                )
-                completion()
-            }
+            self?.createContentAndShowModal(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
         }
     }
     
-    private func saveSharedContent(title: String, url: String?, description: String?, metadata: [String: String]?) {
-        // Utiliser le nouveau système de classification basé sur Vision
-        let finalType = determineFinalContentType(
-            url: url,
-            metadata: metadata
+    // MARK: - Category Selection Modal
+    
+    private func showCategorySelection(for contentData: SharedContentData) {
+        self.sharedContent = contentData
+        
+        let categoryModal = CategorySelectionModalWrapper(
+            contentData: contentData,
+            onCategorySelected: { [weak self] category in
+                self?.saveContent(contentData, to: category)
+            },
+            onCancel: { [weak self] in
+                self?.completeRequest()
+            }
         )
         
+        let hostingController = UIHostingController(rootView: categoryModal)
+        hostingController.modalPresentationStyle = .pageSheet
+        
+        if let sheet = hostingController.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        
+        present(hostingController, animated: true)
+    }
+    
+    private func saveContent(_ contentData: SharedContentData, to category: String) {
         let sharedContent: [String: Any] = [
-            "type": finalType,
-            "title": title,
-            "url": url ?? "",
-            "description": description ?? "",
-            "metadata": metadata ?? [:],
+            "category": category,
+            "title": contentData.title,
+            "url": contentData.url ?? "",
+            "description": contentData.description ?? "",
+            "thumbnailUrl": contentData.thumbnailPath ?? "",
             "timestamp": Date().timeIntervalSince1970
         ]
         
-        // Debug: Logger le contenu sauvegardé
-        print("[ShareExtension] Sauvegarde contenu:")
-        print("  - Type final: \(finalType)")
-        print("  - Titre: \(title)")
-        print("  - URL: \(url ?? "nil")")
-        if let meta = metadata {
-            print("  - Vision labels: \(meta["main_object_label"] ?? "none")")
-            print("  - Vision alternatives: \(meta["main_object_alternatives"] ?? "none")")
-        }
-        
-        // Méthode 1: UserDefaults partagés (simplifié)
+        // Sauvegarder dans UserDefaults partagés
         if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") {
             var pendingContents = sharedDefaults.array(forKey: "pendingSharedContents") as? [[String: Any]] ?? []
             pendingContents.append(sharedContent)
             sharedDefaults.set(pendingContents, forKey: "pendingSharedContents")
-            
-            // Activer le flag de nouveau contenu
             sharedDefaults.set(true, forKey: "hasNewSharedContent")
             sharedDefaults.synchronize()
         }
         
-        // Méthode 2: Fichier partagé (backup)
-        saveToSharedFile(content: sharedContent)
+        completeRequest()
     }
     
-    /// Détermine le type de contenu final en utilisant Vision + URL
-    private func determineFinalContentType(url: String?, metadata: [String: String]?) -> String {
-        // Extraire les labels Vision des métadonnées
-        let detectedLabels = metadata?["detected_labels"]
-        let confidences = metadata?["detected_confidences"]
-        let mainLabel = metadata?["main_object_label"]
-        let alternatives = metadata?["main_object_alternatives"]
+    private func createContentAndShowModal(title: String, url: String, description: String?, thumbnailPath: String?) {
+        let contentData = SharedContentData(
+            title: title,
+            url: url,
+            description: description,
+            thumbnailPath: thumbnailPath
+        )
         
-        let urlObject = url != nil ? URL(string: url!) : nil
-        
-        // Utiliser la nouvelle méthode avec confiance si disponible
-        let finalType: String
-        if let labels = detectedLabels, !labels.isEmpty, let conf = confidences, !conf.isEmpty {
-            finalType = ContentTypeDetector.shared.detectContentTypeWithConfidenceFallback(
-                from: urlObject,
-                detectedLabels: labels,
-                confidences: conf
-            )
-            print("[ShareExtension] Classification intelligente (URL prioritaire + Vision pondérée):")
-            print("  - Labels détectés: \(labels)")
-            print("  - Scores de confiance: \(conf)")
-        } else {
-            // Fallback vers l'ancienne méthode si pas de données de confiance
-            finalType = ContentTypeDetector.shared.detectContentTypeWithFallback(
-                from: urlObject,
-                mainLabel: mainLabel,
-                alternatives: alternatives
-            )
-            print("[ShareExtension] Classification fallback (URL + Vision simple):")
-            print("  - Main label: \(mainLabel ?? "none")")
-            print("  - Alternatives: \(alternatives ?? "none")")
-        }
-        
-        print("[ShareExtension] Résultat final:")
-        print("  - URL: \(url ?? "none")")
-        print("  - Type classifié: \(finalType)")
-        print("  - Méthode: \(urlObject != nil ? "URL prioritaire" : "Vision uniquement")")
-        
-        return finalType
-    }
-    
-    private func saveToSharedFile(content: [String: Any]) {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") else {
-            return
-        }
-        
-        let fileURL = containerURL.appendingPathComponent("pendingContents.json")
-        
-        do {
-            var existingContents: [[String: Any]] = []
-            if FileManager.default.fileExists(atPath: fileURL.path) {
-                let data = try Data(contentsOf: fileURL)
-                existingContents = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
-            }
-            
-            existingContents.append(content)
-            
-            let data = try JSONSerialization.data(withJSONObject: existingContents)
-            try data.write(to: fileURL)
-        } catch {
+        DispatchQueue.main.async {
+            self.showCategorySelection(for: contentData)
         }
     }
     
     private func saveImageFromProvider(_ imageProvider: NSItemProvider,
                                        extraMetadataHandler: (([String: String]) -> Void)? = nil,
                                        completion: @escaping (String?) -> Void) {
+        print("[ShareExtension] Début sauvegarde image")
+        
         // Vérifier si c'est une image
         guard imageProvider.canLoadObject(ofClass: UIImage.self) else {
+            print("[ShareExtension] Erreur: imageProvider ne peut pas charger UIImage")
             completion(nil)
             return
         }
         
+        print("[ShareExtension] ImageProvider peut charger UIImage, chargement...")
+        
         imageProvider.loadObject(ofClass: UIImage.self) { (object, error) in
-            guard let image = object as? UIImage,
-                  let imageData = image.jpegData(compressionQuality: 0.8) else {
+            if let error = error {
+                print("[ShareExtension] Erreur lors du chargement de l'image: \(error)")
                 completion(nil)
                 return
             }
             
-            // Analyze image (Vision + Colors) and pass metadata to caller if needed
-            let analysisMeta = analyzeImage(image)
-            if !analysisMeta.isEmpty {
-                extraMetadataHandler?(analysisMeta)
+            guard let image = object as? UIImage,
+                  let imageData = image.jpegData(compressionQuality: 0.8) else {
+                print("[ShareExtension] Erreur: impossible de convertir en UIImage ou JPEG")
+                completion(nil)
+                return
             }
-            // Simple main subject (label + dominant color name)
-            let mainMeta = analyzeMainSubject(image)
-            if !mainMeta.isEmpty {
-                extraMetadataHandler?(mainMeta)
-            }
+            
+            print("[ShareExtension] Image chargée avec succès, taille: \(imageData.count) bytes")
             
             // Sauvegarder dans le dossier partagé
             guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") else {
+                print("[ShareExtension] Erreur: impossible d'accéder au container partagé")
                 completion(nil)
                 return
             }
+            
+            print("[ShareExtension] Container URL: \(containerURL)")
             
             let imagesDirectory = containerURL.appendingPathComponent("images")
             
             // Créer le dossier images s'il n'existe pas
             do {
                 try FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
+                print("[ShareExtension] Dossier images créé: \(imagesDirectory)")
             } catch {
+                print("[ShareExtension] Erreur création dossier: \(error)")
                 completion(nil)
                 return
             }
@@ -456,93 +279,30 @@ class ShareViewController: UIViewController {
             let fileName = "\(UUID().uuidString).jpg"
             let fileURL = imagesDirectory.appendingPathComponent(fileName)
             
+            print("[ShareExtension] Tentative d'écriture: \(fileURL)")
+            
             do {
                 try imageData.write(to: fileURL)
+                print("[ShareExtension] Image sauvegardée avec succès: \(fileURL)")
                 // Retourner le chemin relatif pour l'app principale
                 completion("images/\(fileName)")
             } catch {
+                print("[ShareExtension] Erreur écriture fichier: \(error)")
                 completion(nil)
             }
         }
     }
     
-    private func completeRequest() {
-        // Masquer le toast
-        toastView?.removeFromSuperview()
-        
-        // Fermer l'extension
-        extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-    }
-    
-    private func showCapturingToast() {
-        // Toast sobre centré
-        toastView = UIView()
-        toastView?.backgroundColor = UIColor.black.withAlphaComponent(0.9)
-        toastView?.layer.cornerRadius = 16
-        toastView?.layer.masksToBounds = true
-        
-        // Ombre subtile
-        toastView?.layer.shadowColor = UIColor.black.cgColor
-        toastView?.layer.shadowOffset = CGSize(width: 0, height: 2)
-        toastView?.layer.shadowOpacity = 0.1
-        toastView?.layer.shadowRadius = 4
-        toastView?.layer.masksToBounds = false
-        
-        // Texte simple
-        let label = UILabel()
-        label.text = "Adding to Pinpin..."
-        label.font = UIFont.systemFont(ofSize: 13, weight: .medium)
-        label.textColor = UIColor.white
-        label.textAlignment = .center
-        
-        toastView?.addSubview(label)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        
-        // Contraintes pour le label
-        label.leadingAnchor.constraint(equalTo: (toastView?.leadingAnchor)!, constant: 16).isActive = true
-        label.trailingAnchor.constraint(equalTo: (toastView?.trailingAnchor)!, constant: -16).isActive = true
-        label.centerYAnchor.constraint(equalTo: (toastView?.centerYAnchor)!).isActive = true
-        
-        // Centré verticalement et horizontalement
-        view.addSubview(toastView!)
-        toastView?.translatesAutoresizingMaskIntoConstraints = false
-        toastView?.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-        toastView?.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-        toastView?.heightAnchor.constraint(equalToConstant: 32).isActive = true
-        
-        // Animation simple
-        toastView?.alpha = 0
-        toastView?.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
-        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
-            self.toastView?.alpha = 1
-            self.toastView?.transform = CGAffineTransform.identity
-        })
-    }
-    
-    // MARK: - URL Detection Helper
+    // MARK: - Utility Methods
     
     private func extractURLFromText(_ text: String) -> URL? {
-        // Utiliser NSDataDetector pour détecter les URLs de façon robuste
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         let matches = detector?.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
         
-        // Prendre la première URL trouvée
-        if let match = matches?.first,
-           let range = Range(match.range, in: text) {
-            let urlString = String(text[range])
-            
-            // Vérifier si c'est une URL valide
-            if let url = URL(string: urlString), url.scheme != nil {
-                return url
-            }
-            
-            // Si pas de schéma, essayer d'ajouter https://
-            if let url = URL(string: "https://\(urlString)") {
-                return url
-            }
-        }
-        
-        return nil
+        return matches?.first?.url
     }
     
+    private func completeRequest() {
+        extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+    }
 }

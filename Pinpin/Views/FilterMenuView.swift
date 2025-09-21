@@ -15,31 +15,26 @@ struct FilterMenuView: View {
     private var contentItems: FetchedResults<ContentItem>
     
     @StateObject private var userPreferences = UserPreferences.shared
+    @StateObject private var categoryService = CategoryService.shared
     @Binding var selectedContentType: String?
     @Binding var isSwipingHorizontally: Bool
+    @State private var showingAddCategory = false
     var onOpenAbout: () -> Void
     
-    // Récupère les types uniques depuis les données
+    // Récupère les catégories utilisées depuis les données
     private var availableTypes: [String] {
         let types = contentItems.compactMap { $0.contentType }
         let uniqueTypes = Set(types)
         
-        // Utiliser l'ordre défini dans ContentType avec misc en dernier
-        // Ne jamais masquer "misc" du menu - on veut pouvoir y accéder pour gérer les contenus
-        return ContentType.orderedCases
-            .map { $0.rawValue }
-            .filter { uniqueTypes.contains($0) }
+        // Retourner toutes les catégories utilisées, même si elles ne sont plus dans CategoryService
+        // (pour éviter de perdre des contenus existants)
+        return Array(uniqueTypes).sorted()
     }
     
     // Compte les items par type
     private func countForType(_ type: String?) -> Int {
         if type == nil {
-            // Pour "All", exclure "misc" si l'option est activée
-            if userPreferences.hideMiscCategory {
-                return contentItems.filter { $0.contentType != "misc" }.count
-            } else {
-                return contentItems.count
-            }
+            return contentItems.count
         }
         return contentItems.filter { $0.contentType == type }.count
     }
@@ -75,7 +70,7 @@ struct FilterMenuView: View {
                 ForEach(availableTypes, id: \.self) { type in
                     CategoryButton(
                         isSelected: selectedContentType == type,
-                        title: ContentType(rawValue: type)?.displayName ?? type.capitalized,
+                        title: type,
                         isSwipingHorizontally: isSwipingHorizontally
                     ) {
                         let generator = UIImpactFeedbackGenerator(style: .light)
@@ -84,6 +79,17 @@ struct FilterMenuView: View {
                             selectedContentType = (selectedContentType == type) ? nil : type
                         }
                     }
+                }
+                
+                // Bouton pour ajouter une catégorie
+                CategoryButton(
+                    isSelected: false,
+                    title: "+ Nouvelle catégorie",
+                    isSwipingHorizontally: isSwipingHorizontally
+                ) {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                    showingAddCategory = true
                 }
                 
                 Spacer()
@@ -121,6 +127,11 @@ struct FilterMenuView: View {
                 )
                 .frame(height: 120)
                 .allowsHitTesting(false)
+            }
+        }
+        .sheet(isPresented: $showingAddCategory) {
+            AddCategorySheet { categoryName in
+                categoryService.addCategory(categoryName)
             }
         }
     }

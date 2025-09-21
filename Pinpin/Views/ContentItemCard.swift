@@ -180,21 +180,7 @@ struct ContentItemCard: View {
     // MARK: - Computed Properties pour les catégories
     
     private var categoryColor: Color {
-        switch item.contentTypeEnum {
-        case .home: return .brown
-        case .fashion: return .pink
-        case .food: return .orange
-        case .tech: return .purple
-        case .beauty: return .pink
-        case .books: return .cyan
-        case .music: return .purple
-        case .show: return .indigo
-        case .sports: return .red
-        case .outdoor: return .blue
-        case .animals: return .green
-        case .vehicles: return .gray
-        case .art: return .indigo
-        case .misc: return .secondary
-        }
+        // Couleur générique pour toutes les catégories
+        return .accentColor
     }
 }

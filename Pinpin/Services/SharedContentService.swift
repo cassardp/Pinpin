@@ -41,36 +41,30 @@ class SharedContentService: ObservableObject {
     }
     
     private func processSharedContent(_ contentData: [String: Any]) async {
-        guard let typeString = contentData["type"] as? String,
-              let contentType = ContentType(rawValue: typeString),
+        guard let category = contentData["category"] as? String,
               let title = contentData["title"] as? String else {
             print("[SharedContentService] Erreur: données invalides pour le contenu")
             return
         }
         
-        print("[SharedContentService] Traitement contenu: \(typeString) - \(title)")
+        print("[SharedContentService] Traitement contenu: \(category) - \(title)")
         
         let url = contentData["url"] as? String
         let description = contentData["description"] as? String
-        let metadata = contentData["metadata"] as? [String: String]
         let thumbnailUrl = contentData["thumbnailUrl"] as? String
         
         // Sauvegarder directement avec Core Data
         await MainActor.run {
             contentService.saveContentItem(
-                contentType: contentType,
+                contentType: category,
                 title: title,
                 description: description,
                 url: url,
-                metadata: metadata,
+                metadata: nil,
                 thumbnailUrl: thumbnailUrl
             )
             
-            // Log pour clarifier le statut des contenus "misc"
-            if typeString == "misc" {
-                let hideMisc = UserPreferences.shared.hideMiscCategory
-                print("[SharedContentService] Contenu 'misc' sauvegardé - Visible: \(!hideMisc)")
-            }
+            print("[SharedContentService] Contenu '\(category)' sauvegardé avec succès")
         }
     }
     

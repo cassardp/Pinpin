@@ -49,23 +49,10 @@ class UserPreferences: ObservableObject {
         }
     }
     
-    @Published var devMode: Bool {
-        didSet {
-            UserDefaults.standard.set(devMode, forKey: "devMode")
-        }
-    }
-    
-    @Published var hideMiscCategory: Bool {
-        didSet {
-            UserDefaults.standard.set(hideMiscCategory, forKey: "hideMiscCategory")
-        }
-    }
     
     private init() {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
-        self.devMode = UserDefaults.standard.bool(forKey: "devMode")
-        self.hideMiscCategory = UserDefaults.standard.bool(forKey: "hideMiscCategory")
         
         // Migration de l'ancien système
         if let savedTheme = UserDefaults.standard.string(forKey: "themeMode"),

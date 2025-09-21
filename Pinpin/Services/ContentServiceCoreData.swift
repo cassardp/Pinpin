@@ -77,7 +77,7 @@ class ContentServiceCoreData: ObservableObject {
     }
     
     func saveContentItem(
-        contentType: ContentType,
+        contentType: String,
         title: String,
         description: String? = nil,
         url: String? = nil,
@@ -89,7 +89,7 @@ class ContentServiceCoreData: ObservableObject {
         
         newItem.id = UUID()
         newItem.userId = currentUserId
-        newItem.contentType = contentType.rawValue
+        newItem.contentType = contentType
         newItem.title = title
         newItem.itemDescription = description
         newItem.url = url
@@ -113,6 +113,20 @@ class ContentServiceCoreData: ObservableObject {
     }
     
     func updateContentItem(_ item: ContentItem) {
+        item.updatedAt = Date()
+        coreDataService.save()
+        loadContentItems()
+    }
+    
+    func updateContentItem(_ item: ContentItem, contentType: String) {
+        item.contentType = contentType
+        item.updatedAt = Date()
+        coreDataService.save()
+        loadContentItems()
+    }
+    
+    func updateContentItem(_ item: ContentItem, isHidden: Bool) {
+        item.isHidden = isHidden
         item.updatedAt = Date()
         coreDataService.save()
         loadContentItems()
@@ -144,8 +158,8 @@ extension ContentItem {
         return metadata as? [String: String] ?? [:]
     }
     
-    // Enum pour le type de contenu
-    var contentTypeEnum: ContentType {
-        return ContentType(rawValue: contentType ?? "misc") ?? .misc
+    // Catégorie de contenu
+    var safeContentType: String {
+        return contentType ?? ""
     }
 }
