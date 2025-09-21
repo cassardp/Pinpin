@@ -15,10 +15,8 @@ struct FilterMenuView: View {
     private var contentItems: FetchedResults<ContentItem>
     
     @StateObject private var userPreferences = UserPreferences.shared
-    @StateObject private var categoryService = CategoryService.shared
     @Binding var selectedContentType: String?
     @Binding var isSwipingHorizontally: Bool
-    @State private var showingAddCategory = false
     var onOpenAbout: () -> Void
     
     // Récupère les catégories utilisées depuis les données
@@ -70,7 +68,7 @@ struct FilterMenuView: View {
                 ForEach(availableTypes, id: \.self) { type in
                     CategoryButton(
                         isSelected: selectedContentType == type,
-                        title: type,
+                        title: type.capitalized,
                         isSwipingHorizontally: isSwipingHorizontally
                     ) {
                         let generator = UIImpactFeedbackGenerator(style: .light)
@@ -81,16 +79,6 @@ struct FilterMenuView: View {
                     }
                 }
                 
-                // Bouton pour ajouter une catégorie
-                CategoryButton(
-                    isSelected: false,
-                    title: "+ Nouvelle catégorie",
-                    isSwipingHorizontally: isSwipingHorizontally
-                ) {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    showingAddCategory = true
-                }
                 
                 Spacer()
             }
@@ -127,11 +115,6 @@ struct FilterMenuView: View {
                 )
                 .frame(height: 120)
                 .allowsHitTesting(false)
-            }
-        }
-        .sheet(isPresented: $showingAddCategory) {
-            AddCategorySheet { categoryName in
-                categoryService.addCategory(categoryName)
             }
         }
     }

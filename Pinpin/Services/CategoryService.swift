@@ -13,20 +13,10 @@ class CategoryService: ObservableObject {
     
     @Published var categories: [String] = []
     
-    private let userDefaults = UserDefaults.standard
+    private let userDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") ?? UserDefaults.standard
     private let categoriesKey = "user_categories"
     
-    // Catégories par défaut au premier lancement
-    private let defaultCategories = [
-        "Favoris",
-        "À lire",
-        "Inspiration",
-        "Recettes",
-        "Voyage",
-        "Shopping",
-        "Travail",
-        "Personnel"
-    ]
+    // Plus de catégories par défaut - liste vide au premier lancement
     
     private init() {
         loadCategories()
@@ -36,18 +26,18 @@ class CategoryService: ObservableObject {
     
     /// Charge les catégories depuis UserDefaults
     func loadCategories() {
-        if let savedCategories = userDefaults.array(forKey: categoriesKey) as? [String], !savedCategories.isEmpty {
+        if let savedCategories = userDefaults.array(forKey: categoriesKey) as? [String] {
             categories = savedCategories
         } else {
-            // Premier lancement - utiliser les catégories par défaut
-            categories = defaultCategories
-            saveCategories()
+            // Premier lancement - liste vide
+            categories = []
         }
     }
     
     /// Sauvegarde les catégories dans UserDefaults
     private func saveCategories() {
         userDefaults.set(categories, forKey: categoriesKey)
+        userDefaults.synchronize() // Force la synchronisation pour les UserDefaults partagés
     }
     
     /// Ajoute une nouvelle catégorie
@@ -89,6 +79,6 @@ class CategoryService: ObservableObject {
     
     /// Retourne la première catégorie (par défaut)
     var defaultCategory: String {
-        return categories.first ?? "Favoris"
+        return categories.first ?? "General"
     }
 }

@@ -182,8 +182,11 @@ class ShareViewController: UIViewController {
         hostingController.modalPresentationStyle = .pageSheet
         
         if let sheet = hostingController.sheetPresentationController {
-            sheet.detents = [.medium(), .large()]
+            sheet.detents = [.large()]
+            sheet.selectedDetentIdentifier = .large
             sheet.prefersGrabberVisible = true
+            sheet.prefersScrollingExpandsWhenScrolledToEdge = false
+            sheet.prefersEdgeAttachedInCompactHeight = true
         }
         
         present(hostingController, animated: true)

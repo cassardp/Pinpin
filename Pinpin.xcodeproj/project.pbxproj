@@ -51,6 +51,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Pinpin.xcdatamodeld,
+				Services/ContentServiceCoreData.swift,
 			);
 			target = 4E19DB772DFC174F00357543 /* PinpinShareExtension */;
 		};

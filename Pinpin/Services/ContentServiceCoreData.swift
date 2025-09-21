@@ -103,9 +103,6 @@ class ContentServiceCoreData: ObservableObject {
     }
     
     func deleteContentItem(_ item: ContentItem) {
-        // Supprimer les images associées avant de supprimer l'item
-        SharedImageService.shared.deleteImagesForItem(item)
-        
         let context = coreDataService.context
         context.delete(item)
         coreDataService.save()
@@ -130,6 +127,37 @@ class ContentServiceCoreData: ObservableObject {
         item.updatedAt = Date()
         coreDataService.save()
         loadContentItems()
+    }
+    
+    // MARK: - Category Methods
+    
+    /// Récupère un item aléatoire d'une catégorie pour l'affichage en miniature
+    func getRandomItemForCategory(_ category: String) -> ContentItem? {
+        let request: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+        request.predicate = NSPredicate(format: "contentType == %@", category)
+        request.fetchLimit = 10 // Récupère les 10 derniers pour avoir du choix
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)]
+        
+        do {
+            let items = try coreDataService.context.fetch(request)
+            return items.randomElement()
+        } catch {
+            print("Erreur lors de la récupération d'item pour la catégorie \(category): \(error)")
+            return nil
+        }
+    }
+    
+    /// Compte le nombre d'items dans une catégorie
+    func getItemCountForCategory(_ category: String) -> Int {
+        let request: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+        request.predicate = NSPredicate(format: "contentType == %@", category)
+        
+        do {
+            return try coreDataService.context.count(for: request)
+        } catch {
+            print("Erreur lors du comptage pour la catégorie \(category): \(error)")
+            return 0
+        }
     }
 }
 

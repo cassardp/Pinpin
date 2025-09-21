@@ -9,7 +9,6 @@ import SwiftUI
 
 struct CategorySelectionModal: View {
     @ObservedObject var categoryService = CategoryService.shared
-    @State private var selectedCategory: String = ""
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
     @Environment(\.dismiss) private var dismiss
@@ -18,73 +17,89 @@ struct CategorySelectionModal: View {
     
     init(defaultCategory: String? = nil, onCategorySelected: @escaping (String) -> Void) {
         self.onCategorySelected = onCategorySelected
-        self._selectedCategory = State(initialValue: defaultCategory ?? CategoryService.shared.defaultCategory)
     }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // Header
-                VStack(spacing: 16) {
-                    Text("Enregistrer dans")
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Add to category")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        
+                        Text("Choose where to save this content")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("Choisissez une catégorie pour organiser votre contenu")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                    Spacer()
+                    
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                            .frame(width: 30, height: 30)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)
+                .padding(.bottom, 16)
                 
-                // Categories Grid
+                // Categories List
                 ScrollView {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 12) {
-                        ForEach(categoryService.categories, id: \.self) { category in
-                            CategoryCard(
-                                title: category,
-                                isSelected: selectedCategory == category
-                            ) {
-                                selectedCategory = category
-                            }
-                        }
-                        
-                        // Add Category Button
+                    LazyVStack(spacing: 8) {
+                        // Add Category Button (en haut)
                         AddCategoryCard {
                             showingAddCategory = true
+                        }
+                        
+                        if categoryService.categories.isEmpty {
+                            // Message quand pas de catégories
+                            VStack(spacing: 12) {
+                                Image(systemName: "folder.badge.plus")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("No categories yet")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Text("Create your first category to organize your content")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, 40)
+                        } else {
+                            ForEach(categoryService.categories, id: \.self) { category in
+                                CategoryCard(
+                                    title: category,
+                                    isSelected: false
+                                ) {
+                                    onCategorySelected(category)
+                                    dismiss()
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
                 }
                 .padding(.top, 24)
                 
-                // Bottom Actions
-                VStack(spacing: 12) {
-                    Button("Enregistrer") {
-                        onCategorySelected(selectedCategory)
-                        dismiss()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(selectedCategory.isEmpty)
-                    
-                    Button("Annuler") {
-                        dismiss()
-                    }
-                    .foregroundColor(.secondary)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 20)
+                Spacer(minLength: 34)
             }
             .background(Color(UIColor.systemBackground))
         }
         .sheet(isPresented: $showingAddCategory) {
             AddCategorySheet { categoryName in
                 categoryService.addCategory(categoryName)
-                selectedCategory = categoryName
+                onCategorySelected(categoryName)
+                dismiss()
             }
         }
     }
@@ -96,35 +111,93 @@ struct CategoryCard: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @StateObject private var contentService = ContentServiceCoreData()
+    @State private var randomItem: ContentItem?
+    @State private var itemCount: Int = 0
+    
+    // Couleur basée sur le hash du nom de la catégorie pour avoir une couleur consistante
+    private var categoryColor: Color {
+        let colors: [Color] = [.red, .blue, .green, .orange, .purple, .pink, .cyan, .indigo, .mint, .teal]
+        let hash = abs(title.hashValue)
+        return colors[hash % colors.count]
+    }
+    
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                // Image de prévisualisation
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color.accentColor : Color(UIColor.secondarySystemBackground))
-                        .frame(height: 80)
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(categoryColor.opacity(0.1))
+                        .frame(width: 50, height: 50)
                     
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                    if let item = randomItem, let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty {
+                        // Afficher l'image réelle du dernier item
+                        AsyncImage(url: URL(string: thumbnailUrl)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            // Placeholder simple pendant le chargement
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(categoryColor.opacity(0.3))
+                                .overlay(
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                )
+                        }
+                        .frame(width: 50, height: 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     } else {
-                        Image(systemName: "folder")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
+                        // Pas d'image disponible - placeholder coloré simple
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(categoryColor.opacity(0.3))
+                            .overlay(
+                                Text(String(title.prefix(1).uppercased()))
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(categoryColor)
+                            )
+                            .frame(width: 50, height: 50)
                     }
                 }
                 
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                // Titre et nombre de publications
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text("\(itemCount) item\(itemCount > 1 ? "s" : "")")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Flèche d'action
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.clear)
+            )
         }
         .buttonStyle(PlainButtonStyle())
+        .onAppear {
+            loadCategoryData()
+        }
+    }
+    
+    private func loadCategoryData() {
+        randomItem = contentService.getRandomItemForCategory(title)
+        itemCount = contentService.getItemCountForCategory(title)
     }
 }
 
@@ -134,23 +207,44 @@ struct AddCategoryCard: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemBackground))
-                    .frame(height: 80)
-                    .overlay(
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                    )
+            HStack(spacing: 12) {
+                // Icône d'ajout
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.accentColor.opacity(0.1))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: "plus")
+                        .font(.title3)
+                        .foregroundColor(.accentColor)
+                }
                 
-                Text("Nouvelle\ncatégorie")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                // Texte
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Create a new category")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text("Organize your content")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Flèche
+                Image(systemName: "chevron.right")
+                    .font(.caption)
                     .foregroundColor(.secondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.secondarySystemBackground).opacity(0.5))
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -166,28 +260,28 @@ struct AddCategorySheet: View {
         NavigationView {
             VStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Nom de la catégorie")
+                    Text("Category name")
                         .font(.headline)
                     
-                    TextField("Ex: Recettes, Voyage, Inspiration...", text: $categoryName)
+                    TextField("e.g. Recipes, Travel, Inspiration...", text: $categoryName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 
                 Spacer()
             }
             .padding(24)
-            .navigationTitle("Nouvelle catégorie")
+            .navigationTitle("New category")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Annuler") {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Ajouter") {
+                    Button("Add") {
                         let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !trimmedName.isEmpty {
                             onCategoryAdded(trimmedName)
@@ -202,20 +296,6 @@ struct AddCategorySheet: View {
     }
 }
 
-// MARK: - Primary Button Style
-struct PrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.headline)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color.accentColor)
-            .cornerRadius(12)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
 
 // MARK: - Preview
 #Preview {

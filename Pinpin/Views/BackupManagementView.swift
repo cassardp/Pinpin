@@ -11,15 +11,17 @@ import UniformTypeIdentifiers
 struct BackupManagementView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingImporter: Bool = false
+    @State private var showingLegacyImporter: Bool = false
     @State private var exportURL: URL? = nil
     @State private var alertMessage: String? = nil
     
     let onOperationComplete: (() -> Void)?
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             Spacer(minLength: 0)
-            // Boutons carrés pour import/export
+            
+            // Boutons principaux
             HStack(spacing: 30) {
                 // Bouton Export
                 Button {
@@ -68,6 +70,30 @@ struct BackupManagementView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+            
+            // Bouton temporaire pour l'ancien format
+            Button {
+                showingLegacyImporter = true
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 20))
+                        .foregroundColor(.orange)
+                    
+                    Text("Import Ancien Format (Dossier/JSON)")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.orange)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 40)
@@ -88,6 +114,26 @@ struct BackupManagementView: View {
                 }
             case .failure(let error):
                 alertMessage = "Import failed: \(error.localizedDescription)"
+            }
+        }
+        .fileImporter(isPresented: $showingLegacyImporter, allowedContentTypes: [UTType.json, UTType.folder], allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    do {
+                        try BackupService.shared.importLegacyBackup(from: url)
+                        alertMessage = "Import de l'ancien format réussi !"
+                        // Fermer les sheets après un délai pour laisser voir le message
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            onOperationComplete?()
+                            dismiss()
+                        }
+                    } catch {
+                        alertMessage = "Import échoué: \(error.localizedDescription)"
+                    }
+                }
+            case .failure(let error):
+                alertMessage = "Import échoué: \(error.localizedDescription)"
             }
         }
         .sheet(isPresented: Binding<Bool>(
