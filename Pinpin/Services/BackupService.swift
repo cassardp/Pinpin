@@ -39,7 +39,7 @@ final class BackupService: ObservableObject {
     
     
     // MARK: - Public API
-    /// Exporte la base dans un dossier temporaire: items.json + fichiers images référencés dans metadata (thumbnail_url, icon_url)
+    /// Exporte la base dans un dossier temporaire: items.json + fichiers images référencés dans thumbnailUrl
     func exportBackupZip() throws -> URL {
         let fm = FileManager.default
         let tmpRoot = fm.temporaryDirectory
