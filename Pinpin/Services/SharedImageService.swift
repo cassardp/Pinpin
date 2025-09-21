@@ -39,36 +39,20 @@ class SharedImageService {
             return
         }
         
-        // Récupérer les chemins des images depuis les métadonnées
-        let metadataDict = item.metadataDict
         print("🗑️ Suppression des images pour item: \(item.title ?? "Sans titre")")
-        print("📋 Métadonnées disponibles: \(metadataDict.keys.sorted())")
         
         var deletedFiles = 0
         
-        // Supprimer l'image principale si elle existe (clé: thumbnail_url)
-        if let imagePath = metadataDict["thumbnail_url"] {
-            let imageURL = containerURL.appendingPathComponent(imagePath)
-            print("🖼️ Tentative de suppression de l'image: \(imagePath)")
+        // Supprimer l'image principale si elle existe (nouveau système)
+        if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
+            let imageURL = containerURL.appendingPathComponent(thumbnailUrl)
+            print("🖼️ Tentative de suppression de l'image: \(thumbnailUrl)")
             do {
                 try FileManager.default.removeItem(at: imageURL)
-                print("✅ Image supprimée: \(imagePath)")
+                print("✅ Image supprimée: \(thumbnailUrl)")
                 deletedFiles += 1
             } catch {
                 print("❌ Erreur suppression image: \(error)")
-            }
-        }
-        
-        // Supprimer l'icône si elle existe (clé: icon_url)
-        if let iconPath = metadataDict["icon_url"] {
-            let iconURL = containerURL.appendingPathComponent(iconPath)
-            print("🎯 Tentative de suppression de l'icône: \(iconPath)")
-            do {
-                try FileManager.default.removeItem(at: iconURL)
-                print("✅ Icône supprimée: \(iconPath)")
-                deletedFiles += 1
-            } catch {
-                print("❌ Erreur suppression icône: \(error)")
             }
         }
         
@@ -115,18 +99,14 @@ class SharedImageService {
         var imageCount = 0
         var totalSize: Int64 = 0
         
-        // Collecter uniquement les chemins des images principales (pas les icônes)
+        // Collecter uniquement les chemins des images principales
         var imagePaths: Set<String> = []
         
         for item in items {
-            let metadataDict = item.metadataDict
-            
-            // Ajouter SEULEMENT l'image principale (exclure les icônes)
-            if let imagePath = metadataDict["thumbnail_url"] {
-                imagePaths.insert(imagePath)
+            // Utiliser directement thumbnailUrl de l'item (nouveau système)
+            if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
+                imagePaths.insert(thumbnailUrl)
             }
-            
-            // Note: on n'ajoute plus icon_url pour exclure les icônes du comptage
         }
         
         // Calculer la taille de chaque image principale unique
