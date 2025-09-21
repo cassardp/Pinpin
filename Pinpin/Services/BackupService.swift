@@ -37,25 +37,6 @@ final class BackupService: ObservableObject {
         let items: [BackupItem]
     }
     
-    // MARK: - Legacy format support (temporaire)
-    private struct LegacyBackupItem: Codable {
-        let id: String
-        let userId: String?
-        let contentType: String
-        let title: String
-        let itemDescription: String?
-        let url: String?
-        let metadata: [String: String]
-        let isHidden: Bool
-        let createdAt: String?
-        let updatedAt: String?
-    }
-    
-    private struct LegacyBackupFile: Codable {
-        let version: Int
-        let createdAt: String
-        let items: [LegacyBackupItem]
-    }
     
     // MARK: - Public API
     /// Exporte la base dans un dossier temporaire: items.json + fichiers images référencés dans metadata (thumbnail_url, icon_url)
@@ -153,141 +134,9 @@ final class BackupService: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(BackupFile.self, from: data)
         
-        // Copier images dans le container partagé
+        // Copier tout le dossier images/ dans le container partagé
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
-            for item in backup.items {
-                // Utiliser uniquement thumbnailUrl (nouveau système simplifié)
-                if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
-                    let src = root.appendingPathComponent(thumbnailUrl)
-                    let dst = containerURL.appendingPathComponent(thumbnailUrl)
-                    // créer le dossier si nécessaire
-                    try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                    if fm.fileExists(atPath: dst.path) {
-                        // ne pas écraser si déjà présent
-                    } else if fm.fileExists(atPath: src.path) {
-                        try fm.copyItem(at: src, to: dst)
-                        print("[BackupService] Image importée: \(thumbnailUrl)")
-                    }
-                }
-            }
-        }
-        
-        // Merge Core Data par id
-        for bi in backup.items {
-            let req: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", bi.id as CVarArg)
-            req.fetchLimit = 1
-            let existing = try coreData.context.fetch(req).first
-            let item: ContentItem = existing ?? ContentItem(context: coreData.context)
-            
-            item.id = bi.id
-            item.userId = bi.userId ?? item.userId
-            item.contentType = bi.contentType
-            item.title = bi.title
-            item.itemDescription = bi.itemDescription
-            item.url = bi.url
-            item.metadata = bi.metadata as NSDictionary
-            item.thumbnailUrl = bi.thumbnailUrl
-            item.isHidden = bi.isHidden
-            item.createdAt = bi.createdAt ?? item.createdAt
-            item.updatedAt = Date()
-        }
-        coreData.save()
-    }
-    
-    // MARK: - Legacy Import (temporaire)
-    /// Importe un fichier JSON de l'ancien format de sauvegarde + images du dossier
-    func importLegacyBackup(from url: URL) throws {
-        let fm = FileManager.default
-        
-        // Autoriser l'accès aux ressources sécurisées
-        let didStartAccess = url.startAccessingSecurityScopedResource()
-        defer { if didStartAccess { url.stopAccessingSecurityScopedResource() } }
-        
-        // Déterminer le dossier racine de la sauvegarde
-        let backupRoot: URL
-        if url.pathExtension.lowercased() == "json" {
-            // Si c'est un fichier JSON, le dossier parent est la racine
-            backupRoot = url.deletingLastPathComponent()
-        } else {
-            // Si c'est un dossier, c'est la racine directement
-            backupRoot = url
-        }
-        
-        // Chercher le fichier JSON dans le dossier
-        let jsonURL: URL
-        if url.pathExtension.lowercased() == "json" {
-            jsonURL = url
-        } else {
-            // Chercher items.json dans le dossier
-            let candidateJSON = backupRoot.appendingPathComponent("items.json")
-            if fm.fileExists(atPath: candidateJSON.path) {
-                jsonURL = candidateJSON
-            } else {
-                throw NSError(domain: "BackupService", code: 3, userInfo: [NSLocalizedDescriptionKey: "Fichier items.json introuvable dans le dossier de sauvegarde"])
-            }
-        }
-        
-        // Lire et décoder le fichier JSON
-        let data = try Data(contentsOf: jsonURL)
-        let decoder = JSONDecoder()
-        let legacyBackup = try decoder.decode(LegacyBackupFile.self, from: data)
-        
-        print("[BackupService] Import legacy backup avec \(legacyBackup.items.count) items depuis \(backupRoot.path)")
-        
-        // Convertir et importer chaque item
-        let dateFormatter = ISO8601DateFormatter()
-        
-        for legacyItem in legacyBackup.items {
-            // Vérifier si l'item existe déjà
-            guard let itemId = UUID(uuidString: legacyItem.id) else {
-                print("[BackupService] ID invalide ignoré: \(legacyItem.id)")
-                continue
-            }
-            
-            let req: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", itemId as CVarArg)
-            req.fetchLimit = 1
-            let existing = try coreData.context.fetch(req).first
-            
-            // Ne pas écraser les items existants
-            if existing != nil {
-                print("[BackupService] Item déjà existant ignoré: \(legacyItem.id)")
-                continue
-            }
-            
-            // Créer un nouvel item
-            let item = ContentItem(context: coreData.context)
-            item.id = itemId
-            item.userId = legacyItem.userId.flatMap { UUID(uuidString: $0) }
-            item.contentType = legacyItem.contentType
-            item.title = legacyItem.title
-            item.itemDescription = legacyItem.itemDescription
-            item.url = legacyItem.url
-            item.metadata = legacyItem.metadata as NSDictionary
-            item.isHidden = legacyItem.isHidden
-            
-            // Convertir les dates depuis les strings ISO8601
-            if let createdAtString = legacyItem.createdAt {
-                item.createdAt = dateFormatter.date(from: createdAtString)
-            }
-            if let updatedAtString = legacyItem.updatedAt {
-                item.updatedAt = dateFormatter.date(from: updatedAtString)
-            } else {
-                item.updatedAt = Date()
-            }
-            
-            // Extraire thumbnailUrl depuis metadata si présent
-            if let thumbnailUrl = legacyItem.metadata["thumbnail_url"], !thumbnailUrl.isEmpty {
-                item.thumbnailUrl = thumbnailUrl
-            }
-            
-            print("[BackupService] Item importé: \(legacyItem.title)")
-        }
-        
-        // Importer les images du dossier images/ vers le container App Group
-        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
-            let imagesSourceDir = backupRoot.appendingPathComponent("images", isDirectory: true)
+            let imagesSourceDir = root.appendingPathComponent("images", isDirectory: true)
             
             if fm.fileExists(atPath: imagesSourceDir.path) {
                 print("[BackupService] Import des images depuis \(imagesSourceDir.path)")
@@ -328,10 +177,45 @@ final class BackupService: ObservableObject {
                 }
             } else {
                 print("[BackupService] Aucun dossier images/ trouvé dans la sauvegarde")
+                
+                // Fallback: copier les images individuellement référencées dans les items
+                for item in backup.items {
+                    if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
+                        let src = root.appendingPathComponent(thumbnailUrl)
+                        let dst = containerURL.appendingPathComponent(thumbnailUrl)
+                        // créer le dossier si nécessaire
+                        try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        if fm.fileExists(atPath: dst.path) {
+                            // ne pas écraser si déjà présent
+                        } else if fm.fileExists(atPath: src.path) {
+                            try fm.copyItem(at: src, to: dst)
+                            print("[BackupService] Image individuelle importée: \(thumbnailUrl)")
+                        }
+                    }
+                }
             }
         }
         
+        // Merge Core Data par id
+        for bi in backup.items {
+            let req: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", bi.id as CVarArg)
+            req.fetchLimit = 1
+            let existing = try coreData.context.fetch(req).first
+            let item: ContentItem = existing ?? ContentItem(context: coreData.context)
+            
+            item.id = bi.id
+            item.userId = bi.userId ?? item.userId
+            item.contentType = bi.contentType
+            item.title = bi.title
+            item.itemDescription = bi.itemDescription
+            item.url = bi.url
+            item.metadata = bi.metadata as NSDictionary
+            item.thumbnailUrl = bi.thumbnailUrl
+            item.isHidden = bi.isHidden
+            item.createdAt = bi.createdAt ?? item.createdAt
+            item.updatedAt = Date()
+        }
         coreData.save()
-        print("[BackupService] Import legacy terminé avec succès")
     }
 }

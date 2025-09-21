@@ -10,8 +10,11 @@ import UniformTypeIdentifiers
 
 struct BackupManagementView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var showingImporter: Bool = false
-    @State private var showingLegacyImporter: Bool = false
+    @State private var showingImporter: Bool = false {
+        didSet {
+            print("[BackupManagementView] showingImporter changé: \(showingImporter)")
+        }
+    }
     @State private var exportURL: URL? = nil
     @State private var alertMessage: String? = nil
     
@@ -51,6 +54,7 @@ struct BackupManagementView: View {
                 
                 // Bouton Import
                 Button {
+                    print("[BackupManagementView] Bouton Import appuyé")
                     showingImporter = true
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                     impactFeedback.impactOccurred()
@@ -71,69 +75,32 @@ struct BackupManagementView: View {
                 .buttonStyle(PlainButtonStyle())
             }
             
-            // Bouton temporaire pour l'ancien format
-            Button {
-                showingLegacyImporter = true
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 20))
-                        .foregroundColor(.orange)
-                    
-                    Text("Import Ancien Format (Dossier/JSON)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.orange)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 40)
-        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [UTType.folder, UTType.package], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [UTType.folder], allowsMultipleSelection: false) { result in
+            print("[BackupManagementView] fileImporter callback appelé")
             switch result {
             case .success(let urls):
+                print("[BackupManagementView] URLs sélectionnées: \(urls)")
                 if let url = urls.first {
                     do {
+                        print("[BackupManagementView] Tentative d'import depuis: \(url)")
                         try BackupService.shared.importBackup(from: url)
+                        print("[BackupManagementView] Import réussi")
                         // Fermer les sheets immédiatement après import réussi
                         DispatchQueue.main.async {
                             onOperationComplete?() // Fermer settings immédiatement
                             dismiss() // Fermer backup management en même temps
                         }
                     } catch {
+                        print("[BackupManagementView] Erreur d'import: \(error)")
                         alertMessage = "Import failed: \(error.localizedDescription)"
                     }
                 }
             case .failure(let error):
+                print("[BackupManagementView] Erreur de sélection: \(error)")
                 alertMessage = "Import failed: \(error.localizedDescription)"
-            }
-        }
-        .fileImporter(isPresented: $showingLegacyImporter, allowedContentTypes: [UTType.json, UTType.folder], allowsMultipleSelection: false) { result in
-            switch result {
-            case .success(let urls):
-                if let url = urls.first {
-                    do {
-                        try BackupService.shared.importLegacyBackup(from: url)
-                        alertMessage = "Import de l'ancien format réussi !"
-                        // Fermer les sheets après un délai pour laisser voir le message
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            onOperationComplete?()
-                            dismiss()
-                        }
-                    } catch {
-                        alertMessage = "Import échoué: \(error.localizedDescription)"
-                    }
-                }
-            case .failure(let error):
-                alertMessage = "Import échoué: \(error.localizedDescription)"
             }
         }
         .sheet(isPresented: Binding<Bool>(
