@@ -61,8 +61,8 @@ struct PredefinedSearchView: View {
                                 .fill(.ultraThickMaterial)
                                 .colorScheme(.dark)
                         )
-                        .scaleEffect(searchQuery == searchTerm ? 0.95 : 1.0)
-                        .animation(.easeInOut(duration: 0.15), value: searchQuery)
+//                        .scaleEffect(searchQuery == searchTerm ? 0.95 : 1.0)
+//                        .animation(.easeInOut(duration: 0.15), value: searchQuery)
                     }
                     .buttonStyle(PredefinedSearchButtonStyle())
                 }
@@ -110,6 +110,7 @@ struct PredefinedSearchView: View {
         
         // Analyser uniquement les labels Vision des items de la catégorie
         for item in items {
+            var itemLabels: Set<String> = []
             
             // Extraire les labels depuis les métadonnées
             for (key, value) in item.metadataDict {
@@ -128,19 +129,30 @@ struct PredefinedSearchView: View {
                         if cleanLabel.count >= 3 && 
                            cleanLabel.count <= 15 && 
                            !excludedLabels.contains(cleanLabel) {
-                            labelFrequency[cleanLabel, default: 0] += 1
+                            itemLabels.insert(cleanLabel)
                         }
                     }
                 }
+            }
+            
+            // Compter chaque label unique une seule fois par item
+            for label in itemLabels {
+                labelFrequency[label, default: 0] += 1
             }
         }
         
         // Trier par fréquence et prendre les 15 plus populaires
         let sortedLabels = labelFrequency
             .filter { $0.value >= 1 } // Minimum 2 occurrences
-            .sorted { $0.value > $1.value }
+            .sorted { 
+                if $0.value == $1.value {
+                    return $0.key < $1.key // Tri secondaire par nom pour stabilité
+                }
+                return $0.value > $1.value 
+            }
             .prefix(15)
             .map { $0.key }
+        
         
         dynamicSearches = Array(sortedLabels)
     }
@@ -170,6 +182,8 @@ struct PredefinedSearchView: View {
         
         // Extraire les couleurs depuis les métadonnées
         for item in items {
+            var itemColors: Set<String> = []
+            
             for (key, value) in item.metadataDict {
                 if (key.contains("color_name") || key.contains("color_name_fr")) && !value.isEmpty {
                     let colorName = value.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -179,18 +193,29 @@ struct PredefinedSearchView: View {
                                      englishColorName(for: colorName) : colorName
                     
                     if supportedColors.contains(displayColor) {
-                        colorFrequency[displayColor, default: 0] += 1
+                        itemColors.insert(displayColor)
                     }
                 }
+            }
+            
+            // Compter chaque couleur unique une seule fois par item
+            for color in itemColors {
+                colorFrequency[color, default: 0] += 1
             }
         }
         
         // Trier par fréquence et prendre les 6 couleurs les plus populaires
         let sortedColors = colorFrequency
             .filter { $0.value >= 1 } // Minimum 1 occurrence
-            .sorted { $0.value > $1.value }
+            .sorted { 
+                if $0.value == $1.value {
+                    return $0.key < $1.key // Tri secondaire par nom pour stabilité
+                }
+                return $0.value > $1.value 
+            }
             .prefix(6)
             .map { $0.key }
+        
         
         detectedColors = Array(sortedColors)
     }

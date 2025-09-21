@@ -255,7 +255,6 @@ struct FloatingSearchBar: View {
                     .background(
                         RoundedRectangle(cornerRadius: 28)
                             .fill(.ultraThickMaterial)
-                            .stroke(.white.opacity(0.15), lineWidth: 0.5)
                             .colorScheme(.dark)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
