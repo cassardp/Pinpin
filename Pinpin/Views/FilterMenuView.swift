@@ -19,6 +19,8 @@ struct FilterMenuView: View {
     @Binding var isSwipingHorizontally: Bool
     var onOpenAbout: () -> Void
     
+    @State private var isSwipeActionsOpen = false
+    
     // Récupère les catégories utilisées depuis les données
     private var availableTypes: [String] {
         let types = contentItems.compactMap { $0.safeCategoryName }
@@ -45,45 +47,113 @@ struct FilterMenuView: View {
                 .onTapGesture {
                     // Perdre le focus du TextField
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    
+                    // Fermer les swipe actions si ouvertes
+                    if isSwipeActionsOpen {
+                        isSwipeActionsOpen = false
+                        isSwipingHorizontally = false
+                    }
                 }
             
-            // VStack centré verticalement
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer()
+            // Liste native avec actions de swipe
+            List {
+                // Spacer en haut
+                Color.clear
+                    .frame(height: 100)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 
                 // Option "Tout"
-                CategoryButton(
+                CategoryListRow(
                     isSelected: selectedContentType == nil,
                     title: "All",
                     isSwipingHorizontally: isSwipingHorizontally
                 ) {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    withAnimation(.easeInOut) {
-                        selectedContentType = nil
-                    }
+                    selectedContentType = nil
                 }
+                .swipeActions(edge: .leading) {
+                    Button("Select") {
+                        selectedContentType = nil
+                        isSwipeActionsOpen = false
+                    }
+                    .tint(.blue)
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
                 
                 // Types dynamiques
                 ForEach(availableTypes, id: \.self) { type in
-                    CategoryButton(
+                    CategoryListRow(
                         isSelected: selectedContentType == type,
                         title: type.capitalized,
                         isSwipingHorizontally: isSwipingHorizontally
                     ) {
-                        let generator = UIImpactFeedbackGenerator(style: .light)
-                        generator.impactOccurred()
-                        withAnimation(.easeInOut) {
-                            selectedContentType = (selectedContentType == type) ? nil : type
-                        }
+                        selectedContentType = (selectedContentType == type) ? nil : type
                     }
+                    .swipeActions(edge: .leading) {
+                        Button("Select") {
+                            selectedContentType = (selectedContentType == type) ? nil : type
+                            isSwipeActionsOpen = false
+                        }
+                        .tint(.blue)
+                        
+                        Button("Hide") {
+                            // TODO: Implémenter la fonctionnalité de masquage de catégorie
+                            isSwipeActionsOpen = false
+                        }
+                        .tint(.orange)
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
                 
-                
-                Spacer()
+                // Spacer en bas
+                Color.clear
+                    .frame(height: 100)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollIndicators(.hidden)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        // Détecter un swipe horizontal vers la gauche (ouverture des actions)
+                        if value.translation.width < -20 && abs(value.translation.height) < 10 {
+                            if !isSwipeActionsOpen {
+                                isSwipeActionsOpen = true
+                                isSwipingHorizontally = true
+                            }
+                        }
+                        // Détecter un swipe horizontal vers la droite (fermeture des actions)
+                        else if value.translation.width > 20 && abs(value.translation.height) < 10 && isSwipeActionsOpen {
+                            // Ne pas fermer le menu, juste marquer qu'on ferme les actions
+                            isSwipingHorizontally = true
+                        }
+                    }
+                    .onEnded { value in
+                        // Si c'était un swipe vers la droite pour fermer les actions
+                        if value.translation.width > 20 && isSwipeActionsOpen {
+                            isSwipeActionsOpen = false
+                            isSwipingHorizontally = false
+                        }
+                        // Sinon, petit délai pour permettre aux swipe actions de se fermer naturellement
+                        else {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                if isSwipeActionsOpen {
+                                    isSwipeActionsOpen = false
+                                    isSwipingHorizontally = false
+                                }
+                            }
+                        }
+                    }
+            )
+            .onChange(of: isSwipeActionsOpen) { _, newValue in
+                isSwipingHorizontally = newValue
             }
             
-            // Effet de fondu en haut - en dehors de la ScrollView
+            // Effet de fondu en haut
             VStack {
                 LinearGradient(
                     gradient: Gradient(stops: [
@@ -100,7 +170,7 @@ struct FilterMenuView: View {
                 Spacer()
             }
             
-            // Effet de fondu en bas - en dehors de la ScrollView
+            // Effet de fondu en bas
             VStack {
                 Spacer()
                 
@@ -120,14 +190,12 @@ struct FilterMenuView: View {
     }
 }
 
-// MARK: - CategoryButton Component
-struct CategoryButton: View {
+// MARK: - CategoryListRow Component
+struct CategoryListRow: View {
     let isSelected: Bool
     let title: String
     let isSwipingHorizontally: Bool
     let action: () -> Void
-    
-    @State private var isDragging: Bool = false
     
     var body: some View {
         HStack(spacing: 12) {
@@ -144,28 +212,19 @@ struct CategoryButton: View {
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
             }
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        if !isDragging && (abs(value.translation.width) > 10 || abs(value.translation.height) > 10) {
-                            isDragging = true
-                        }
-                    }
-                    .onEnded { value in
-                        // Si c'est un petit mouvement (tap), exécuter l'action
-                        if !isDragging && abs(value.translation.width) < 10 && abs(value.translation.height) < 10 && !isSwipingHorizontally {
-                            action()
-                        }
-                        
-                        isDragging = false
-                    }
-            )
+            .padding(.vertical, 0)
             
             Spacer()
         }
         .padding(.horizontal, 32)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            withAnimation(.easeInOut) {
+                action()
+            }
+        }
     }
 }
 
