@@ -38,6 +38,13 @@ struct ContentItemContextMenu: View {
                 Label(item.safeCategoryName.capitalized, systemImage: "folder")
             }
             
+            // Search Similar
+            Button(action: {
+                searchSimilarProducts()
+            }) {
+                Label("Search Similar", systemImage: "binoculars")
+            }
+            
             Divider()
             
             // Delete
@@ -68,5 +75,9 @@ struct ContentItemContextMenu: View {
     private func changeCategory(to category: String) {
         contentService.updateContentItem(item, categoryName: category)
         onStorageStatsRefresh()
+    }
+    
+    private func searchSimilarProducts() {
+        // Logique à implémenter
     }
 }

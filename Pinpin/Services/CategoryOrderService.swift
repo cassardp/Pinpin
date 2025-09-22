@@ -52,8 +52,10 @@ class CategoryOrderService: ObservableObject {
         
         // Mettre à jour l'ordre sauvegardé si de nouvelles catégories ont été ajoutées
         if orderedList != categoryOrder {
-            categoryOrder = orderedList
-            saveCategoryOrder()
+            DispatchQueue.main.async {
+                self.categoryOrder = orderedList
+                self.saveCategoryOrder()
+            }
         }
         
         return orderedList
