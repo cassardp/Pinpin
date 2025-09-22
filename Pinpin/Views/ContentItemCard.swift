@@ -1,6 +1,6 @@
 //
 //  ContentItemCard.swift
-//  Neeed2
+//  Pinpin
 //
 //  Main content item card that delegates to specialized views
 //

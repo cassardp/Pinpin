@@ -195,7 +195,6 @@ final class BackupService: ObservableObject {
                         // Copier le fichier s'il n'existe pas déjà
                         if fm.fileExists(atPath: destURL.path) {
                             skippedCount += 1
-                            // print("[BackupService] Image déjà existante ignorée: \(relativePath)")
                         } else {
                             try fm.copyItem(at: fileURL, to: destURL)
                             importedCount += 1

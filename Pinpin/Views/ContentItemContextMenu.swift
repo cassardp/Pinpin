@@ -7,7 +7,10 @@ struct ContentItemContextMenu: View {
     let onDeleteRequest: () -> Void
     @StateObject private var coreDataService = CoreDataService.shared
     
-    @State private var categoryNames: [String] = []
+    // Initialisation directe des catégories pour éviter le délai d'affichage
+    private var categoryNames: [String] {
+        coreDataService.fetchCategoryNames()
+    }
     
     var body: some View {
         VStack {
@@ -51,16 +54,9 @@ struct ContentItemContextMenu: View {
                     .foregroundColor(.red)
             }
         }
-        .onAppear {
-            loadCategoryNames()
-        }
     }
     
     // MARK: - Actions
-    
-    private func loadCategoryNames() {
-        categoryNames = coreDataService.fetchCategoryNames()
-    }
     
     private func shareContent() {
         guard let url = item.url, let shareURL = URL(string: url) else { return }

@@ -1,6 +1,6 @@
 //
 //  UserPreferences.swift
-//  Neeed2
+//  Pinpin
 //
 //  Service pour gérer les préférences utilisateur
 //

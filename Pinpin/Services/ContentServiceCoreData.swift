@@ -1,6 +1,6 @@
 //
 //  ContentServiceCoreData.swift
-//  Neeed2
+//  Pinpin
 //
 //  Service Core Data simple
 //

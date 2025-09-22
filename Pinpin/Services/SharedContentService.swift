@@ -1,6 +1,6 @@
 //
 //  SharedContentService.swift
-//  Neeed2
+//  Pinpin
 //
 //  Service pour gérer les contenus partagés via Share Extension
 //  Utilise Core Data au lieu de Supabase

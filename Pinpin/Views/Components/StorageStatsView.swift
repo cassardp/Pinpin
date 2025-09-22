@@ -1,6 +1,6 @@
 //
 //  StorageStatsView.swift
-//  Neeed2
+//  Pinpin
 //
 //  Vue pour afficher les statistiques de stockage des images
 //

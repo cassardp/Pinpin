@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  Neeed2
+//  Pinpin
 //
 //  Vue des paramètres de l'application
 //

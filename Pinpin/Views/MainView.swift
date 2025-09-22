@@ -1,6 +1,6 @@
 //
 //  MainView.swift
-//  Neeed2
+//  Pinpin
 //
 //  Vue principale de l'application
 //
@@ -19,7 +19,6 @@ struct MainView: View {
     @State private var menuSwipeProgress: CGFloat = 0
     @State private var scrollProgress: CGFloat = 0
     @State private var isSettingsOpen = false
-    @State private var isAboutOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
     @State private var isSwipingHorizontally: Bool = false
     @State private var searchQuery: String = ""
@@ -284,7 +283,7 @@ struct MainView: View {
             FilterMenuView(
                 selectedContentType: $selectedContentType,
                 isSwipingHorizontally: $isSwipingHorizontally,
-                onOpenAbout: { isAboutOpen = true }
+                onOpenAbout: { }
             )
         }
         .onAppear {

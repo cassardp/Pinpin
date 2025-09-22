@@ -61,8 +61,6 @@ struct PredefinedSearchView: View {
                                 .fill(.ultraThickMaterial)
                                 .colorScheme(.dark)
                         )
-//                        .scaleEffect(searchQuery == searchTerm ? 0.95 : 1.0)
-//                        .animation(.easeInOut(duration: 0.15), value: searchQuery)
                     }
                     .buttonStyle(PredefinedSearchButtonStyle())
                 }
@@ -143,7 +141,7 @@ struct PredefinedSearchView: View {
         
         // Trier par fréquence et prendre les 15 plus populaires
         let sortedLabels = labelFrequency
-            .filter { $0.value >= 1 } // Minimum 2 occurrences
+            .filter { $0.value >= 2 } // Minimum 2 occurrences
             .sorted { 
                 if $0.value == $1.value {
                     return $0.key < $1.key // Tri secondaire par nom pour stabilité

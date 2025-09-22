@@ -1,6 +1,6 @@
 //
 //  FilterMenuView.swift
-//  Neeed2
+//  Pinpin
 //
 //  Menu latéral de filtrage par type de contenu
 //

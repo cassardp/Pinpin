@@ -1,6 +1,6 @@
 //
 //  SharedImageService.swift
-//  Neeed2
+//  Pinpin
 //
 //  Service pour gérer les images sauvegardées par l'extension de partage
 //
@@ -85,9 +85,7 @@ class SharedImageService {
             }
         }
         
-        // Diviser par 2 car chaque item génère 2 fichiers (image + icône)
-        // Simple et efficace ! 
-        return (imageCount / 2, totalSize)
+        return (imageCount, totalSize)
     }
     
     /// Calculer les statistiques de stockage pour des items spécifiques

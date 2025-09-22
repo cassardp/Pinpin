@@ -1,6 +1,6 @@
 //
 //  EmptyStateView.swift
-//  Neeed2
+//  Pinpin
 //
 //  Vue d'état vide quand aucun contenu n'est partagé
 //

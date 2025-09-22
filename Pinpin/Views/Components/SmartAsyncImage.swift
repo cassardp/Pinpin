@@ -1,6 +1,6 @@
 //
 //  SmartAsyncImage.swift
-//  Neeed2
+//  Pinpin
 //
 //  Composant intelligent pour afficher des images avec fallback local/distant
 //
