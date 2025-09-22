@@ -104,7 +104,14 @@ struct CategorySelectionModalWrapper: View {
     }
     
     private func loadCategories() {
-        categories = coreDataService.fetchCategoryNames()
+        let categoryNames = coreDataService.fetchCategoryNames()
+        
+        // Trier les catégories par nombre d'items (décroissant)
+        categories = categoryNames.sorted { categoryA, categoryB in
+            let countA = coreDataService.countItems(for: categoryA)
+            let countB = coreDataService.countItems(for: categoryB)
+            return countA > countB
+        }
     }
     
     private func addCategory(_ name: String) {

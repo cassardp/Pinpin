@@ -15,20 +15,21 @@ struct FilterMenuView: View {
     private var contentItems: FetchedResults<ContentItem>
     
     @StateObject private var userPreferences = UserPreferences.shared
+    @StateObject private var categoryOrderService = CategoryOrderService.shared
     @Binding var selectedContentType: String?
     @Binding var isSwipingHorizontally: Bool
     var onOpenAbout: () -> Void
     
     @State private var isSwipeActionsOpen = false
     
-    // Récupère les catégories utilisées depuis les données
+    // Récupère les catégories utilisées depuis les données avec ordre personnalisé
     private var availableTypes: [String] {
         let types = contentItems.compactMap { $0.safeCategoryName }
         let uniqueTypes = Set(types)
+        let availableCategories = Array(uniqueTypes)
         
-        // Retourner toutes les catégories utilisées, même si elles ne sont plus dans CoreDataService
-        // (pour éviter de perdre des contenus existants)
-        return Array(uniqueTypes).sorted()
+        // Appliquer l'ordre personnalisé
+        return categoryOrderService.orderedCategories(from: availableCategories)
     }
     
     // Compte les items par type
@@ -37,6 +38,16 @@ struct FilterMenuView: View {
             return contentItems.count
         }
         return contentItems.filter { $0.safeCategoryName == type }.count
+    }
+    
+    // Méthode pour déplacer les catégories (fonctionnalité native SwiftUI)
+    private func moveCategories(from source: IndexSet, to destination: Int) {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            categoryOrderService.reorderCategories(from: source, to: destination)
+        }
     }
     
     var body: some View {
@@ -55,11 +66,11 @@ struct FilterMenuView: View {
                     }
                 }
             
-            // Liste native avec actions de swipe
+            // Liste centrée verticalement - solution simple
             List {
-                // Spacer en haut
+                // Spacer invisible pour centrer
                 Color.clear
-                    .frame(height: 100)
+                    .frame(height: 0)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                 
@@ -81,7 +92,7 @@ struct FilterMenuView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 
-                // Types dynamiques
+                // Types dynamiques avec réorganisation native
                 ForEach(availableTypes, id: \.self) { type in
                     CategoryListRow(
                         isSelected: selectedContentType == type,
@@ -97,25 +108,23 @@ struct FilterMenuView: View {
                         }
                         .tint(.blue)
                         
-                        Button("Hide") {
-                            // TODO: Implémenter la fonctionnalité de masquage de catégorie
-                            isSwipeActionsOpen = false
-                        }
-                        .tint(.orange)
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                 }
+                .onMove(perform: moveCategories)
                 
-                // Spacer en bas
+                // Spacer invisible pour centrer
                 Color.clear
-                    .frame(height: 100)
+                    .frame(height: 0)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentMargins(.vertical, 100)
             .gesture(
                 DragGesture()
                     .onChanged { value in
@@ -153,39 +162,6 @@ struct FilterMenuView: View {
                 isSwipingHorizontally = newValue
             }
             
-            // Effet de fondu en haut
-            VStack {
-                LinearGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: Color(UIColor.systemBackground), location: 0.0),
-                        .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.3),
-                        .init(color: Color.clear, location: 1.0)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 120)
-                .allowsHitTesting(false)
-                
-                Spacer()
-            }
-            
-            // Effet de fondu en bas
-            VStack {
-                Spacer()
-                
-                LinearGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: Color.clear, location: 0.0),
-                        .init(color: Color(UIColor.systemBackground).opacity(0.8), location: 0.7),
-                        .init(color: Color(UIColor.systemBackground), location: 1.0)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 120)
-                .allowsHitTesting(false)
-            }
         }
     }
 }
@@ -212,7 +188,7 @@ struct CategoryListRow: View {
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
             }
-            .padding(.vertical, 0)
+            .padding(.vertical, -4)
             
             Spacer()
         }
@@ -227,6 +203,7 @@ struct CategoryListRow: View {
         }
     }
 }
+
 
 // MARK: - Preview
 #Preview {
