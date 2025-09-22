@@ -81,28 +81,8 @@ class CoreDataService: ObservableObject {
     }
     
     private func createDefaultCategories() {
-        let defaultCategories = [
-            ("Général", "#007AFF", "folder", 0),
-            ("Travail", "#FF9500", "briefcase", 1),
-            ("Personnel", "#34C759", "person", 2),
-            ("Idées", "#FF2D92", "lightbulb", 3),
-            ("À lire", "#5856D6", "book", 4)
-        ]
-        
-        for (index, (name, color, icon, order)) in defaultCategories.enumerated() {
-            let category = Category(context: context)
-            category.id = UUID()
-            category.name = name
-            category.colorHex = color
-            category.iconName = icon
-            category.sortOrder = Int32(order)
-            category.isDefault = index == 0 // Premier = défaut
-            let now = Date()
-            category.createdAt = now
-            category.updatedAt = now
-        }
-        
-        save()
+        // Pas de catégories par défaut au premier lancement
+        // L'utilisateur devra créer ses propres catégories
     }
     
     // MARK: - Category Queries
