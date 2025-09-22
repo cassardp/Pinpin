@@ -52,6 +52,7 @@ class SharedContentService: ObservableObject {
         let url = contentData["url"] as? String
         let description = contentData["description"] as? String
         let thumbnailUrl = contentData["thumbnailUrl"] as? String
+        let metadata = contentData["metadata"] as? [String: String] ?? [:]
         
         // Sauvegarder directement avec Core Data
         await MainActor.run {
@@ -60,7 +61,7 @@ class SharedContentService: ObservableObject {
                 title: title,
                 description: description,
                 url: url,
-                metadata: [:],
+                metadata: metadata,
                 thumbnailUrl: thumbnailUrl
             )
             

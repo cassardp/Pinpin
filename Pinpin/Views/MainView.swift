@@ -20,7 +20,6 @@ struct MainView: View {
     @State private var scrollProgress: CGFloat = 0
     @State private var isSettingsOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
-    @State private var isSwipingHorizontally: Bool = false
     @State private var searchQuery: String = ""
     @State private var showSearchBar: Bool = false
     @State private var showFloatingBar: Bool = true
@@ -282,7 +281,6 @@ struct MainView: View {
         } drawer: {
             FilterMenuView(
                 selectedContentType: $selectedContentType,
-                isSwipingHorizontally: $isSwipingHorizontally,
                 onOpenAbout: { }
             )
         }
@@ -318,7 +316,7 @@ struct MainView: View {
             }
         }
         .sheet(isPresented: $isSettingsOpen) {
-            SettingsView(isSwipingHorizontally: $isSwipingHorizontally)
+            SettingsView()
                 .presentationDetents([.medium, .large], selection: $settingsDetent)
                 .presentationDragIndicator(.hidden)
         }
@@ -401,7 +399,7 @@ struct MainView: View {
             onSelectionTap: { toggleItemSelection(item.safeId) }
         )
         .id(item.safeId)
-        .allowsHitTesting(!isSwipingHorizontally && !isPinching)
+        .allowsHitTesting(!isPinching)
         .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
         .onAppear {
             if item == filteredItems.last {
@@ -455,7 +453,6 @@ struct MainView: View {
         MagnificationGesture(minimumScaleDelta: 0)
             .onChanged { newScale in
                 isPinching = true
-                isSwipingHorizontally = true
                 // Toujours permettre le pinch, pas de limites
                 pinchScale = max(0.98, min(newScale, 1.02))
             }
@@ -490,7 +487,6 @@ struct MainView: View {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     pinchScale = 1.0
                     isPinching = false
-                    isSwipingHorizontally = false
                 }
             }
     }

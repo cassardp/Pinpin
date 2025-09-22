@@ -14,16 +14,16 @@ struct ContentItemContextMenu: View {
     
     var body: some View {
         VStack {
-            // Partage natif
+            // Share
             if let url = item.url, !url.hasPrefix("file://") {
                 Button(action: {
                     shareContent()
                 }) {
-                    Label("Partager", systemImage: "square.and.arrow.up")
+                    Label("Share", systemImage: "square.and.arrow.up")
                 }
             }
             
-            // Menu de changement de catégorie
+            // Category menu
             Menu {
                 ForEach(categoryNames, id: \.self) { categoryName in
                     if categoryName != item.safeCategoryName {
@@ -35,23 +35,16 @@ struct ContentItemContextMenu: View {
                     }
                 }
             } label: {
-                Label("Changer de catégorie", systemImage: "folder")
+                Label(item.safeCategoryName.capitalized, systemImage: "folder")
             }
             
-            // Masquer/Afficher
-            Button(action: {
-                toggleItemVisibility()
-            }) {
-                Label(item.isHidden ? "Afficher" : "Masquer", 
-                      systemImage: item.isHidden ? "eye" : "eye.slash")
-            }
+            Divider()
             
-            // Supprimer
-            Button(action: {
+            // Delete
+            Button(role: .destructive, action: {
                 onDeleteRequest()
             }) {
-                Label("Supprimer", systemImage: "trash")
-                    .foregroundColor(.red)
+                Label("Delete", systemImage: "trash")
             }
         }
     }
@@ -74,11 +67,6 @@ struct ContentItemContextMenu: View {
     
     private func changeCategory(to category: String) {
         contentService.updateContentItem(item, categoryName: category)
-        onStorageStatsRefresh()
-    }
-    
-    private func toggleItemVisibility() {
-        contentService.updateContentItem(item, isHidden: !item.isHidden)
         onStorageStatsRefresh()
     }
 }

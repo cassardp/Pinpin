@@ -17,10 +17,7 @@ struct FilterMenuView: View {
     @StateObject private var userPreferences = UserPreferences.shared
     @StateObject private var categoryOrderService = CategoryOrderService.shared
     @Binding var selectedContentType: String?
-    @Binding var isSwipingHorizontally: Bool
     var onOpenAbout: () -> Void
-    
-    @State private var isSwipeActionsOpen = false
     
     // Récupère les catégories utilisées depuis les données avec ordre personnalisé
     private var availableTypes: [String] {
@@ -58,12 +55,6 @@ struct FilterMenuView: View {
                 .onTapGesture {
                     // Perdre le focus du TextField
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    
-                    // Fermer les swipe actions si ouvertes
-                    if isSwipeActionsOpen {
-                        isSwipeActionsOpen = false
-                        isSwipingHorizontally = false
-                    }
                 }
             
             // Liste centrée verticalement - solution simple
@@ -77,17 +68,9 @@ struct FilterMenuView: View {
                 // Option "Tout"
                 CategoryListRow(
                     isSelected: selectedContentType == nil,
-                    title: "All",
-                    isSwipingHorizontally: isSwipingHorizontally
+                    title: "All"
                 ) {
                     selectedContentType = nil
-                }
-                .swipeActions(edge: .leading) {
-                    Button("Select") {
-                        selectedContentType = nil
-                        isSwipeActionsOpen = false
-                    }
-                    .tint(.blue)
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -96,18 +79,9 @@ struct FilterMenuView: View {
                 ForEach(availableTypes, id: \.self) { type in
                     CategoryListRow(
                         isSelected: selectedContentType == type,
-                        title: type.capitalized,
-                        isSwipingHorizontally: isSwipingHorizontally
+                        title: type.capitalized
                     ) {
                         selectedContentType = (selectedContentType == type) ? nil : type
-                    }
-                    .swipeActions(edge: .leading) {
-                        Button("Select") {
-                            selectedContentType = (selectedContentType == type) ? nil : type
-                            isSwipeActionsOpen = false
-                        }
-                        .tint(.blue)
-                        
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -125,42 +99,6 @@ struct FilterMenuView: View {
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentMargins(.vertical, 100)
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        // Détecter un swipe horizontal vers la gauche (ouverture des actions)
-                        if value.translation.width < -20 && abs(value.translation.height) < 10 {
-                            if !isSwipeActionsOpen {
-                                isSwipeActionsOpen = true
-                                isSwipingHorizontally = true
-                            }
-                        }
-                        // Détecter un swipe horizontal vers la droite (fermeture des actions)
-                        else if value.translation.width > 20 && abs(value.translation.height) < 10 && isSwipeActionsOpen {
-                            // Ne pas fermer le menu, juste marquer qu'on ferme les actions
-                            isSwipingHorizontally = true
-                        }
-                    }
-                    .onEnded { value in
-                        // Si c'était un swipe vers la droite pour fermer les actions
-                        if value.translation.width > 20 && isSwipeActionsOpen {
-                            isSwipeActionsOpen = false
-                            isSwipingHorizontally = false
-                        }
-                        // Sinon, petit délai pour permettre aux swipe actions de se fermer naturellement
-                        else {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                if isSwipeActionsOpen {
-                                    isSwipeActionsOpen = false
-                                    isSwipingHorizontally = false
-                                }
-                            }
-                        }
-                    }
-            )
-            .onChange(of: isSwipeActionsOpen) { _, newValue in
-                isSwipingHorizontally = newValue
-            }
             
         }
     }
@@ -170,7 +108,6 @@ struct FilterMenuView: View {
 struct CategoryListRow: View {
     let isSelected: Bool
     let title: String
-    let isSwipingHorizontally: Bool
     let action: () -> Void
     
     var body: some View {
@@ -209,7 +146,6 @@ struct CategoryListRow: View {
 #Preview {
     FilterMenuView(
         selectedContentType: .constant(nil),
-        isSwipingHorizontally: .constant(false),
         onOpenAbout: {}
     )
 }

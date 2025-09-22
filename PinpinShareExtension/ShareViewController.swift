@@ -9,11 +9,13 @@ import UIKit
 import UniformTypeIdentifiers
 import LinkPresentation
 import SwiftUI
+import Vision
 
 class ShareViewController: UIViewController {
     
     private var sharedContent: SharedContentData?
     private var isProcessingContent = false
+    private var ocrMetadata: [String: String] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -120,8 +122,9 @@ class ShareViewController: UIViewController {
                 
                 // Sauvegarder l'image si disponible (pas d'icônes)
                 if let imageProvider = metadata.imageProvider {
-                    self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { meta in
-                        // Pas de métadonnées supplémentaires dans la version simplifiée
+                    self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { ocrMetadata in
+                        // Stocker les métadonnées OCR pour utilisation ultérieure
+                        self?.storeOCRMetadata(ocrMetadata)
                     }) { imagePath in
                         if let imagePath = imagePath {
                             self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: imagePath)
@@ -163,8 +166,9 @@ class ShareViewController: UIViewController {
                 // Extraire l'image
                 if let imageProvider = metadata.imageProvider {
                     // Save main image and merge analysis metadata
-                    self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { meta in
-                        // Pas de métadonnées supplémentaires
+                    self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { ocrMetadata in
+                        // Stocker les métadonnées OCR pour utilisation ultérieure
+                        self?.storeOCRMetadata(ocrMetadata)
                     }) { imagePath in
                         if let imagePath = imagePath {
                             self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: imagePath)
@@ -234,7 +238,7 @@ class ShareViewController: UIViewController {
         // Utiliser le contenu final si disponible, sinon le contenu temporaire
         let finalContent = self.sharedContent ?? contentData
         
-        let sharedContent: [String: Any] = [
+        var sharedContent: [String: Any] = [
             "category": category,
             "title": finalContent.title,
             "url": finalContent.url ?? "",
@@ -242,6 +246,11 @@ class ShareViewController: UIViewController {
             "thumbnailUrl": finalContent.thumbnailPath ?? "",
             "timestamp": Date().timeIntervalSince1970
         ]
+        
+        // Ajouter les métadonnées OCR si disponibles
+        if !ocrMetadata.isEmpty {
+            sharedContent["metadata"] = ocrMetadata
+        }
         
         // Sauvegarder dans UserDefaults partagés
         if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") {
@@ -316,12 +325,44 @@ class ShareViewController: UIViewController {
             do {
                 try imageData.write(to: fileURL)
                 print("[ShareExtension] Image sauvegardée avec succès: \(fileURL)")
-                // Retourner le chemin relatif pour l'app principale
-                completion("images/\(fileName)")
+                
+                // Lancer l'OCR automatique sur l'image
+                self.performOCROnImage(image) { ocrText in
+                    var metadata: [String: String] = [:]
+                    
+                    if let ocrText = ocrText, !ocrText.isEmpty {
+                        let cleanedText = OCRService.shared.cleanOCRText(ocrText)
+                        metadata["ocr_text"] = cleanedText
+                        print("[ShareExtension] OCR extrait: \(cleanedText)")
+                    }
+                    
+                    // Appeler le handler de métadonnées si fourni
+                    extraMetadataHandler?(metadata)
+                    
+                    // Retourner le chemin relatif pour l'app principale
+                    completion("images/\(fileName)")
+                }
             } catch {
                 print("[ShareExtension] Erreur écriture fichier: \(error)")
                 completion(nil)
             }
+        }
+    }
+    
+    // MARK: - OCR Methods
+    
+    private func performOCROnImage(_ image: UIImage, completion: @escaping (String?) -> Void) {
+        OCRService.shared.extractText(from: image) { ocrText in
+            DispatchQueue.main.async {
+                completion(ocrText)
+            }
+        }
+    }
+    
+    private func storeOCRMetadata(_ metadata: [String: String]) {
+        // Fusionner les nouvelles métadonnées OCR avec les existantes
+        for (key, value) in metadata {
+            ocrMetadata[key] = value
         }
     }
     

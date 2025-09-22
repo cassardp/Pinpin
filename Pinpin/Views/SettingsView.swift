@@ -10,7 +10,6 @@ import UniformTypeIdentifiers
 import UIKit
 
 struct SettingsView: View {
-    @Binding var isSwipingHorizontally: Bool
     @StateObject private var userPreferences = UserPreferences.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -68,7 +67,6 @@ struct SettingsView: View {
                 .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .disabled(isSwipingHorizontally)
             .sheet(isPresented: $showingBackupManagement) {
                 BackupManagementView(onOperationComplete: {
                     showingBackupManagement = false
@@ -127,5 +125,5 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 
 #Preview {
-    SettingsView(isSwipingHorizontally: .constant(false))
+    SettingsView()
 }

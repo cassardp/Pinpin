@@ -9,19 +9,10 @@ struct PredefinedSearchView: View {
     
     @StateObject private var contentService = ContentServiceCoreData()
     @State private var dynamicSearches: [String] = []
-    @State private var detectedColors: [String] = []
     
-    // Recherches préenregistrées populaires (fallback)
-    private let fallbackSearches = [
-        "photos", "videos", "articles", "links", "documents", 
-        "recipes", "outdoor", "shopping", "books", "music",
-        "work", "ideas", "inspiration", "tutorials", "news"
-    ]
-    
-    // Recherches à afficher (dynamiques ou fallback + couleurs)
+    // Recherches à afficher (uniquement dynamiques)
     private var searchesToDisplay: [String] {
-        let baseSearches = dynamicSearches.isEmpty ? fallbackSearches : dynamicSearches
-        return baseSearches + detectedColors
+        return dynamicSearches
     }
     
     var body: some View {
@@ -42,18 +33,9 @@ struct PredefinedSearchView: View {
                             onSearchSelected()
                         }
                     }) {
-                        HStack(spacing: 6) {
-                            // Indicateur de couleur si c'est un tag couleur
-                            if detectedColors.contains(searchTerm) {
-                                Circle()
-                                    .fill(colorForName(searchTerm))
-                                    .frame(width: 12, height: 12)
-                            }
-                            
-                            Text(searchTerm)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.white)
-                        }
+                        Text(searchTerm)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(
@@ -71,15 +53,12 @@ struct PredefinedSearchView: View {
         .transition(.move(edge: .top).combined(with: .opacity))
         .onAppear {
             generateDynamicSearches()
-            generateColorTags()
         }
         .onChange(of: contentService.contentItems) {
             generateDynamicSearches()
-            generateColorTags()
         }
         .onChange(of: selectedContentType) {
             generateDynamicSearches()
-            generateColorTags()
         }
     }
     
@@ -104,44 +83,39 @@ struct PredefinedSearchView: View {
             return
         }
         
-        var labelFrequency: [String: Int] = [:]
+        var keywordFrequency: [String: Int] = [:]
         
-        // Analyser uniquement les labels Vision des items de la catégorie
+        // Extraire des mots-clés depuis les URLs et le texte OCR
         for item in items {
-            var itemLabels: Set<String> = []
+            var itemKeywords: Set<String> = []
             
-            // Extraire les labels depuis les métadonnées
-            for (key, value) in item.metadataDict {
-                if key.contains("label") && !value.isEmpty {
-                    // Traiter les labels (peuvent être séparés par des virgules)
-                    let labels = value.components(separatedBy: ",")
-                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                        .filter { !$0.isEmpty }
-                    
-                    for label in labels {
-                        let cleanLabel = label.lowercased()
-                            .replacingOccurrences(of: "_", with: " ")
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        
-                        // Filtrer les labels pertinents (3-15 caractères, pas de labels techniques)
-                        if cleanLabel.count >= 3 && 
-                           cleanLabel.count <= 15 && 
-                           !excludedLabels.contains(cleanLabel) {
-                            itemLabels.insert(cleanLabel)
-                        }
-                    }
-                }
+            // Analyser l'URL (domaine et path)
+            if let urlString = item.url, let url = URL(string: urlString) {
+                // Traitement spécial pour les domaines connus
+                let processedHost = processSpecialDomains(url.host ?? "")
+                let urlKeywords = extractKeywords(from: processedHost)
+                itemKeywords.formUnion(urlKeywords)
+                
+                // Extraire aussi des mots du path
+                let pathKeywords = extractKeywords(from: url.pathComponents.joined(separator: " "))
+                itemKeywords.formUnion(pathKeywords)
             }
             
-            // Compter chaque label unique une seule fois par item
-            for label in itemLabels {
-                labelFrequency[label, default: 0] += 1
+            // Analyser le texte OCR si disponible
+            if let ocrText = item.metadataDict["ocr_text"], !ocrText.isEmpty {
+                let ocrKeywords = extractKeywords(from: ocrText)
+                itemKeywords.formUnion(ocrKeywords)
+            }
+            
+            // Compter chaque mot-clé unique une seule fois par item
+            for keyword in itemKeywords {
+                keywordFrequency[keyword, default: 0] += 1
             }
         }
         
         // Trier par fréquence et prendre les 15 plus populaires
-        let sortedLabels = labelFrequency
-            .filter { $0.value >= 2 } // Minimum 2 occurrences
+        let sortedKeywords = keywordFrequency
+            .filter { $0.value >= 2 } // Minimum 2 occurrence
             .sorted { 
                 if $0.value == $1.value {
                     return $0.key < $1.key // Tri secondaire par nom pour stabilité
@@ -151,119 +125,99 @@ struct PredefinedSearchView: View {
             .prefix(15)
             .map { $0.key }
         
-        
-        dynamicSearches = Array(sortedLabels)
+        dynamicSearches = Array(sortedKeywords)
     }
     
-    // MARK: - Color Tags Generation
-    private func generateColorTags() {
-        let allItems = contentService.contentItems
-        guard !allItems.isEmpty else {
-            detectedColors = []
-            return
-        }
+    // MARK: - Keyword Extraction
+    private func extractKeywords(from text: String) -> Set<String> {
+        var keywords: Set<String> = []
         
-        // Filtrer selon la catégorie sélectionnée
-        let items: [ContentItem]
-        if let selectedType = selectedContentType, selectedType != "all" {
-            items = allItems.filter { $0.safeCategoryName == selectedType }
-        } else {
-            items = allItems
-        }
+        // Nettoyer et normaliser le texte
+        let cleanText = text
+            .lowercased()
+            .replacingOccurrences(of: "[^a-zA-Z0-9àâäéèêëïîôöùûüÿç\\s-]", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !items.isEmpty else {
-            detectedColors = []
-            return
-        }
+        // Diviser en mots
+        let words = cleanText.components(separatedBy: .whitespacesAndNewlines)
+            .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+            .filter { !$0.isEmpty }
         
-        var colorFrequency: [String: Int] = [:]
-        
-        // Extraire les couleurs depuis les métadonnées
-        for item in items {
-            var itemColors: Set<String> = []
-            
-            for (key, value) in item.metadataDict {
-                if (key.contains("color_name") || key.contains("color_name_fr")) && !value.isEmpty {
-                    let colorName = value.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                    
-                    // Utiliser les noms anglais pour l'affichage
-                    let displayColor = key.contains("color_name_fr") ? 
-                                     englishColorName(for: colorName) : colorName
-                    
-                    if supportedColors.contains(displayColor) {
-                        itemColors.insert(displayColor)
-                    }
-                }
-            }
-            
-            // Compter chaque couleur unique une seule fois par item
-            for color in itemColors {
-                colorFrequency[color, default: 0] += 1
+        for word in words {
+            // Filtrer les mots pertinents
+            if word.count >= 3 && 
+               word.count <= 20 && 
+               !stopWords.contains(word) &&
+               !excludedTerms.contains(word) &&
+               !isNumericSequence(word) {
+                keywords.insert(word)
             }
         }
         
-        // Trier par fréquence et prendre les 6 couleurs les plus populaires
-        let sortedColors = colorFrequency
-            .filter { $0.value >= 1 } // Minimum 1 occurrence
-            .sorted { 
-                if $0.value == $1.value {
-                    return $0.key < $1.key // Tri secondaire par nom pour stabilité
-                }
-                return $0.value > $1.value 
-            }
-            .prefix(6)
-            .map { $0.key }
-        
-        
-        detectedColors = Array(sortedColors)
+        return keywords
     }
     
-    // MARK: - Color Utilities
-    private let supportedColors: Set<String> = [
-        "black", "white", "gray", "red", "orange", "yellow", 
-        "green", "cyan", "blue", "purple", "magenta", "pink"
+    // MARK: - Special Domains Processing
+    private func processSpecialDomains(_ host: String) -> String {
+        // Mapper les domaines courts vers leurs vraies plateformes
+        switch host.lowercased() {
+        case "pin.it":
+            return "pinterest"
+        case "t.co":
+            return "twitter"
+        case "bit.ly", "tinyurl.com", "short.link":
+            return "shortlink"
+        case "youtu.be":
+            return "youtube"
+        case "amzn.to":
+            return "amazon"
+        default:
+            return host
+        }
+    }
+    
+    // MARK: - Numeric Sequence Detection
+    private func isNumericSequence(_ word: String) -> Bool {
+        // Vérifier si le mot est principalement composé de chiffres
+        let digitCount = word.filter { $0.isNumber }.count
+        let totalCount = word.count
+        
+        // Si plus de 70% du mot sont des chiffres, l'exclure
+        // Cela filtre : "123456", "2024", "v1.2.3", "id12345", etc.
+        return Double(digitCount) / Double(totalCount) > 0.7
+    }
+    
+    // Mots vides à exclure (stop words français et anglais)
+    private let stopWords: Set<String> = [
+        // Français
+        "le", "la", "les", "un", "une", "des", "du", "de", "et", "ou", "mais", "donc", "car", "ni", "or",
+        "ce", "cette", "ces", "son", "sa", "ses", "mon", "ma", "mes", "ton", "ta", "tes", "notre", "nos", "votre", "vos", "leur", "leurs",
+        "je", "tu", "il", "elle", "nous", "vous", "ils", "elles", "me", "te", "se", "lui", "eux",
+        "dans", "sur", "avec", "par", "pour", "sans", "sous", "vers", "chez", "entre", "depuis", "pendant", "avant", "après",
+        "que", "qui", "quoi", "dont", "où", "comment", "pourquoi", "quand", "combien",
+        "très", "plus", "moins", "aussi", "encore", "déjà", "toujours", "jamais", "souvent", "parfois",
+        "avoir", "être", "faire", "aller", "venir", "voir", "savoir", "pouvoir", "vouloir", "devoir", "dénichée", 
+        
+        // Anglais
+        "the", "a", "an", "and", "or", "but", "so", "for", "nor", "yet",
+        "this", "that", "these", "those", "his", "her", "its", "my", "your", "our", "their",
+        "i", "you", "he", "she", "it", "we", "they", "me", "him", "us", "them",
+        "in", "on", "at", "by", "for", "with", "without", "under", "over", "through", "during", "before", "after", "above", "below",
+        "what", "who", "when", "where", "why", "how", "which", "whose",
+        "very", "more", "most", "less", "also", "too", "still", "already", "always", "never", "often", "sometimes",
+        "have", "has", "had", "is", "are", "was", "were", "be", "been", "being", "do", "does", "did", "will", "would", "could", "should", "may", "might", "must", "can"
     ]
     
-    private func englishColorName(for frenchName: String) -> String {
-        switch frenchName {
-        case "noir": return "black"
-        case "blanc": return "white"
-        case "gris": return "gray"
-        case "rouge": return "red"
-        case "orange": return "orange"
-        case "jaune": return "yellow"
-        case "vert": return "green"
-        case "cyan": return "cyan"
-        case "bleu": return "blue"
-        case "violet": return "purple"
-        case "magenta": return "magenta"
-        case "rose": return "pink"
-        default: return frenchName
-        }
-    }
-    
-    private func colorForName(_ colorName: String) -> Color {
-        switch colorName {
-        case "black": return .black
-        case "white": return .white
-        case "gray": return .gray
-        case "red": return .red
-        case "orange": return .orange
-        case "yellow": return .yellow
-        case "green": return .green
-        case "cyan": return .cyan
-        case "blue": return .blue
-        case "purple": return .purple
-        case "magenta": return .pink
-        case "pink": return .pink
-        default: return .gray
-        }
-    }
-    
-    // Labels techniques à exclure (métadonnées non pertinentes pour l'utilisateur)
-    private let excludedLabels: Set<String> = [
-        "vision enhanced", "wood processed", "document", "container", "adult", "structure", "material",
-     ]
+    // Termes techniques à exclure
+    private let excludedTerms: Set<String> = [
+        "www", "http", "https", "com", "org", "net", "fr", "html", "php", "asp", "jsp",
+        "index", "page", "home", "main", "default", "admin", "login", "register",
+        "file", "image", "photo", "video", "audio", "document", "pdf", "doc", "docx",
+        "jpg", "jpeg", "png", "gif", "mp4", "mp3", "avi", "mov", "wav",
+        "size", "width", "height", "length", "format", "type", "version", "update", "track", "pin",
+        "open", "share", "status", "media",
+    ]
     
 }
 
