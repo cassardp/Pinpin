@@ -96,7 +96,7 @@ struct PredefinedSearchView: View {
         // Filtrer selon la catégorie sélectionnée
         let items: [ContentItem]
         if let selectedType = selectedContentType, selectedType != "all" {
-            items = allItems.filter { $0.contentType == selectedType }
+            items = allItems.filter { $0.safeCategoryName == selectedType }
         } else {
             items = allItems
         }
@@ -168,7 +168,7 @@ struct PredefinedSearchView: View {
         // Filtrer selon la catégorie sélectionnée
         let items: [ContentItem]
         if let selectedType = selectedContentType, selectedType != "all" {
-            items = allItems.filter { $0.contentType == selectedType }
+            items = allItems.filter { $0.safeCategoryName == selectedType }
         } else {
             items = allItems
         }

@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct CategorySelectionModal: View {
-    @ObservedObject var categoryService = CategoryService.shared
+    @StateObject private var coreDataService = CoreDataService.shared
+    @State private var categoryNames: [String] = []
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
     @Environment(\.dismiss) private var dismiss
@@ -58,7 +59,7 @@ struct CategorySelectionModal: View {
                             showingAddCategory = true
                         }
                         
-                        if categoryService.categories.isEmpty {
+                        if categoryNames.isEmpty {
                             // Message quand pas de catégories
                             VStack(spacing: 12) {
                                 Image(systemName: "folder.badge.plus")
@@ -76,12 +77,12 @@ struct CategorySelectionModal: View {
                             }
                             .padding(.vertical, 40)
                         } else {
-                            ForEach(categoryService.categories, id: \.self) { category in
+                            ForEach(categoryNames, id: \.self) { categoryName in
                                 CategoryCard(
-                                    title: category,
+                                    title: categoryName,
                                     isSelected: false
                                 ) {
-                                    onCategorySelected(category)
+                                    onCategorySelected(categoryName)
                                     dismiss()
                                 }
                             }
@@ -95,13 +96,22 @@ struct CategorySelectionModal: View {
             }
             .background(Color(UIColor.systemBackground))
         }
+        .onAppear {
+            loadCategoryNames()
+        }
         .sheet(isPresented: $showingAddCategory) {
             AddCategorySheet { categoryName in
-                categoryService.addCategory(categoryName)
+                coreDataService.addCategory(name: categoryName)
+                loadCategoryNames()
                 onCategorySelected(categoryName)
                 dismiss()
             }
         }
+    }
+    
+    // MARK: - Actions
+    private func loadCategoryNames() {
+        categoryNames = coreDataService.fetchCategoryNames()
     }
 }
 

@@ -17,10 +17,21 @@ final class BackupService: ObservableObject {
     private let coreData = CoreDataService.shared
     
     // MARK: - Backup model
+    private struct BackupCategory: Codable {
+        let id: UUID
+        let name: String
+        let colorHex: String
+        let iconName: String
+        let sortOrder: Int32
+        let isDefault: Bool
+        let createdAt: Date
+        let updatedAt: Date
+    }
+    
     private struct BackupItem: Codable {
         let id: UUID
         let userId: UUID?
-        let contentType: String
+        let categoryName: String?
         let title: String
         let itemDescription: String?
         let url: String?
@@ -34,6 +45,7 @@ final class BackupService: ObservableObject {
     private struct BackupFile: Codable {
         let version: Int
         let createdAt: Date
+        let categories: [BackupCategory]
         let items: [BackupItem]
     }
     
@@ -51,17 +63,35 @@ final class BackupService: ObservableObject {
         let workingDir = tmpRoot.appendingPathComponent("PinpinBackup_\(stamp)", isDirectory: true)
         try fm.createDirectory(at: workingDir, withIntermediateDirectories: true)
         
-        // 1) Export JSON des items
-        let fetch: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
-        fetch.sortDescriptors = [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)]
-        let items = try coreData.context.fetch(fetch)
+        // 1) Export JSON des catégories
+        let categoriesFetch: NSFetchRequest<Category> = Category.fetchRequest()
+        categoriesFetch.sortDescriptors = [NSSortDescriptor(keyPath: \Category.sortOrder, ascending: true)]
+        let categories = try coreData.context.fetch(categoriesFetch)
         
-        let mapped: [BackupItem] = items.map { item in
+        let mappedCategories: [BackupCategory] = categories.map { category in
+            return BackupCategory(
+                id: category.id ?? UUID(),
+                name: category.name ?? "",
+                colorHex: category.colorHex ?? "#007AFF",
+                iconName: category.iconName ?? "folder",
+                sortOrder: category.sortOrder,
+                isDefault: category.isDefault,
+                createdAt: category.createdAt ?? Date(),
+                updatedAt: category.updatedAt ?? Date()
+            )
+        }
+        
+        // 2) Export JSON des items
+        let itemsFetch: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+        itemsFetch.sortDescriptors = [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)]
+        let items = try coreData.context.fetch(itemsFetch)
+        
+        let mappedItems: [BackupItem] = items.map { item in
             let meta = (item.metadata as? [String: String]) ?? [:]
             return BackupItem(
                 id: item.id ?? UUID(),
                 userId: item.userId,
-                contentType: item.contentType ?? "",
+                categoryName: item.category?.name,
                 title: item.title ?? "Untitled",
                 itemDescription: item.itemDescription,
                 url: item.url,
@@ -72,16 +102,16 @@ final class BackupService: ObservableObject {
                 updatedAt: item.updatedAt
             )
         }
-        let backup = BackupFile(version: 1, createdAt: Date(), items: mapped)
+        let backup = BackupFile(version: 2, createdAt: Date(), categories: mappedCategories, items: mappedItems)
         let jsonURL = workingDir.appendingPathComponent("items.json")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let jsonData = try encoder.encode(backup)
         try jsonData.write(to: jsonURL, options: .atomic)
         
-        // 2) Copier les images locales référencées (si existent)
+        // 3) Copier les images locales référencées (si existent)
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
-            for item in mapped {
+            for item in mappedItems {
                 // Utiliser uniquement thumbnailUrl (nouveau système simplifié)
                 if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
                     let src = containerURL.appendingPathComponent(thumbnailUrl)
@@ -98,7 +128,7 @@ final class BackupService: ObservableObject {
             }
         }
         
-        // 3) Retourner le dossier (le partage via Fichiers gère l'enregistrement du paquet)
+        // 4) Retourner le dossier (le partage via Fichiers gère l'enregistrement du paquet)
         return workingDir
     }
     
@@ -196,7 +226,25 @@ final class BackupService: ObservableObject {
             }
         }
         
-        // Merge Core Data par id
+        // Import des catégories d'abord
+        for bc in backup.categories {
+            let req: NSFetchRequest<Category> = Category.fetchRequest()
+            req.predicate = NSPredicate(format: "name == %@", bc.name)
+            req.fetchLimit = 1
+            let existing = try coreData.context.fetch(req).first
+            let category: Category = existing ?? Category(context: coreData.context)
+            
+            category.id = bc.id
+            category.name = bc.name
+            category.colorHex = bc.colorHex
+            category.iconName = bc.iconName
+            category.sortOrder = bc.sortOrder
+            category.isDefault = bc.isDefault
+            category.createdAt = bc.createdAt
+            category.updatedAt = bc.updatedAt
+        }
+        
+        // Merge Core Data des items par id
         for bi in backup.items {
             let req: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
             req.predicate = NSPredicate(format: "id == %@", bi.id as CVarArg)
@@ -206,7 +254,17 @@ final class BackupService: ObservableObject {
             
             item.id = bi.id
             item.userId = bi.userId ?? item.userId
-            item.contentType = bi.contentType
+            
+            // Associer la catégorie par nom
+            if let categoryName = bi.categoryName {
+                let categoryReq: NSFetchRequest<Category> = Category.fetchRequest()
+                categoryReq.predicate = NSPredicate(format: "name == %@", categoryName)
+                categoryReq.fetchLimit = 1
+                if let category = try coreData.context.fetch(categoryReq).first {
+                    item.category = category
+                }
+            }
+            
             item.title = bi.title
             item.itemDescription = bi.itemDescription
             item.url = bi.url

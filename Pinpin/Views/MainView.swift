@@ -13,7 +13,7 @@ struct MainView: View {
     @StateObject private var contentService = ContentServiceCoreData()
     @StateObject private var sharedContentService: SharedContentService
     @StateObject private var userPreferences = UserPreferences.shared
-    @StateObject private var categoryService = CategoryService.shared
+    @StateObject private var coreDataService = CoreDataService.shared
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
@@ -87,7 +87,7 @@ struct MainView: View {
         let items = Array(allContentItems)
         let typeFiltered: [ContentItem]
         if let selectedType = selectedContentType {
-            typeFiltered = items.filter { $0.contentType == selectedType }
+            typeFiltered = items.filter { $0.safeCategoryName == selectedType }
         } else {
             typeFiltered = items
         }

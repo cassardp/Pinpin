@@ -8,7 +8,7 @@
 import Foundation
 
 // Note: Ce modèle est conservé pour la compatibilité Core Data
-// mais les catégories sont maintenant gérées par CategoryService
+// mais les catégories sont maintenant gérées par CoreDataService
 struct ContentCategory {
     let name: String
     

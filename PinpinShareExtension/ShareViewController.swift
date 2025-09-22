@@ -13,14 +13,37 @@ import SwiftUI
 class ShareViewController: UIViewController {
     
     private var sharedContent: SharedContentData?
+    private var isProcessingContent = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         view.backgroundColor = UIColor.systemBackground
         
-        // Traiter le contenu partagé
-        processSharedContent()
+        // Afficher l'interface immédiatement avec un contenu temporaire
+        showCategorySelectionImmediately()
+        
+        // Traiter le contenu partagé en arrière-plan
+        processSharedContentInBackground()
+    }
+    
+    private func showCategorySelectionImmediately() {
+        // Créer un contenu temporaire pour afficher l'interface immédiatement
+        let temporaryContent = SharedContentData(
+            title: "Loading...",
+            url: nil,
+            description: "Processing shared content..."
+        )
+        
+        showCategorySelection(for: temporaryContent)
+    }
+    
+    private func processSharedContentInBackground() {
+        isProcessingContent = true
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.processSharedContent()
+        }
     }
     
     private func processSharedContent() {
@@ -101,9 +124,9 @@ class ShareViewController: UIViewController {
                         // Pas de métadonnées supplémentaires dans la version simplifiée
                     }) { imagePath in
                         if let imagePath = imagePath {
-                            self?.createContentAndShowModal(title: title, url: url.absoluteString, description: description, thumbnailPath: imagePath)
+                            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: imagePath)
                         } else {
-                            self?.createContentAndShowModal(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
+                            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
                         }
                     }
                     return
@@ -111,7 +134,7 @@ class ShareViewController: UIViewController {
             }
             
             // Pas d'image, créer le contenu sans thumbnail
-            self?.createContentAndShowModal(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
+            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
         }
     }
     
@@ -121,12 +144,7 @@ class ShareViewController: UIViewController {
             handleURL(detectedURL)
         } else {
             // Traiter comme texte simple
-            let contentData = SharedContentData(
-                title: text,
-                url: nil,
-                description: text
-            )
-            showCategorySelection(for: contentData)
+            updateContentAfterProcessing(title: text, url: nil, description: text, thumbnailPath: nil)
         }
     }
     
@@ -149,9 +167,9 @@ class ShareViewController: UIViewController {
                         // Pas de métadonnées supplémentaires
                     }) { imagePath in
                         if let imagePath = imagePath {
-                            self?.createContentAndShowModal(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: imagePath)
+                            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: imagePath)
                         } else {
-                            self?.createContentAndShowModal(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
+                            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
                         }
                     }
                     return
@@ -159,7 +177,7 @@ class ShareViewController: UIViewController {
             }
             
             // Si pas de métadonnées, sauvegarder quand même
-            self?.createContentAndShowModal(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
+            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
         }
     }
     
@@ -178,27 +196,50 @@ class ShareViewController: UIViewController {
             }
         )
         
+        // Intégrer directement dans le ShareViewController au lieu d'une sheet
         let hostingController = UIHostingController(rootView: categoryModal)
-        hostingController.modalPresentationStyle = .pageSheet
         
-        if let sheet = hostingController.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.selectedDetentIdentifier = .large
-            sheet.prefersGrabberVisible = true
-            sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-            sheet.prefersEdgeAttachedInCompactHeight = true
+        // Ajouter comme enfant du ShareViewController
+        addChild(hostingController)
+        view.addSubview(hostingController.view)
+        
+        // Contraintes pour remplir toute la vue
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+        
+        hostingController.didMove(toParent: self)
+    }
+    
+    private func updateContentAfterProcessing(title: String, url: String?, description: String?, thumbnailPath: String?) {
+        let finalContentData = SharedContentData(
+            title: title,
+            url: url,
+            description: description,
+            thumbnailPath: thumbnailPath
+        )
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.sharedContent = finalContentData
+            self?.isProcessingContent = false
+            // L'interface est déjà affichée, pas besoin de la recréer
         }
-        
-        present(hostingController, animated: true)
     }
     
     private func saveContent(_ contentData: SharedContentData, to category: String) {
+        // Utiliser le contenu final si disponible, sinon le contenu temporaire
+        let finalContent = self.sharedContent ?? contentData
+        
         let sharedContent: [String: Any] = [
             "category": category,
-            "title": contentData.title,
-            "url": contentData.url ?? "",
-            "description": contentData.description ?? "",
-            "thumbnailUrl": contentData.thumbnailPath ?? "",
+            "title": finalContent.title,
+            "url": finalContent.url ?? "",
+            "description": finalContent.description ?? "",
+            "thumbnailUrl": finalContent.thumbnailPath ?? "",
             "timestamp": Date().timeIntervalSince1970
         ]
         
@@ -214,18 +255,6 @@ class ShareViewController: UIViewController {
         completeRequest()
     }
     
-    private func createContentAndShowModal(title: String, url: String, description: String?, thumbnailPath: String?) {
-        let contentData = SharedContentData(
-            title: title,
-            url: url,
-            description: description,
-            thumbnailPath: thumbnailPath
-        )
-        
-        DispatchQueue.main.async {
-            self.showCategorySelection(for: contentData)
-        }
-    }
     
     private func saveImageFromProvider(_ imageProvider: NSItemProvider,
                                        extraMetadataHandler: (([String: String]) -> Void)? = nil,

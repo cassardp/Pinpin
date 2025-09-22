@@ -5,7 +5,9 @@ struct ContentItemContextMenu: View {
     let contentService: ContentServiceCoreData
     let onStorageStatsRefresh: () -> Void
     let onDeleteRequest: () -> Void
-    @StateObject private var categoryService = CategoryService.shared
+    @StateObject private var coreDataService = CoreDataService.shared
+    
+    @State private var categoryNames: [String] = []
     
     var body: some View {
         VStack {
@@ -20,12 +22,12 @@ struct ContentItemContextMenu: View {
             
             // Menu de changement de catégorie
             Menu {
-                ForEach(categoryService.categories, id: \.self) { category in
-                    if category != item.contentType {
+                ForEach(categoryNames, id: \.self) { categoryName in
+                    if categoryName != item.safeCategoryName {
                         Button(action: {
-                            changeCategory(to: category)
+                            changeCategory(to: categoryName)
                         }) {
-                            Label(category, systemImage: "folder")
+                            Label(categoryName, systemImage: "folder")
                         }
                     }
                 }
@@ -49,9 +51,16 @@ struct ContentItemContextMenu: View {
                     .foregroundColor(.red)
             }
         }
+        .onAppear {
+            loadCategoryNames()
+        }
     }
     
     // MARK: - Actions
+    
+    private func loadCategoryNames() {
+        categoryNames = coreDataService.fetchCategoryNames()
+    }
     
     private func shareContent() {
         guard let url = item.url, let shareURL = URL(string: url) else { return }
@@ -68,7 +77,7 @@ struct ContentItemContextMenu: View {
     }
     
     private func changeCategory(to category: String) {
-        contentService.updateContentItem(item, contentType: category)
+        contentService.updateContentItem(item, categoryName: category)
         onStorageStatsRefresh()
     }
     

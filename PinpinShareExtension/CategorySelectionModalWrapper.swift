@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreData
 
 struct CategorySelectionModalWrapper: View {
     let contentData: SharedContentData
@@ -16,38 +17,37 @@ struct CategorySelectionModalWrapper: View {
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
     
-    // Plus de catégories par défaut - utilise seulement celles sauvegardées
+    private let coreDataService = CoreDataService.shared
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Add to category")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                        
-                        Text("Choose where to save this content")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Add to category")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
                     
-                    Spacer()
-                    
-                    Button(action: { onCancel() }) {
-                        Image(systemName: "xmark")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                            .frame(width: 30, height: 30)
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .clipShape(Circle())
-                    }
+                    Text("Choose where to save this content")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
+                
+                Spacer()
+                
+                Button(action: { onCancel() }) {
+                    Image(systemName: "xmark")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .frame(width: 30, height: 30)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .clipShape(Circle())
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
                 
                 // Categories List
                 ScrollView {
@@ -75,12 +75,12 @@ struct CategorySelectionModalWrapper: View {
                             }
                             .padding(.vertical, 40)
                         } else {
-                            ForEach(categories, id: \.self) { category in
+                            ForEach(categories, id: \.self) { categoryName in
                                 CategoryCard(
-                                    title: category,
+                                    title: categoryName,
                                     isSelected: false
                                 ) {
-                                    onCategorySelected(category)
+                                    onCategorySelected(categoryName)
                                 }
                             }
                         }
@@ -89,11 +89,9 @@ struct CategorySelectionModalWrapper: View {
                 }
                 .padding(.top, 24)
                 
-                Spacer(minLength: 34)
-            }
-            .background(Color(UIColor.systemBackground))
-            .navigationBarHidden(true)
+            Spacer(minLength: 34)
         }
+        .background(Color(UIColor.systemBackground))
         .onAppear {
             loadCategories()
         }
@@ -106,25 +104,12 @@ struct CategorySelectionModalWrapper: View {
     }
     
     private func loadCategories() {
-        if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin"),
-           let savedCategories = sharedDefaults.array(forKey: "user_categories") as? [String] {
-            categories = savedCategories
-        } else {
-            categories = []
-        }
+        categories = coreDataService.fetchCategoryNames()
     }
     
     private func addCategory(_ name: String) {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty && !categories.contains(trimmedName) else { return }
-        
-        categories.append(trimmedName)
-        
-        // Sauvegarder dans UserDefaults partagés
-        if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") {
-            sharedDefaults.set(categories, forKey: "user_categories")
-            sharedDefaults.synchronize()
-        }
+        coreDataService.addCategory(name: name)
+        loadCategories() // Recharger la liste
     }
 }
 
@@ -135,10 +120,12 @@ struct CategoryCard: View {
     let action: () -> Void
     
     @State private var itemCount: Int = 0
+    @State private var firstImageURL: String? = nil
+    private let coreDataService = CoreDataService.shared
     
-    // Couleur basée sur le hash du nom de la catégorie pour avoir une couleur consistante
+    // Couleur simple basée sur le hash du nom (fallback)
     private var categoryColor: Color {
-        let colors: [Color] = [.red, .blue, .green, .orange, .purple, .pink, .cyan, .indigo, .mint, .teal]
+        let colors: [Color] = [.blue, .green, .orange, .purple, .pink, .cyan, .indigo, .mint]
         let hash = abs(title.hashValue)
         return colors[hash % colors.count]
     }
@@ -146,17 +133,109 @@ struct CategoryCard: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                // Image de prévisualisation
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(categoryColor.opacity(0.1))
-                        .frame(width: 50, height: 50)
-                    
-                    // Pour l'extension, on utilise un placeholder avec la première lettre
-                    Text(String(title.prefix(1).uppercased()))
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(categoryColor)
+                // Image de prévisualisation ou fallback
+                if let imageURL = firstImageURL {
+                    // Vérifier si c'est un chemin local (images/...)
+                    if imageURL.hasPrefix("images/") {
+                        // Image locale dans App Group
+                        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
+                            let fullURL = containerURL.appendingPathComponent(imageURL)
+                            if let uiImage = UIImage(contentsOfFile: fullURL.path) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                // Fichier local non trouvé
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(categoryColor.opacity(0.1))
+                                        .frame(width: 50, height: 50)
+                                    Text(String(title.prefix(1).uppercased()))
+                                        .font(.title2)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(categoryColor)
+                                }
+                            }
+                        } else {
+                            // Pas d'accès App Group
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(categoryColor.opacity(0.1))
+                                    .frame(width: 50, height: 50)
+                                Text(String(title.prefix(1).uppercased()))
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(categoryColor)
+                            }
+                        }
+                    } else if let url = URL(string: imageURL) {
+                        // URL web - utiliser AsyncImage
+                        AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        case .failure(_):
+                            // Erreur de chargement
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(categoryColor.opacity(0.1))
+                                    .frame(width: 50, height: 50)
+                                Text(String(title.prefix(1).uppercased()))
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(categoryColor)
+                            }
+                        case .empty:
+                            // Placeholder pendant le chargement
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(categoryColor.opacity(0.1))
+                                    .frame(width: 50, height: 50)
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            }
+                        @unknown default:
+                            // Fallback
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(categoryColor.opacity(0.1))
+                                    .frame(width: 50, height: 50)
+                                Text(String(title.prefix(1).uppercased()))
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(categoryColor)
+                            }
+                        }
+                        }
+                    } else {
+                        // URL invalide
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(categoryColor.opacity(0.1))
+                                .frame(width: 50, height: 50)
+                            Text(String(title.prefix(1).uppercased()))
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(categoryColor)
+                        }
+                    }
+                } else {
+                    // Fallback : première lettre si pas d'image
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(categoryColor.opacity(0.1))
+                            .frame(width: 50, height: 50)
+                        Text(String(title.prefix(1).uppercased()))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(categoryColor)
+                    }
                 }
                 
                 // Titre et nombre de publications
@@ -170,6 +249,8 @@ struct CategoryCard: View {
                     Text("\(itemCount) item\(itemCount > 1 ? "s" : "")")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                    
+                    // Debug supprimé - tout fonctionne ! 🎉
                 }
                 
                 Spacer()
@@ -189,12 +270,18 @@ struct CategoryCard: View {
         .buttonStyle(PlainButtonStyle())
         .onAppear {
             loadCategoryCount()
+            loadFirstImage()
         }
     }
     
     private func loadCategoryCount() {
-        // Pour l'extension, on simule le nombre ou on pourrait accéder aux UserDefaults partagés
-        itemCount = Int.random(in: 1...25)
+        // Compter les vrais items pour cette catégorie
+        itemCount = coreDataService.countItems(for: title)
+    }
+    
+    private func loadFirstImage() {
+        // Récupérer la première image de la catégorie
+        firstImageURL = coreDataService.fetchFirstImageURL(for: title)
     }
 }
 

@@ -21,10 +21,10 @@ struct FilterMenuView: View {
     
     // Récupère les catégories utilisées depuis les données
     private var availableTypes: [String] {
-        let types = contentItems.compactMap { $0.contentType }
+        let types = contentItems.compactMap { $0.safeCategoryName }
         let uniqueTypes = Set(types)
         
-        // Retourner toutes les catégories utilisées, même si elles ne sont plus dans CategoryService
+        // Retourner toutes les catégories utilisées, même si elles ne sont plus dans CoreDataService
         // (pour éviter de perdre des contenus existants)
         return Array(uniqueTypes).sorted()
     }
@@ -34,7 +34,7 @@ struct FilterMenuView: View {
         if type == nil {
             return contentItems.count
         }
-        return contentItems.filter { $0.contentType == type }.count
+        return contentItems.filter { $0.safeCategoryName == type }.count
     }
     
     var body: some View {

@@ -56,11 +56,11 @@ class SharedContentService: ObservableObject {
         // Sauvegarder directement avec Core Data
         await MainActor.run {
             contentService.saveContentItem(
-                contentType: category,
+                categoryName: category,
                 title: title,
                 description: description,
                 url: url,
-                metadata: nil,
+                metadata: [:],
                 thumbnailUrl: thumbnailUrl
             )
             
