@@ -17,7 +17,6 @@ struct CategorySelectionModalWrapper: View {
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
     @State private var selectedCategory: String? = nil
-    @State private var isProcessing = false
     
     private let coreDataService = CoreDataService.shared
     
@@ -27,12 +26,8 @@ struct CategorySelectionModalWrapper: View {
                     LazyVStack(spacing: 8) {
                         // Add Category Button (en haut)
                         AddCategoryCard {
-                            if !isProcessing {
-                                showingAddCategory = true
-                            }
+                            showingAddCategory = true
                         }
-                        .disabled(isProcessing)
-                        .opacity(isProcessing ? 0.5 : 1.0)
                         
                         if categories.isEmpty {
                             // Message quand pas de catégories
@@ -57,12 +52,8 @@ struct CategorySelectionModalWrapper: View {
                                     title: categoryName,
                                     isSelected: selectedCategory == categoryName
                                 ) {
-                                    if !isProcessing {
-                                        handleCategorySelection(categoryName)
-                                    }
+                                    handleCategorySelection(categoryName)
                                 }
-                                .disabled(isProcessing)
-                                .opacity(isProcessing && selectedCategory != categoryName ? 0.5 : 1.0)
                             }
                         }
                     }
@@ -72,34 +63,6 @@ struct CategorySelectionModalWrapper: View {
                 }
                 .background(Color(UIColor.systemBackground))
                 .ignoresSafeArea(.all)
-                .overlay(
-                    // Overlay de chargement
-                    Group {
-                        if isProcessing {
-                            ZStack {
-                                Color.black.opacity(0.3)
-                                    .ignoresSafeArea(.all)
-                                
-                                VStack(spacing: 16) {
-                                    ProgressView()
-                                        .scaleEffect(1.2)
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .primary))
-                                    
-                                    Text("Adding to \(selectedCategory?.capitalized ?? "category")...")
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-                                }
-                                .padding(32)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(UIColor.systemBackground))
-                                        .shadow(radius: 10)
-                                )
-                            }
-                            .transition(.opacity)
-                        }
-                    }
-                )
         .onAppear {
             loadCategories()
         }
@@ -135,13 +98,11 @@ struct CategorySelectionModalWrapper: View {
         // Marquer la catégorie comme sélectionnée avec animation
         withAnimation(.easeInOut(duration: 0.2)) {
             selectedCategory = categoryName
-            isProcessing = true
         }
         
         // Délai de 0.8 seconde pour laisser voir la sélection et permettre le chargement
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             onCategorySelected(categoryName)
-            // La modal restera ouverte jusqu'à ce que le processus soit terminé
         }
     }
 }
