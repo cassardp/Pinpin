@@ -302,7 +302,7 @@ struct AddCategoryCard: View {
                 
                 // Texte simplifié
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("New")
+                    Text("Add a category")
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
