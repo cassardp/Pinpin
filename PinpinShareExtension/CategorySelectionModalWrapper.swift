@@ -23,46 +23,46 @@ struct CategorySelectionModalWrapper: View {
     var body: some View {
         // Categories List - ScrollView prend tout l'espace
         ScrollView {
-                    LazyVStack(spacing: 8) {
-                        // Add Category Button (en haut)
-                        AddCategoryCard {
-                            showingAddCategory = true
-                        }
+            VStack(spacing: 16) {
+                // Add Category Button (en haut)
+                AddCategoryCard {
+                    showingAddCategory = true
+                }
+                
+                if categories.isEmpty {
+                    // Message quand pas de catégories
+                    VStack(spacing: 12) {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 40))
+                            .foregroundColor(.secondary)
                         
-                        if categories.isEmpty {
-                            // Message quand pas de catégories
-                            VStack(spacing: 12) {
-                                Image(systemName: "folder.badge.plus")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.secondary)
-                                
-                                Text("No categories yet")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                
-                                Text("Create your first category to organize your content")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.vertical, 40)
-                        } else {
-                            ForEach(categories, id: \.self) { categoryName in
-                                CategoryCard(
-                                    title: categoryName,
-                                    isSelected: selectedCategory == categoryName
-                                ) {
-                                    handleCategorySelection(categoryName)
-                                }
-                            }
+                        Text("No categories yet")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("Create your first category to organize your content")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.vertical, 40)
+                } else {
+                    ForEach(categories, id: \.self) { categoryName in
+                        CategoryCard(
+                            title: categoryName,
+                            isSelected: selectedCategory == categoryName
+                        ) {
+                            handleCategorySelection(categoryName)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 40)
-                    .padding(.bottom, 100)
                 }
-                .background(Color(UIColor.systemBackground))
-                .ignoresSafeArea(.all)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 40)
+            .padding(.bottom, 100)
+        }
+        .background(Color(UIColor.systemBackground))
+        .ignoresSafeArea(.all)
         .onAppear {
             loadCategories()
         }
@@ -286,41 +286,37 @@ struct AddCategoryCard: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 32) {
-                // Icône d'ajout
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.primary.opacity(0.1))
-                        .frame(width: 60, height: 60)
-                    
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .fontWeight(.black)
-                        .foregroundColor(.primary)
-                }
+        HStack(spacing: 32) {
+            // Icône d'ajout
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.1))
+                    .frame(width: 60, height: 60)
                 
-                // Texte simplifié
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Add a category")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                }
-                
-                Spacer()
-                
-
+                Image(systemName: "plus")
+                    .font(.title2)
+                    .fontWeight(.black)
+                    .foregroundColor(.primary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.systemBackground).opacity(0.5))
-            )
+            
+            // Texte simplifié
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Add a category")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
         }
-        .buttonStyle(PlainButtonStyle())
+        .frame(height: 70) // Hauteur fixe identique à CategoryCard
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 }
 

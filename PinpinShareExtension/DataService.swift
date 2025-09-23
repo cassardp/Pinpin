@@ -55,7 +55,11 @@ final class DataService {
         
         do {
             let categories = try context.fetch(descriptor)
-            return categories.map { $0.name }
+            var seen = Set<UUID>()
+            return categories.compactMap { category in
+                guard seen.insert(category.id).inserted else { return nil }
+                return category.name
+            }
         } catch {
             print("Erreur lors de la récupération des catégories dans l'extension: \(error)")
             return ["Général"] // Fallback

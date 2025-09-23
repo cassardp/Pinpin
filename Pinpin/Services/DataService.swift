@@ -205,7 +205,11 @@ final class DataService: ObservableObject {
     }
     
     func fetchCategoryNames() -> [String] {
-        return fetchCategories().compactMap { $0.name }
+        var seen = Set<UUID>()
+        return fetchCategories().compactMap { category in
+            guard seen.insert(category.id).inserted else { return nil }
+            return category.name
+        }
     }
     
     func addCategory(name: String, colorHex: String = "#007AFF", iconName: String = "folder") {
