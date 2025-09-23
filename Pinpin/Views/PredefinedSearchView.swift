@@ -116,13 +116,13 @@ struct PredefinedSearchView: View {
         // Trier par fréquence et prendre les 15 plus populaires
         let sortedKeywords = keywordFrequency
             .filter { $0.value >= 2 } // Minimum 2 occurrence
-            .sorted { 
+            .sorted {
                 if $0.value == $1.value {
                     return $0.key < $1.key // Tri secondaire par nom pour stabilité
                 }
                 return $0.value > $1.value 
             }
-            .prefix(15)
+            .prefix(25)
             .map { $0.key }
         
         dynamicSearches = Array(sortedKeywords)

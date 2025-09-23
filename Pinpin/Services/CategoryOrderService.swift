@@ -11,15 +11,16 @@ import Combine
 class CategoryOrderService: ObservableObject {
     static let shared = CategoryOrderService()
     
-    private let userDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") ?? UserDefaults.standard
+    private let userDefaults: UserDefaults
     private let categoryOrderKey = "categoryOrder"
     
     @Published var categoryOrder: [String] = []
     
     private init() {
+        userDefaults = .standard
         loadCategoryOrder()
     }
-    
+
     /// Charge l'ordre des catégories depuis UserDefaults
     private func loadCategoryOrder() {
         categoryOrder = userDefaults.stringArray(forKey: categoryOrderKey) ?? []
@@ -28,7 +29,6 @@ class CategoryOrderService: ObservableObject {
     /// Sauvegarde l'ordre des catégories dans UserDefaults
     private func saveCategoryOrder() {
         userDefaults.set(categoryOrder, forKey: categoryOrderKey)
-        userDefaults.synchronize()
     }
     
     /// Applique l'ordre personnalisé aux catégories disponibles
