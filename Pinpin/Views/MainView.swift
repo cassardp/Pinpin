@@ -6,14 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 import UIKit
 
-
 struct MainView: View {
-    @StateObject private var contentService = ContentServiceCoreData()
+    @Environment(\.modelContext) private var modelContext
+    @StateObject private var dataService = DataService.shared
     @StateObject private var sharedContentService: SharedContentService
     @StateObject private var userPreferences = UserPreferences.shared
-    @StateObject private var coreDataService = CoreDataService.shared
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
@@ -74,18 +74,16 @@ struct MainView: View {
 
     @State private var selectedContentType: String? = nil
 
-    // FetchRequest CoreData
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)],
-        animation: .default)
-    private var allContentItems: FetchedResults<ContentItem>
+    // SwiftData Query
+    @Query(sort: \ContentItem.createdAt, order: .reverse)
+    private var allContentItems: [ContentItem]
 
     // Items filtrés
     private var filteredItems: [ContentItem] {
-        let items = Array(allContentItems)
+        let items = allContentItems
         let typeFiltered: [ContentItem]
         if let selectedType = selectedContentType {
-            typeFiltered = items.filter { $0.safeCategoryName == selectedType }
+            typeFiltered = items.filter { $0.category?.name == selectedType }
         } else {
             typeFiltered = items
         }
@@ -94,7 +92,7 @@ struct MainView: View {
         guard !query.isEmpty else { return typeFiltered }
 
         return typeFiltered.filter { item in
-            let title = item.title?.lowercased() ?? ""
+            let title = item.title.lowercased()
             let description = (item.metadataDict["best_description"] ?? item.itemDescription ?? "").lowercased()
             let url = item.url?.lowercased() ?? ""
             // Appliquer la même transformation que dans PredefinedSearchView : _ → espace
@@ -111,9 +109,9 @@ struct MainView: View {
     }
 
     init() {
-        let contentService = ContentServiceCoreData()
-        self._contentService = StateObject(wrappedValue: contentService)
-        self._sharedContentService = StateObject(wrappedValue: SharedContentService(contentService: contentService))
+        let dataService = DataService.shared
+        self._dataService = StateObject(wrappedValue: dataService)
+        self._sharedContentService = StateObject(wrappedValue: SharedContentService(dataService: dataService))
     }
 
     var body: some View {
@@ -173,7 +171,7 @@ struct MainView: View {
                                 .animation(.linear(duration: 0.08), value: pinchScale)
                                 .allowsHitTesting(!isPinching)
 
-                                if contentService.isLoadingMore {
+                                if dataService.isLoadingMore {
                                     HStack {
                                         Spacer()
                                         ProgressView().scaleEffect(0.8)
@@ -227,7 +225,7 @@ struct MainView: View {
                         .animation(nil, value: selectedContentType)
                     }
                     .scrollIndicators(.hidden)
-                    .refreshable { contentService.loadContentItems() }
+                    .refreshable { _ = dataService.loadContentItems() }
                     .scrollDisabled(isMenuOpen || isSettingsOpen)
                     .highPriorityGesture(pinchGesture)
                     .simultaneousGesture(
@@ -293,7 +291,7 @@ struct MainView: View {
                     await sharedContentService.processPendingSharedContents()
                 }
             }
-            contentService.loadContentItems()
+            _ = dataService.loadContentItems()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             Task {
@@ -356,7 +354,7 @@ struct MainView: View {
             Button("Delete", role: .destructive) {
                 if let item = itemToDelete {
                     withAnimation(.easeInOut(duration: 0.25)) {
-                        contentService.deleteContentItem(item)
+                        dataService.deleteContentItem(item)
                         storageStatsRefreshTrigger += 1
                     }
                 }
@@ -380,7 +378,7 @@ struct MainView: View {
         let itemsToDelete = filteredItems.filter { selectedItems.contains($0.safeId) }
         withAnimation(.easeInOut(duration: 0.25)) {
             for item in itemsToDelete {
-                contentService.deleteContentItem(item)
+                dataService.deleteContentItem(item)
             }
             selectedItems.removeAll()
             isSelectionMode = false
@@ -403,7 +401,7 @@ struct MainView: View {
         .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }
         .onAppear {
             if item == filteredItems.last {
-                contentService.loadMoreContentItems()
+                _ = dataService.loadMoreContentItems()
             }
         }
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: cornerRadius))
@@ -411,7 +409,7 @@ struct MainView: View {
             if !isSelectionMode {
                 ContentItemContextMenu(
                     item: item,
-                    contentService: contentService,
+                    dataService: dataService,
                     onStorageStatsRefresh: { storageStatsRefreshTrigger += 1 },
                     onDeleteRequest: {
                         itemToDelete = item

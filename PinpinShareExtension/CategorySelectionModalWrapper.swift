@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import CoreData
+import SwiftData
 
 struct CategorySelectionModalWrapper: View {
     let contentData: SharedContentData
@@ -18,7 +18,7 @@ struct CategorySelectionModalWrapper: View {
     @State private var newCategoryName = ""
     @State private var selectedCategory: String? = nil
     
-    private let coreDataService = CoreDataService.shared
+    private let dataService = DataService.shared
     
     var body: some View {
         // Categories List - ScrollView prend tout l'espace
@@ -75,18 +75,18 @@ struct CategorySelectionModalWrapper: View {
     }
     
     private func loadCategories() {
-        let categoryNames = coreDataService.fetchCategoryNames()
+        let categoryNames = dataService.fetchCategoryNames()
         
         // Trier les catégories par nombre d'items (décroissant)
         categories = categoryNames.sorted { categoryA, categoryB in
-            let countA = coreDataService.countItems(for: categoryA)
-            let countB = coreDataService.countItems(for: categoryB)
+            let countA = dataService.countItems(for: categoryA)
+            let countB = dataService.countItems(for: categoryB)
             return countA > countB
         }
     }
     
     private func addCategory(_ name: String) {
-        coreDataService.addCategory(name: name)
+        dataService.addCategory(name: name)
         loadCategories() // Recharger la liste
     }
     
@@ -115,7 +115,7 @@ struct CategoryCard: View {
     
     @State private var firstImageURL: String? = nil
     @State private var itemCount: Int = 0
-    private let coreDataService = CoreDataService.shared
+    private let dataService = DataService.shared
     
     // Couleur simple basée sur le hash du nom (fallback)
     private var categoryColor: Color {
@@ -272,12 +272,12 @@ struct CategoryCard: View {
     
     private func loadCategoryCount() {
         // Compter les vrais items pour cette catégorie
-        itemCount = coreDataService.countItems(for: title)
+        itemCount = dataService.countItems(for: title)
     }
     
     private func loadFirstImage() {
         // Récupérer la première image de la catégorie
-        firstImageURL = coreDataService.fetchFirstImageURL(for: title)
+        firstImageURL = dataService.fetchFirstImageURL(for: title)
     }
 }
 

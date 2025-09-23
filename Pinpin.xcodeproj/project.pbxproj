@@ -47,14 +47,6 @@
 			);
 			target = 4E19DB772DFC174F00357543 /* PinpinShareExtension */;
 		};
-		4E3E67A32DFC60D900375183 /* Exceptions for "Pinpin" folder in "PinpinShareExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Pinpin.xcdatamodeld,
-				Services/ContentServiceCoreData.swift,
-			);
-			target = 4E19DB772DFC174F00357543 /* PinpinShareExtension */;
-		};
 		4E7250692E812CA100384822 /* Exceptions for "PinpinShareExtension" folder in "Pinpin" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -76,9 +68,6 @@
 		};
 		4E9460EB2DFADAC400FFE8F8 /* Pinpin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				4E3E67A32DFC60D900375183 /* Exceptions for "Pinpin" folder in "PinpinShareExtension" target */,
-			);
 			path = Pinpin;
 			sourceTree = "<group>";
 		};

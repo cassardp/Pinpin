@@ -1,26 +1,22 @@
 //
-//  Neeed2App.swift
-//  Neeed2
+//  PinpinApp.swift
+//  Pinpin
 //
 //  Created by Patrice on 12/06/2025.
 //
 
 import SwiftUI
-import CoreData
+import SwiftData
 
 @main
 struct PinpinApp: App {
-    @StateObject private var coreDataService = CoreDataService.shared
+    let dataService = DataService.shared
     
     var body: some Scene {
         WindowGroup {
             MainView()
-                .environment(\.managedObjectContext, coreDataService.context)
+                .modelContainer(dataService.container)
                 .font(.system(.body, design: .rounded))
-                .onAppear {
-                    // Créer les catégories par défaut si nécessaire
-                    coreDataService.createDefaultCategoriesIfNeeded()
-                }
         }
     }
 }

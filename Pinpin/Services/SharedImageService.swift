@@ -7,7 +7,6 @@
 
 import Foundation
 import UIKit
-import CoreData
 
 class SharedImageService {
     static let shared = SharedImageService()
@@ -39,7 +38,7 @@ class SharedImageService {
             return
         }
         
-        print("🗑️ Suppression des images pour item: \(item.title ?? "Sans titre")")
+        print("🗑️ Suppression des images pour item: \(item.title.isEmpty ? "Sans titre" : item.title)")
         
         var deletedFiles = 0
         

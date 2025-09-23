@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentCardView: View {
-    @ObservedObject var item: ContentItem
+    let item: ContentItem
     
     var body: some View {
         if isTikTokContent {

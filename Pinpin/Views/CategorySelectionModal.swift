@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CategorySelectionModal: View {
-    @StateObject private var coreDataService = CoreDataService.shared
+    @StateObject private var dataService = DataService.shared
     @State private var categoryNames: [String] = []
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
@@ -101,7 +101,7 @@ struct CategorySelectionModal: View {
         }
         .sheet(isPresented: $showingAddCategory) {
             AddCategorySheet { categoryName in
-                coreDataService.addCategory(name: categoryName)
+                dataService.addCategory(name: categoryName)
                 loadCategoryNames()
                 onCategorySelected(categoryName)
                 dismiss()
@@ -111,7 +111,7 @@ struct CategorySelectionModal: View {
     
     // MARK: - Actions
     private func loadCategoryNames() {
-        categoryNames = coreDataService.fetchCategoryNames()
+        categoryNames = dataService.fetchCategoryNames()
     }
 }
 
@@ -121,7 +121,7 @@ struct CategoryCard: View {
     let isSelected: Bool
     let action: () -> Void
     
-    @StateObject private var contentService = ContentServiceCoreData()
+    @StateObject private var dataService = DataService.shared
     @State private var randomItem: ContentItem?
     @State private var itemCount: Int = 0
     
@@ -206,8 +206,8 @@ struct CategoryCard: View {
     }
     
     private func loadCategoryData() {
-        randomItem = contentService.getRandomItemForCategory(title)
-        itemCount = contentService.getItemCountForCategory(title)
+        randomItem = dataService.getRandomItemForCategory(title)
+        itemCount = dataService.getItemCountForCategory(title)
     }
 }
 

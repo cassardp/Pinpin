@@ -1,16 +1,16 @@
 import SwiftUI
+import SwiftData
 import UIKit
 
 struct ContentItemContextMenu: View {
     let item: ContentItem
-    let contentService: ContentServiceCoreData
+    let dataService: DataService
     let onStorageStatsRefresh: () -> Void
     let onDeleteRequest: () -> Void
-    @StateObject private var coreDataService = CoreDataService.shared
     
     // Initialisation directe des catégories pour éviter le délai d'affichage
     private var categoryNames: [String] {
-        coreDataService.fetchCategoryNames()
+        dataService.fetchCategoryNames()
     }
     
     var body: some View {
@@ -74,7 +74,7 @@ struct ContentItemContextMenu: View {
     }
     
     private func changeCategory(to category: String) {
-        contentService.updateContentItem(item, categoryName: category)
+        dataService.updateContentItem(item, categoryName: category)
         onStorageStatsRefresh()
     }
     

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import CoreData
 
 struct StorageStatsView: View {
     @State private var imageCount: Int = 0

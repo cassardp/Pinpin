@@ -6,13 +6,11 @@
 //
 
 import SwiftUI
-import CoreData
+import SwiftData
 
 struct FilterMenuView: View {
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)],
-        animation: .default)
-    private var contentItems: FetchedResults<ContentItem>
+    @Query(sort: \ContentItem.createdAt, order: .reverse)
+    private var contentItems: [ContentItem]
     
     @StateObject private var userPreferences = UserPreferences.shared
     @StateObject private var categoryOrderService = CategoryOrderService.shared
@@ -148,4 +146,5 @@ struct CategoryListRow: View {
         selectedContentType: .constant(nil),
         onOpenAbout: {}
     )
+    .modelContainer(DataService.shared.container)
 }

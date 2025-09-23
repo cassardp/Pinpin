@@ -1,5 +1,5 @@
 import SwiftUI
-import CoreData
+import SwiftData
 
 // MARK: - PredefinedSearchView
 struct PredefinedSearchView: View {
@@ -7,7 +7,9 @@ struct PredefinedSearchView: View {
     var selectedContentType: String?
     let onSearchSelected: () -> Void
     
-    @StateObject private var contentService = ContentServiceCoreData()
+    @Query(sort: \ContentItem.createdAt, order: .reverse)
+    private var allContentItems: [ContentItem]
+    
     @State private var dynamicSearches: [String] = []
     
     // Recherches à afficher (uniquement dynamiques)
@@ -54,7 +56,7 @@ struct PredefinedSearchView: View {
         .onAppear {
             generateDynamicSearches()
         }
-        .onChange(of: contentService.contentItems) {
+        .onChange(of: allContentItems.count) {
             generateDynamicSearches()
         }
         .onChange(of: selectedContentType) {
@@ -64,7 +66,7 @@ struct PredefinedSearchView: View {
     
     // MARK: - Dynamic Search Generation
     private func generateDynamicSearches() {
-        let allItems = contentService.contentItems
+        let allItems = allContentItems
         guard !allItems.isEmpty else {
             dynamicSearches = []
             return

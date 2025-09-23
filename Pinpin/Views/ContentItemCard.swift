@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentItemCard: View {
-    @ObservedObject var item: ContentItem
+    let item: ContentItem
     @StateObject private var userPreferences = UserPreferences.shared
     let cornerRadius: CGFloat
     let numberOfColumns: Int
@@ -165,8 +165,8 @@ struct ContentItemCard: View {
             return bestTitle
         }
         
-        if let title = item.title, !title.isEmpty {
-            return title
+        if !item.title.isEmpty && item.title != "Nouveau contenu" {
+            return item.title
         }
         
         // Fallback sur l'URL nettoyée

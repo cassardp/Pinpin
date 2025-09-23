@@ -10,13 +10,13 @@ import Foundation
 
 class SharedContentService: ObservableObject {
     private let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
-    private let contentService: ContentServiceCoreData
+    private let dataService: DataService
     
     // Flag pour détecter les nouveaux contenus
     private static let newContentFlagKey = "hasNewSharedContent"
     
-    init(contentService: ContentServiceCoreData) {
-        self.contentService = contentService
+    init(dataService: DataService) {
+        self.dataService = dataService
     }
     
     func processPendingSharedContents() async {
@@ -54,9 +54,9 @@ class SharedContentService: ObservableObject {
         let thumbnailUrl = contentData["thumbnailUrl"] as? String
         let metadata = contentData["metadata"] as? [String: String] ?? [:]
         
-        // Sauvegarder directement avec Core Data
+        // Sauvegarder directement avec SwiftData
         await MainActor.run {
-            contentService.saveContentItem(
+            dataService.saveContentItem(
                 categoryName: category,
                 title: title,
                 description: description,

@@ -2,11 +2,11 @@
 //  BackupService.swift
 //  Pinpin
 //
-//  Simple native backup/export & import for Core Data items + local images
+//  Service de sauvegarde/restauration native pour les données SwiftData + images locales
 //
 
 import Foundation
-import CoreData
+import SwiftData
 import UniformTypeIdentifiers
 
 @MainActor
@@ -14,7 +14,7 @@ final class BackupService: ObservableObject {
     static let shared = BackupService()
     private init() {}
     
-    private let coreData = CoreDataService.shared
+    private let dataService = DataService.shared
     
     // MARK: - Backup model
     private struct BackupCategory: Codable {
@@ -64,35 +64,48 @@ final class BackupService: ObservableObject {
         try fm.createDirectory(at: workingDir, withIntermediateDirectories: true)
         
         // 1) Export JSON des catégories
-        let categoriesFetch: NSFetchRequest<Category> = Category.fetchRequest()
-        categoriesFetch.sortDescriptors = [NSSortDescriptor(keyPath: \Category.sortOrder, ascending: true)]
-        let categories = try coreData.context.fetch(categoriesFetch)
+        let categories = dataService.fetchCategories()
         
         let mappedCategories: [BackupCategory] = categories.map { category in
             return BackupCategory(
-                id: category.id ?? UUID(),
-                name: category.name ?? "",
-                colorHex: category.colorHex ?? "#007AFF",
-                iconName: category.iconName ?? "folder",
+                id: category.id,
+                name: category.name,
+                colorHex: category.colorHex,
+                iconName: category.iconName,
                 sortOrder: category.sortOrder,
                 isDefault: category.isDefault,
-                createdAt: category.createdAt ?? Date(),
-                updatedAt: category.updatedAt ?? Date()
+                createdAt: category.createdAt,
+                updatedAt: category.updatedAt
             )
         }
         
         // 2) Export JSON des items
-        let itemsFetch: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
-        itemsFetch.sortDescriptors = [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)]
-        let items = try coreData.context.fetch(itemsFetch)
+        let items = dataService.loadContentItems()
         
         let mappedItems: [BackupItem] = items.map { item in
-            let meta = (item.metadata as? [String: String]) ?? [:]
+            // Convertir les métadonnées Data en dictionnaire
+            var meta: [String: String] = [:]
+            if let metadataData = item.metadata {
+                do {
+                    if let dict = try JSONSerialization.jsonObject(with: metadataData) as? [String: Any] {
+                        meta = dict.compactMapValues { value in
+                            if let stringValue = value as? String {
+                                return stringValue
+                            } else {
+                                return String(describing: value)
+                            }
+                        }
+                    }
+                } catch {
+                    print("Erreur lors de la conversion des métadonnées: \(error)")
+                }
+            }
+            
             return BackupItem(
-                id: item.id ?? UUID(),
+                id: item.id,
                 userId: item.userId,
                 categoryName: item.category?.name,
-                title: item.title ?? "Untitled",
+                title: item.title,
                 itemDescription: item.itemDescription,
                 url: item.url,
                 metadata: meta,
@@ -227,52 +240,91 @@ final class BackupService: ObservableObject {
         
         // Import des catégories d'abord
         for bc in backup.categories {
-            let req: NSFetchRequest<Category> = Category.fetchRequest()
-            req.predicate = NSPredicate(format: "name == %@", bc.name)
-            req.fetchLimit = 1
-            let existing = try coreData.context.fetch(req).first
-            let category: Category = existing ?? Category(context: coreData.context)
+            // Chercher si la catégorie existe déjà
+            let descriptor = FetchDescriptor<Category>(
+                predicate: #Predicate { $0.name == bc.name }
+            )
             
-            category.id = bc.id
-            category.name = bc.name
-            category.colorHex = bc.colorHex
-            category.iconName = bc.iconName
-            category.sortOrder = bc.sortOrder
-            category.isDefault = bc.isDefault
-            category.createdAt = bc.createdAt
-            category.updatedAt = bc.updatedAt
+            do {
+                let existingCategories = try dataService.context.fetch(descriptor)
+                let category: Category
+                
+                if let existing = existingCategories.first {
+                    category = existing
+                } else {
+                    category = Category()
+                    dataService.context.insert(category)
+                }
+                
+                category.id = bc.id
+                category.name = bc.name
+                category.colorHex = bc.colorHex
+                category.iconName = bc.iconName
+                category.sortOrder = bc.sortOrder
+                category.isDefault = bc.isDefault
+                category.createdAt = bc.createdAt
+                category.updatedAt = bc.updatedAt
+            } catch {
+                print("Erreur lors de l'import de la catégorie \(bc.name): \(error)")
+            }
         }
         
-        // Merge Core Data des items par id
+        // Merge SwiftData des items par id
         for bi in backup.items {
-            let req: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
-            req.predicate = NSPredicate(format: "id == %@", bi.id as CVarArg)
-            req.fetchLimit = 1
-            let existing = try coreData.context.fetch(req).first
-            let item: ContentItem = existing ?? ContentItem(context: coreData.context)
+            // Chercher si l'item existe déjà
+            let descriptor = FetchDescriptor<ContentItem>(
+                predicate: #Predicate { $0.id == bi.id }
+            )
             
-            item.id = bi.id
-            item.userId = bi.userId ?? item.userId
-            
-            // Associer la catégorie par nom
-            if let categoryName = bi.categoryName {
-                let categoryReq: NSFetchRequest<Category> = Category.fetchRequest()
-                categoryReq.predicate = NSPredicate(format: "name == %@", categoryName)
-                categoryReq.fetchLimit = 1
-                if let category = try coreData.context.fetch(categoryReq).first {
-                    item.category = category
+            do {
+                let existingItems = try dataService.context.fetch(descriptor)
+                let item: ContentItem
+                
+                if let existing = existingItems.first {
+                    item = existing
+                } else {
+                    item = ContentItem()
+                    dataService.context.insert(item)
                 }
+                
+                item.id = bi.id
+                item.userId = bi.userId ?? item.userId
+                
+                // Associer la catégorie par nom
+                if let categoryName = bi.categoryName {
+                    let categoryDescriptor = FetchDescriptor<Category>(
+                        predicate: #Predicate { $0.name == categoryName }
+                    )
+                    
+                    if let category = try dataService.context.fetch(categoryDescriptor).first {
+                        item.category = category
+                    }
+                }
+                
+                item.title = bi.title
+                item.itemDescription = bi.itemDescription
+                item.url = bi.url
+                
+                // Convertir les métadonnées en Data
+                if !bi.metadata.isEmpty {
+                    do {
+                        item.metadata = try JSONSerialization.data(withJSONObject: bi.metadata)
+                    } catch {
+                        print("Erreur lors de la conversion des métadonnées: \(error)")
+                        item.metadata = nil
+                    }
+                } else {
+                    item.metadata = nil
+                }
+                
+                item.thumbnailUrl = bi.thumbnailUrl
+                item.isHidden = bi.isHidden
+                item.createdAt = bi.createdAt ?? item.createdAt
+                item.updatedAt = Date()
+            } catch {
+                print("Erreur lors de l'import de l'item \(bi.id): \(error)")
             }
-            
-            item.title = bi.title
-            item.itemDescription = bi.itemDescription
-            item.url = bi.url
-            item.metadata = bi.metadata as NSDictionary
-            item.thumbnailUrl = bi.thumbnailUrl
-            item.isHidden = bi.isHidden
-            item.createdAt = bi.createdAt ?? item.createdAt
-            item.updatedAt = Date()
         }
-        coreData.save()
+        dataService.save()
     }
 }
