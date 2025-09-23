@@ -16,6 +16,7 @@ final class DataService {
     
     // MARK: - SwiftData Container
     lazy var container: ModelContainer = {
+        prepareSharedContainerIfNeeded()
         let schema = Schema([ContentItem.self, Category.self])
         
         // Configuration pour App Group sans CloudKit
@@ -132,13 +133,13 @@ final class DataService {
         
         do {
             let items = try context.fetch(descriptor)
-            return items.count
+            return uniqueItems(items).count
         } catch {
             print("Erreur lors du comptage des items: \(error)")
             return 0
         }
     }
-    
+
     func fetchFirstImageURL(for categoryName: String) -> String? {
         var descriptor = FetchDescriptor<ContentItem>(
             predicate: #Predicate { item in
@@ -150,10 +151,29 @@ final class DataService {
         
         do {
             let items = try context.fetch(descriptor)
-            return items.first?.thumbnailUrl
+            return uniqueItems(items).first?.thumbnailUrl
         } catch {
             print("Erreur lors de la récupération de la première image: \(error)")
             return nil
+        }
+    }
+
+    private func uniqueItems(_ items: [ContentItem]) -> [ContentItem] {
+        var seen = Set<UUID>()
+        return items.filter { seen.insert($0.id).inserted }
+    }
+    
+    private func prepareSharedContainerIfNeeded() {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) else {
+            print("[ShareExtension][DataService] Impossible d'accéder au container partagé")
+            return
+        }
+        let libraryURL = containerURL.appendingPathComponent("Library", isDirectory: true)
+        let supportURL = libraryURL.appendingPathComponent("Application Support", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: supportURL, withIntermediateDirectories: true)
+        } catch {
+            print("[ShareExtension][DataService] Erreur préparation container partagé: \(error)")
         }
     }
     

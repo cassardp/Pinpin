@@ -54,6 +54,13 @@
 			);
 			target = 4E9460E82DFADAC400FFE8F8 /* Pinpin */;
 		};
+		4EC6B14A2E82F4A1005E3771 /* Exceptions for "Pinpin" folder in "Pinpin" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4E9460E82DFADAC400FFE8F8 /* Pinpin */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -68,6 +75,9 @@
 		};
 		4E9460EB2DFADAC400FFE8F8 /* Pinpin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4EC6B14A2E82F4A1005E3771 /* Exceptions for "Pinpin" folder in "Pinpin" target */,
+			);
 			path = Pinpin;
 			sourceTree = "<group>";
 		};
@@ -254,6 +264,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -284,6 +295,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -436,11 +448,13 @@
 				DEVELOPMENT_TEAM = ZJA29UUY93;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Pinpin/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
@@ -471,11 +485,13 @@
 				DEVELOPMENT_TEAM = ZJA29UUY93;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Pinpin/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";

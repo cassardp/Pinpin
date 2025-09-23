@@ -14,16 +14,18 @@ final class DataService: ObservableObject {
     static let shared = DataService()
     
     private let groupID = "group.com.misericode.pinpin"
+    private let cloudKitContainerID = "iCloud.com.misericode.Pinpin"
     
     // MARK: - SwiftData Container
     private lazy var _container: ModelContainer = {
+        prepareSharedContainerIfNeeded()
         let schema = Schema([ContentItem.self, Category.self])
         
-        // Configuration pour App Group sans CloudKit
+        // Configuration pour App Group avec CloudKit (synchronisation iCloud)
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(groupID),
-            cloudKitDatabase: .none
+            cloudKitDatabase: .private(cloudKitContainerID)
         )
         
         do {
@@ -80,9 +82,10 @@ final class DataService: ObservableObject {
         
         do {
             let items = try context.fetch(descriptor)
-            checkForMoreItems(currentCount: items.count)
+            let unique = uniqueItems(items)
+            checkForMoreItems(currentCount: unique.count)
             isLoading = false
-            return Array(items.prefix(currentLimit))
+            return Array(unique.prefix(currentLimit))
         } catch {
             errorMessage = "Erreur de chargement: \(error.localizedDescription)"
             isLoading = false
@@ -102,9 +105,10 @@ final class DataService: ObservableObject {
         
         do {
             let items = try context.fetch(descriptor)
-            checkForMoreItems(currentCount: items.count)
+            let unique = uniqueItems(items)
+            checkForMoreItems(currentCount: unique.count)
             isLoadingMore = false
-            return Array(items.prefix(currentLimit))
+            return Array(unique.prefix(currentLimit))
         } catch {
             errorMessage = "Erreur de chargement: \(error.localizedDescription)"
             isLoadingMore = false
@@ -192,7 +196,8 @@ final class DataService: ObservableObject {
         )
         
         do {
-            return try context.fetch(descriptor)
+            let categories = try context.fetch(descriptor)
+            return categories
         } catch {
             print("Erreur lors de la récupération des catégories: \(error)")
             return []
@@ -268,6 +273,25 @@ final class DataService: ObservableObject {
         return newCategory
     }
     
+    private func uniqueItems(_ items: [ContentItem]) -> [ContentItem] {
+        var seen = Set<UUID>()
+        return items.filter { seen.insert($0.id).inserted }
+    }
+    
+    private func prepareSharedContainerIfNeeded() {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) else {
+            print("[DataService] Impossible d'accéder au container partagé")
+            return
+        }
+        let libraryURL = containerURL.appendingPathComponent("Library", isDirectory: true)
+        let supportURL = libraryURL.appendingPathComponent("Application Support", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: supportURL, withIntermediateDirectories: true)
+        } catch {
+            print("[DataService] Erreur lors de la préparation du container partagé: \(error)")
+        }
+    }
+    
     // MARK: - Search and Filter
     func searchContentItems(query: String) -> [ContentItem] {
         guard !query.isEmpty else { return loadContentItems() }
@@ -282,7 +306,8 @@ final class DataService: ObservableObject {
         )
         
         do {
-            return try context.fetch(descriptor)
+            let items = try context.fetch(descriptor)
+            return uniqueItems(items)
         } catch {
             print("Erreur lors de la recherche: \(error)")
             return []
@@ -298,7 +323,8 @@ final class DataService: ObservableObject {
         )
         
         do {
-            return try context.fetch(descriptor)
+            let items = try context.fetch(descriptor)
+            return uniqueItems(items)
         } catch {
             print("Erreur lors du filtrage: \(error)")
             return []
@@ -330,7 +356,7 @@ final class DataService: ObservableObject {
         
         do {
             let items = try context.fetch(descriptor)
-            return items.randomElement()
+            return uniqueItems(items).randomElement()
         } catch {
             print("Erreur lors de la récupération d'un item aléatoire: \(error)")
             return nil
@@ -344,7 +370,7 @@ final class DataService: ObservableObject {
         
         do {
             let items = try context.fetch(descriptor)
-            return items.count
+            return uniqueItems(items).count
         } catch {
             print("Erreur lors du comptage des items: \(error)")
             return 0

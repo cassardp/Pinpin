@@ -10,16 +10,16 @@ import SwiftData
 
 @Model
 final class ContentItem {
-    var id: UUID
-    var title: String
+    var id: UUID = UUID()
+    var title: String = "Nouveau contenu"
     var itemDescription: String?
     var url: String?
     var thumbnailUrl: String?
     var metadata: Data?
-    var isHidden: Bool
+    var isHidden: Bool = false
     var userId: UUID?
-    var createdAt: Date
-    var updatedAt: Date
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
     
     // Relation avec Category
     var category: Category?

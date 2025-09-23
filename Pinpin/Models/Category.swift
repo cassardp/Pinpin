@@ -10,18 +10,18 @@ import SwiftData
 
 @Model
 final class Category {
-    var id: UUID
-    var name: String
-    var colorHex: String
-    var iconName: String
-    var sortOrder: Int32
-    var isDefault: Bool
-    var createdAt: Date
-    var updatedAt: Date
+    var id: UUID = UUID()
+    var name: String = ""
+    var colorHex: String = "#007AFF"
+    var iconName: String = "folder"
+    var sortOrder: Int32 = 0
+    var isDefault: Bool = false
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
     
-    // Relation inverse avec ContentItem
+    // Relation inverse avec ContentItem (optionnelle pour compatibilité CloudKit)
     @Relationship(deleteRule: .nullify, inverse: \ContentItem.category)
-    var contentItems: [ContentItem] = []
+    var contentItems: [ContentItem]?
     
     init(
         id: UUID = UUID(),
@@ -41,6 +41,7 @@ final class Category {
         self.isDefault = isDefault
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.contentItems = []
     }
 }
 
@@ -48,11 +49,11 @@ final class Category {
 extension Category {
     /// Nombre d'éléments dans cette catégorie
     var itemCount: Int {
-        return contentItems.count
+        return (contentItems ?? []).count
     }
     
     /// Vérifie si la catégorie est vide
     var isEmpty: Bool {
-        return contentItems.isEmpty
+        return (contentItems ?? []).isEmpty
     }
 }
