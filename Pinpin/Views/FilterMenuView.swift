@@ -98,7 +98,7 @@ struct FilterMenuView: View {
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentMargins(.vertical, 100)
+            .contentMargins(.vertical, 60)
             
         }
     }

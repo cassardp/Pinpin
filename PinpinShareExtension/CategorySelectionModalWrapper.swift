@@ -239,10 +239,10 @@ struct CategoryCard: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     
-                    Text("\(itemCount) LINK\(itemCount > 1 ? "S" : "")")
-                        .font(.system(size: 13))
+                    Text("\(itemCount) PIN\(itemCount > 1 ? "S" : "")")
+                        .font(.system(size: 12))
                         .fontWeight(.medium)
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundColor(.secondary.opacity(0.6))
                 }
                 
                 Spacer()
