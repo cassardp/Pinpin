@@ -279,6 +279,7 @@ struct MainView: View {
         } drawer: {
             FilterMenuView(
                 selectedContentType: $selectedContentType,
+                isMenuOpen: $isMenuOpen,
                 onOpenAbout: { }
             )
         }

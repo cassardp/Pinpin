@@ -16,15 +16,16 @@ struct FilterMenuView: View {
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
     
-    @StateObject private var userPreferences = UserPreferences.shared
     @StateObject private var categoryOrderService = CategoryOrderService.shared
     private let dataService = DataService.shared
     @Binding var selectedContentType: String?
+    @Binding var isMenuOpen: Bool
     var onOpenAbout: () -> Void
     @State private var isEditing = false
     @State private var categoryToRename: Category?
     @State private var renameText: String = ""
     @State private var isShowingRenameSheet = false
+    @State private var isCreatingCategory = false
     @State private var categoryToDelete: Category?
     @State private var isShowingDeleteAlert = false
     
@@ -48,9 +49,7 @@ struct FilterMenuView: View {
     
     // Compte les items par type
     private func countForType(_ type: String?) -> Int {
-        if type == nil {
-            return contentItems.count
-        }
+        guard let type = type else { return contentItems.count }
         return contentItems.filter { $0.safeCategoryName == type }.count
     }
     
@@ -76,41 +75,37 @@ struct FilterMenuView: View {
             
             // Liste centrée verticalement - solution simple
             List {
-                // Bouton d'édition
-                HStack {
-                    Spacer()
-                    Button(action: toggleEditing) {
-                        Text(isEditing ? "Done" : "Edit")
-                            .font(.body)
-                            .fontWeight(.semibold)
+                // Bouton d'ajout
+                Button {
+                    if isEditing {
+                        toggleEditing()
+                    } else {
+                        hapticFeedback()
+                        prepareCreateCategory()
                     }
-                    .buttonStyle(.plain)
+                } label: {
+                    HStack {
+                        Text(isEditing ? "Done" : "Add")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
                 }
+                .buttonStyle(.plain)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                .padding(.horizontal, 32)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 80)
                 .contentShape(Rectangle())
 
-                // Spacer invisible pour centrer
-                Color.clear
-                    .frame(height: 0)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                
                 // Option "Tout"
                 CategoryListRow(
                     isSelected: selectedContentType == nil,
                     title: "All",
                     isEmpty: false,
                     isEditing: false,
-                    action: {
-                        selectedContentType = nil
-                    },
-                    onEdit: nil,
-                    onDelete: nil,
-                    canDelete: false
+                    action: { selectedContentType = nil }
                 )
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -140,12 +135,24 @@ struct FilterMenuView: View {
                     .listRowSeparator(.hidden)
                 }
                 .onMove(perform: moveCategories)
-                
-                // Spacer invisible pour centrer
-                Color.clear
-                    .frame(height: 0)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
+
+                // Bouton d'édition (bas de liste)
+                Button(action: toggleEditing) {
+                    HStack {
+                        Text(isEditing ? "Done" : "Edit")
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .padding(.horizontal, 16)
+                .padding(.top, 80)
+                .padding(.bottom, 12)
+                .contentShape(Rectangle())
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -155,26 +162,21 @@ struct FilterMenuView: View {
             .animation(.easeInOut, value: isEditing)
             
         }
+        .onChange(of: isMenuOpen) { _, isOpen in
+            guard !isOpen else { return }
+            resetEditingState()
+        }
+        .onDisappear(perform: resetEditingState)
         .sheet(isPresented: $isShowingRenameSheet) {
             RenameCategorySheet(
                 name: $renameText,
                 onCancel: resetRenameState,
-                onSave: {
-                    guard let categoryToRename else {
-                        resetRenameState()
-                        return
-                    }
-                    saveRenamedCategory(categoryToRename)
-                }
+onSave: handleSaveAction
             )
         }
-        .alert("Delete category?", isPresented: $isShowingDeleteAlert, presenting: categoryToDelete) { category in
-            Button("Cancel", role: .cancel) {
-                categoryToDelete = nil
-            }
-            Button("Delete", role: .destructive) {
-                deleteCategory(category)
-            }
+.alert("Delete category?", isPresented: $isShowingDeleteAlert, presenting: categoryToDelete) { category in
+            Button("Cancel", role: .cancel, action: resetDeleteState)
+            Button("Delete", role: .destructive) { deleteCategory(category) }
         } message: { category in
             Text("All items will move to Misc before deleting \(category.name).")
         }
@@ -212,6 +214,7 @@ struct CategoryListRow: View {
         self.canDelete = canDelete
     }
     
+    
     var body: some View {
         HStack(spacing: 12) {
             HStack(spacing: 12) {
@@ -233,14 +236,6 @@ struct CategoryListRow: View {
             
             if isEditing {
                 HStack(spacing: 16) {
-                    if let onEdit {
-                        Button(action: onEdit) {
-                            Image(systemName: "pencil")
-                                .font(.title3)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.primary)
-                    }
                     if let onDelete, canDelete {
                         Button(action: onDelete) {
                             Image(systemName: "trash")
@@ -253,13 +248,17 @@ struct CategoryListRow: View {
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 32)
+        .padding(.leading, 16)
+        .padding(.trailing, 16)
         .contentShape(Rectangle())
-        .onTapGesture {
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
+.onTapGesture {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.easeInOut) {
-                action()
+                if isEditing, let onEdit {
+                    onEdit()
+                } else {
+                    action()
+                }
             }
         }
         .opacity(isEmpty ? 0.6 : 1.0)
@@ -268,37 +267,55 @@ struct CategoryListRow: View {
 
 // MARK: - Private helpers
 private extension FilterMenuView {
-    func toggleEditing() {
+func toggleEditing() {
+        hapticFeedback()
         withAnimation(.easeInOut) {
             isEditing.toggle()
         }
     }
     
+    func hapticFeedback() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+func resetEditingState() {
+        guard isEditing else { return }
+        isEditing = false
+    }
+    
     func prepareRename(for category: Category) {
-        renameText = category.name
+        renameText = category.name.capitalized
         categoryToRename = category
+        isCreatingCategory = false
+        isShowingRenameSheet = true
+    }
+
+    func prepareCreateCategory() {
+        renameText = ""
+        categoryToRename = nil
+        isCreatingCategory = true
         isShowingRenameSheet = true
     }
     
     func resetRenameState() {
         renameText = ""
         categoryToRename = nil
+        isCreatingCategory = false
         isShowingRenameSheet = false
     }
-    
-    func saveRenamedCategory(_ category: Category) {
-        let newName = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+func saveRenamedCategory(_ category: Category) {
+        let newName = processedCategoryName
         let oldName = category.name
-        guard !newName.isEmpty, newName != oldName else {
+        
+        guard validateCategoryName(newName, excludingId: category.id) else {
             resetRenameState()
             return
         }
-        guard !allCategories.contains(where: { $0.name.caseInsensitiveCompare(newName) == .orderedSame && $0.id != category.id }) else {
-            resetRenameState()
-            return
-        }
+        
         category.name = newName
         category.updatedAt = Date()
+        
         do {
             try modelContext.save()
             categoryOrderService.renameCategory(oldName: oldName, newName: newName)
@@ -310,19 +327,76 @@ private extension FilterMenuView {
         }
         resetRenameState()
     }
+
+func saveNewCategory() {
+        let newName = processedCategoryName
+        
+        guard validateCategoryName(newName) else {
+            resetRenameState()
+            return
+        }
+
+        let newCategory = Category(name: newName)
+        newCategory.sortOrder = Int32(allCategories.count)
+        newCategory.createdAt = Date()
+        newCategory.updatedAt = Date()
+
+        modelContext.insert(newCategory)
+        do {
+            try modelContext.save()
+            selectedContentType = newName
+        } catch {
+            print("Failed to create category: \(error)")
+        }
+        resetRenameState()
+    }
     
     func prepareDelete(for category: Category) {
         categoryToDelete = category
         isShowingDeleteAlert = true
     }
     
-    func deleteCategory(_ category: Category) {
+func deleteCategory(_ category: Category) {
         let name = category.name
         dataService.deleteCategory(category)
         categoryOrderService.removeCategory(named: name)
+        
         if selectedContentType == name {
             selectedContentType = nil
         }
+        
+        resetDeleteState()
+    }
+    
+    // MARK: - Computed Properties
+    private var processedCategoryName: String {
+        renameText.trimmingCharacters(in: .whitespacesAndNewlines).capitalized
+    }
+    
+    // MARK: - Validation
+    private func validateCategoryName(_ name: String, excludingId: UUID? = nil) -> Bool {
+        guard !name.isEmpty else { return false }
+        
+        return !allCategories.contains { category in
+            category.name.caseInsensitiveCompare(name) == .orderedSame &&
+            category.id != excludingId
+        }
+    }
+    
+    // MARK: - State Management
+    private func handleSaveAction() {
+        if isCreatingCategory {
+            saveNewCategory()
+        } else {
+            guard let categoryToRename else {
+                resetRenameState()
+                return
+            }
+            saveRenamedCategory(categoryToRename)
+        }
+    }
+    
+    private func resetDeleteState() {
         categoryToDelete = nil
         isShowingDeleteAlert = false
     }
@@ -383,6 +457,7 @@ struct RenameCategorySheet: View {
 #Preview {
     FilterMenuView(
         selectedContentType: .constant(nil),
+        isMenuOpen: .constant(false),
         onOpenAbout: {}
     )
     .modelContainer(DataService.shared.container)
