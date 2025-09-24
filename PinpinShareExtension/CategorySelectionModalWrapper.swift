@@ -77,8 +77,17 @@ struct CategorySelectionModalWrapper: View {
     private func loadCategories() {
         let categoryNames = dataService.fetchCategoryNames()
         
+        // Filtrer les catégories : masquer "Misc" si elle est vide
+        let filteredCategories = categoryNames.filter { categoryName in
+            if categoryName.lowercased() == "misc" {
+                let itemCount = dataService.countItems(for: categoryName)
+                return itemCount > 0 // Masquer Misc si vide
+            }
+            return true // Garder toutes les autres catégories
+        }
+        
         // Trier les catégories par nombre d'items (décroissant)
-        categories = categoryNames.sorted { categoryA, categoryB in
+        categories = filteredCategories.sorted { categoryA, categoryB in
             let countA = dataService.countItems(for: categoryA)
             let countB = dataService.countItems(for: categoryB)
             return countA > countB
@@ -117,11 +126,18 @@ struct CategoryCard: View {
     @State private var itemCount: Int = 0
     private let dataService = DataService.shared
     
-    // Couleur simple basée sur le hash du nom (fallback)
-    private var categoryColor: Color {
-        let colors: [Color] = [.blue, .green, .orange, .purple, .pink, .cyan, .indigo, .mint]
-        let hash = abs(title.hashValue)
-        return colors[hash % colors.count]
+    // Style uniforme pour les catégories sans items (comme l'icône d'ajout)
+    private var fallbackIconView: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.primary.opacity(0.1))
+                .frame(width: 60, height: 60)
+            
+            Text(String(title.prefix(1).uppercased()))
+                .font(.title2)
+                .fontWeight(.black)
+                .foregroundColor(.primary)
+        }
     }
     
     var body: some View {
@@ -141,27 +157,11 @@ struct CategoryCard: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             } else {
                                 // Fichier local non trouvé
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(categoryColor.opacity(0.1))
-                                        .frame(width: 60, height: 60)
-                                    Text(String(title.prefix(1).uppercased()))
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(categoryColor)
-                                }
+                                fallbackIconView
                             }
                         } else {
                             // Pas d'accès App Group
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(categoryColor.opacity(0.1))
-                                    .frame(width: 60, height: 60)
-                                Text(String(title.prefix(1).uppercased()))
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(categoryColor)
-                            }
+                            fallbackIconView
                         }
                     } else if let url = URL(string: imageURL) {
                         // URL web - utiliser AsyncImage
@@ -175,60 +175,28 @@ struct CategoryCard: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         case .failure(_):
                             // Erreur de chargement
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(categoryColor.opacity(0.1))
-                                    .frame(width: 60, height: 60)
-                                Text(String(title.prefix(1).uppercased()))
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(categoryColor)
-                            }
+                            fallbackIconView
                         case .empty:
                             // Placeholder pendant le chargement
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(categoryColor.opacity(0.1))
+                                    .fill(Color.primary.opacity(0.1))
                                     .frame(width: 60, height: 60)
                                 ProgressView()
                                     .scaleEffect(0.7)
                             }
                         @unknown default:
                             // Fallback
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(categoryColor.opacity(0.1))
-                                    .frame(width: 60, height: 60)
-                                Text(String(title.prefix(1).uppercased()))
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(categoryColor)
-                            }
+                            fallbackIconView
                         }
                         }
                     } else {
                         // URL invalide
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(categoryColor.opacity(0.1))
-                                .frame(width: 60, height: 60)
-                            Text(String(title.prefix(1).uppercased()))
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(categoryColor)
-                        }
+                        fallbackIconView
                     }
                 } else {
                     // Fallback : première lettre si pas d'image
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(categoryColor.opacity(0.1))
-                            .frame(width: 60, height: 60)
-                        Text(String(title.prefix(1).uppercased()))
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(categoryColor)
-                    }
+                    fallbackIconView
                 }
                 
                 // Titre dans le style FilterMenuView

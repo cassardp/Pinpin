@@ -176,8 +176,8 @@ struct FloatingSearchBar: View {
                     .frame(width: 48, height: 48)
                     .background(
                         Circle()
-                            .fill(.thinMaterial)
-                            .stroke(.black.opacity(0.15), lineWidth: 0.5)
+                            .fill(.ultraThinMaterial)
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                     )
             }
             .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
@@ -215,8 +215,8 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.thinMaterial)
-                            .stroke(.black.opacity(0.15), lineWidth: 0.5)
+                            .fill(.ultraThinMaterial)
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 } else {
@@ -314,8 +314,8 @@ struct FloatingSearchBar: View {
                                 .stroke(.white.opacity(0.3), lineWidth: 0.5)
                         } else {
                             RoundedRectangle(cornerRadius: 22)
-                                .fill(.thinMaterial)
-                                .stroke(.black.opacity(0.15), lineWidth: 0.5)
+                                .fill(.ultraThinMaterial)
+                                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                     }
                 )

@@ -120,6 +120,9 @@ struct FilterMenuView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 Color.clear.frame(height: 99)
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 199)
+            }
             .animation(.easeInOut, value: isEditing)
             }
             
@@ -375,7 +378,6 @@ struct RenameCategorySheet: View {
             .background(Color(UIColor.systemBackground))
             .ignoresSafeArea(.all)
             .animation(.easeInOut(duration: 0.3), value: name.isEmpty)
-            .navigationTitle("Rename")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
