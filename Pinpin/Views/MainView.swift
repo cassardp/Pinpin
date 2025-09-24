@@ -101,6 +101,15 @@ struct MainView: View {
                 .lowercased()
                 .replacingOccurrences(of: "_", with: " ")
             
+            // Gestion spéciale pour Twitter/X
+            if query == "twitter" {
+                // Pour Twitter/X, chercher sur x.com (format de stockage réel) mais afficher "twitter"
+                return title.contains("twitter") || title.contains("x.com") 
+                    || description.contains("twitter") || description.contains("x.com")
+                    || url.contains("x.com")
+                    || metadataValues.contains("twitter") || metadataValues.contains("x.com")
+            }
+            
             return title.contains(query)
                 || description.contains(query)
                 || url.contains(query)

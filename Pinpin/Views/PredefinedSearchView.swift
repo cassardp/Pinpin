@@ -14,20 +14,21 @@ struct PredefinedSearchView: View {
 
     // Recherches à afficher (domaines uniquement)
     private var searchesToDisplay: [String] {
-        return domains
+        return domains.map { getDisplayName(for: $0) }
     }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                ForEach(searchesToDisplay, id: \.self) { searchTerm in
+                ForEach(Array(searchesToDisplay.enumerated()), id: \.element) { index, displayTerm in
                     Button(action: {
                         // Haptic feedback léger
                         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                         impactFeedback.impactOccurred()
 
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            searchQuery = searchTerm
+                            // Utiliser le terme de recherche approprié
+                            searchQuery = getSearchTermForDomain(domains[index])
                         }
 
                         // Délai pour voir l'animation avant de fermer
@@ -35,7 +36,7 @@ struct PredefinedSearchView: View {
                             onSearchSelected()
                         }
                     }) {
-                        Text(searchTerm)
+                        Text(displayTerm)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -215,7 +216,7 @@ struct PredefinedSearchView: View {
         var cleanDomain = domain.lowercased()
 
         // Enlever les préfixes communs
-        let prefixesToRemove = ["www.", "m.", "mobile.", "app.", "api.", "cdn.", "static."]
+        let prefixesToRemove = ["www.", "m.", "mobile.", "app.", "api.", "cdn.", "static.", "media.", "open."]
         for prefix in prefixesToRemove {
             if cleanDomain.hasPrefix(prefix) {
                 cleanDomain = String(cleanDomain.dropFirst(prefix.count))
@@ -238,12 +239,36 @@ struct PredefinedSearchView: View {
         return cleanDomain
     }
 
-    // MARK: - Search Term Mapping
+    // MARK: - Display Name Mapping
+    private func getDisplayName(for domain: String) -> String {
+        // Gérer les cas spéciaux où l'affichage diffère du domaine de recherche
+        switch domain.lowercased() {
+        case "x":
+            // Pour le domaine "x", on affiche "twitter" mais on recherche sur "t.co"
+            return "twitter"
+        default:
+            return domain
+        }
+    }
+    
+    // MARK: - Search Term for Domain
+    private func getSearchTermForDomain(_ domain: String) -> String {
+        // Pour certains domaines, on doit rechercher sur l'URL originale, pas le domaine processé
+        switch domain.lowercased() {
+        case "x":
+            // Pour Twitter/X, afficher "twitter" dans la barre de recherche (plus familier)
+            return "twitter"
+        default:
+            return domain
+        }
+    }
+    
+    // MARK: - Search Term Mapping (Legacy - not used)
     private func getSearchTerm(for displayTerm: String) -> String {
-        // Gérer les cas spéciaux où l'affichage diffère du terme de recherche
+        // Cette fonction n'est plus utilisée - remplacée par getSearchTermForDomain
+        // Conservée pour compatibilité
         switch displayTerm.lowercased() {
         case "twitter":
-            // Pour Twitter, on utilise juste "x" qui matchera "x.com"
             return "x"
         default:
             return displayTerm
