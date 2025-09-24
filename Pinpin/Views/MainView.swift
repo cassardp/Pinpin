@@ -289,7 +289,10 @@ struct MainView: View {
             FilterMenuView(
                 selectedContentType: $selectedContentType,
                 isMenuOpen: $isMenuOpen,
-                onOpenAbout: { }
+                onOpenAbout: { },
+                onOpenSettings: {
+                    isSettingsOpen = true
+                }
             )
         }
         .onAppear {
@@ -349,6 +352,9 @@ struct MainView: View {
                     onRestoreBar: {
                         scrollProgress = 0.0
                     },
+                    onShareCategory: {
+                        shareCurrentCategory()
+                    },
                     bottomPadding: keyboardHeight > 0 ? 0 : 12
                 )
                 .transition(.asymmetric(
@@ -393,6 +399,40 @@ struct MainView: View {
             selectedItems.removeAll()
             isSelectionMode = false
             storageStatsRefreshTrigger += 1
+        }
+    }
+    
+    private func shareCurrentCategory() {
+        let itemsToShare = filteredItems
+        let categoryName = selectedContentType?.capitalized ?? "All"
+        
+        var shareText = "My \(categoryName) pins:\n\n"
+        
+        for item in itemsToShare {
+            let title = item.title.isEmpty ? "Untitled" : item.title
+            let url = (item.url?.isEmpty ?? true) ? "No URL" : (item.url ?? "No URL")
+            shareText += "• \(title)\n  \(url)\n\n"
+        }
+        
+        shareText += "Shared from Pinpin"
+        
+        let activityViewController = UIActivityViewController(
+            activityItems: [shareText],
+            applicationActivities: nil
+        )
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            
+            // Configuration pour iPad
+            if let popover = activityViewController.popoverPresentationController {
+                popover.sourceView = window
+                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            
+            rootViewController.present(activityViewController, animated: true)
         }
     }
 

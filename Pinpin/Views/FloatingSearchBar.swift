@@ -22,6 +22,7 @@ struct FloatingSearchBar: View {
     let onSelectAll: () -> Void
     let onDeleteSelected: () -> Void
     let onRestoreBar: () -> Void
+    let onShareCategory: () -> Void
 
     // Insets
     var bottomPadding: CGFloat = 12
@@ -155,7 +156,7 @@ struct FloatingSearchBar: View {
         HStack {
             Spacer()
 
-            // Gauche : Settings / Cancel
+            // Gauche : Share / Cancel
             Button(action: {
                 // Haptic feedback léger
                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -167,11 +168,12 @@ struct FloatingSearchBar: View {
                         selectedItems.removeAll()
                     }
                 } else {
-                    showSettings = true
+                    onShareCategory()
                 }
             }) {
-                Image(systemName: isSelectionMode ? "xmark" : "gearshape")
-                    .font(.system(size: 20, weight: .medium))
+                Image(systemName: isSelectionMode ? "xmark" : "square.and.arrow.up")
+                    .font(.system(size: 18, weight: .medium))
+                    .padding(.bottom, 4)
                     .foregroundColor(.primary)
                     .frame(width: 48, height: 48)
                     .background(

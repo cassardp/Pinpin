@@ -21,6 +21,7 @@ struct FilterMenuView: View {
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
     var onOpenAbout: () -> Void
+    var onOpenSettings: () -> Void
     @State private var isEditing = false
     @State private var categoryToRename: Category?
     @State private var renameText: String = ""
@@ -162,6 +163,15 @@ struct FilterMenuView: View {
                                     toggleEditing()
                                 } label: {
                                     Label("Edit", systemImage: "pencil")
+                                }
+                                
+                                Divider()
+                                
+                                Button {
+                                    hapticFeedback()
+                                    onOpenSettings()
+                                } label: {
+                                    Label("Settings", systemImage: "gearshape")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")
@@ -405,7 +415,8 @@ struct RenameCategorySheet: View {
     FilterMenuView(
         selectedContentType: .constant(nil),
         isMenuOpen: .constant(false),
-        onOpenAbout: {}
+        onOpenAbout: {},
+        onOpenSettings: {}
     )
     .modelContainer(DataService.shared.container)
 }
