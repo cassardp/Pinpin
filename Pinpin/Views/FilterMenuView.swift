@@ -118,12 +118,8 @@ struct FilterMenuView: View {
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Color.clear.frame(height: 99)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 199)
-            }
+            .contentMargins(.top, 99)
+            .contentMargins(.bottom, 199)
             .animation(.easeInOut, value: isEditing)
             }
             
@@ -153,10 +149,12 @@ struct FilterMenuView: View {
                             Menu {
                                 Button {
                                     hapticFeedback()
-                                    prepareCreateCategory()
+                                    onOpenSettings()
                                 } label: {
-                                    Label("Add", systemImage: "plus")
+                                    Label("Settings", systemImage: "gearshape")
                                 }
+                                
+                                Divider()
                                 
                                 Button {
                                     hapticFeedback()
@@ -165,13 +163,11 @@ struct FilterMenuView: View {
                                     Label("Edit", systemImage: "pencil")
                                 }
                                 
-                                Divider()
-                                
                                 Button {
                                     hapticFeedback()
-                                    onOpenSettings()
+                                    prepareCreateCategory()
                                 } label: {
-                                    Label("Settings", systemImage: "gearshape")
+                                    Label("Add", systemImage: "plus")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")
