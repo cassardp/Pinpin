@@ -42,7 +42,6 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                 HStack {
                     drawer()
                         .frame(width: width)
-                        .ignoresSafeArea(edges: .vertical)
                         .offset(x: totalOffset - width)
                         .allowsHitTesting(!isDragging)
                     Spacer(minLength: 0)

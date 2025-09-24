@@ -64,40 +64,17 @@ struct FilterMenuView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .bottomLeading) {
             // Background
             Color(UIColor.systemBackground)
-                .ignoresSafeArea()
                 .onTapGesture {
                     // Perdre le focus du TextField
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 }
             
             // Liste centrée verticalement - solution simple
-            List {
-                // Bouton d'ajout
-                Button {
-                    if isEditing {
-                        toggleEditing()
-                    } else {
-                        hapticFeedback()
-                        prepareCreateCategory()
-                    }
-                } label: {
-                    HStack {
-                        Text(isEditing ? "Done" : "Add")
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(.gray)
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 80)
-                .contentShape(Rectangle())
+            ScrollViewReader { proxy in
+                List {
 
                 // Option "Tout"
                 CategoryListRow(
@@ -135,31 +112,48 @@ struct FilterMenuView: View {
                     .listRowSeparator(.hidden)
                 }
                 .onMove(perform: moveCategories)
-
-                // Bouton d'édition (bas de liste)
-                Button(action: toggleEditing) {
-                    HStack {
-                        Text(isEditing ? "Done" : "Edit")
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundColor(.gray)
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .padding(.horizontal, 16)
-                .padding(.top, 80)
-                .padding(.bottom, 12)
-                .contentShape(Rectangle())
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentMargins(.vertical, 60)
             .animation(.easeInOut, value: isEditing)
+            }
+            
+            // Menu ellipsis en bas à gauche
+            
+            
+                    HStack {
+                        Menu {
+                            Button {
+                                hapticFeedback()
+                                prepareCreateCategory()
+                            } label: {
+                                Label("Add", systemImage: "plus")
+                            }
+                            
+                            Button {
+                                hapticFeedback()
+                                toggleEditing()
+                            } label: {
+                                Label(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                )
+                        }
+                        .padding(.leading, 16)
+                        
+                        Spacer()
+                }
+                .padding(.bottom, 0)
             
         }
         .onChange(of: isMenuOpen) { _, isOpen in
@@ -183,87 +177,6 @@ onSave: handleSaveAction
     }
 }
 
-// MARK: - CategoryListRow Component
-struct CategoryListRow: View {
-    let isSelected: Bool
-    let title: String
-    let isEmpty: Bool
-    let isEditing: Bool
-    let action: () -> Void
-    let onEdit: (() -> Void)?
-    let onDelete: (() -> Void)?
-    let canDelete: Bool
-    
-    init(
-        isSelected: Bool,
-        title: String,
-        isEmpty: Bool,
-        isEditing: Bool = false,
-        action: @escaping () -> Void,
-        onEdit: (() -> Void)? = nil,
-        onDelete: (() -> Void)? = nil,
-        canDelete: Bool = true
-    ) {
-        self.isSelected = isSelected
-        self.title = title
-        self.isEmpty = isEmpty
-        self.isEditing = isEditing
-        self.action = action
-        self.onEdit = onEdit
-        self.onDelete = onDelete
-        self.canDelete = canDelete
-    }
-    
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 12) {
-                if isSelected {
-                    Circle()
-                        .fill(isEmpty ? Color.secondary : Color.primary)
-                        .frame(width: 8, height: 8)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                }
-
-                Text(title)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(isEmpty ? .secondary : .primary)
-            }
-            .padding(.vertical, -4)
-            
-            Spacer()
-            
-            if isEditing {
-                HStack(spacing: 16) {
-                    if let onDelete, canDelete {
-                        Button(action: onDelete) {
-                            Image(systemName: "trash")
-                                .font(.title3)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.red)
-                    }
-                }
-                .transition(.opacity)
-            }
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 16)
-        .contentShape(Rectangle())
-.onTapGesture {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(.easeInOut) {
-                if isEditing, let onEdit {
-                    onEdit()
-                } else {
-                    action()
-                }
-            }
-        }
-        .opacity(isEmpty ? 0.6 : 1.0)
-    }
-}
 
 // MARK: - Private helpers
 private extension FilterMenuView {
@@ -424,6 +337,12 @@ struct RenameCategorySheet: View {
                         .textInputAutocapitalization(.words)
                         .submitLabel(.done)
                         .focused($isFieldFocused)
+                        .onSubmit {
+                            // Vérifier que le nom n'est pas vide avant de sauvegarder
+                            if !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                onSave()
+                            }
+                        }
                 }
                 
                 Spacer()
@@ -452,6 +371,7 @@ struct RenameCategorySheet: View {
         }
     }
 }
+
 
 // MARK: - Preview
 #Preview {
