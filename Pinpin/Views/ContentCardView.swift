@@ -37,11 +37,22 @@ struct ContentCardView: View {
     private var squareContentView: some View {
         VStack(alignment: .leading) {
             Rectangle()
+                .fill(Color.gray.opacity(0.3)) // Même couleur que le placeholder
                 .aspectRatio(1.0, contentMode: .fit)
                 .overlay(
-                    SmartAsyncImage(item: item)
-                        .aspectRatio(contentMode: .fill)
-                        .clipped()
+                    Group {
+                        if isAppleMusicContent {
+                            // Crop 20% pour Apple Music (garde l'image carrée)
+                            SmartAsyncImage(item: item)
+                                .aspectRatio(contentMode: .fill)
+                                .scaleEffect(1.50) // Zoom pour compenser le crop de 20%
+                                .clipped()
+                        } else {
+                            SmartAsyncImage(item: item)
+                                .aspectRatio(contentMode: .fill)
+                                .clipped()
+                        }
+                    }
                 )
         }
     }
@@ -59,6 +70,11 @@ struct ContentCardView: View {
     private var isTikTokContent: Bool {
         guard let url = item.url else { return false }
         return url.contains("tiktok.com") || url.contains("vm.tiktok.com")
+    }
+    
+    private var isAppleMusicContent: Bool {
+        guard let url = item.url else { return false }
+        return url.contains("music.apple.com")
     }
     
     private var shouldUseSquareFormat: Bool {

@@ -31,7 +31,6 @@ struct SmartAsyncImage: View {
                 AsyncImage(url: localURL) { image in
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
                 } placeholder: {
                     Color.gray.opacity(0.3)
                 }
@@ -40,7 +39,6 @@ struct SmartAsyncImage: View {
                 AsyncImage(url: remoteURL) { image in
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
                 } placeholder: {
                     Color.gray.opacity(0.3)
                 }
