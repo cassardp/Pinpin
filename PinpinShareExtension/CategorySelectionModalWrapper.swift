@@ -325,45 +325,57 @@ struct AddCategorySheet: View {
     @State private var categoryName = ""
     @Environment(\.dismiss) private var dismiss
     let onCategoryAdded: (String) -> Void
+    @FocusState private var isFieldFocused: Bool
     
     var body: some View {
-        VStack {
-            Spacer()
-            
-            VStack(spacing: 40) {
-                // Champ texte centré
-                TextField("Category Name", text: $categoryName)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .padding(.horizontal, 40)
+        NavigationStack {
+            VStack {
+                Spacer()
                 
-                // Bouton Add qui apparaît quand le champ n'est pas vide
-                if !categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button("Add") {
-                        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        onCategoryAdded(trimmedName)
+                VStack(spacing: 40) {
+                    TextField("Category Name", text: $categoryName)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .padding(.horizontal, 40)
+                        .textInputAutocapitalization(.words)
+                        .submitLabel(.done)
+                        .focused($isFieldFocused)
+                }
+                
+                Spacer()
+            }
+            .background(Color(UIColor.systemBackground))
+            .ignoresSafeArea(.all)
+            .animation(.easeInOut(duration: 0.3), value: categoryName.isEmpty)
+            .navigationTitle("New Category")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        categoryName = ""
                         dismiss()
                     }
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
-                    .padding(.horizontal, 40)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.primary.opacity(0.1))
-                    )
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmedName.isEmpty else { return }
+                        onCategoryAdded(trimmedName)
+                        categoryName = ""
+                        dismiss()
+                    }
+                    .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            
-            Spacer()
+            .onAppear {
+                categoryName = ""
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    isFieldFocused = true
+                }
+            }
         }
-        .background(Color(UIColor.systemBackground))
-        .ignoresSafeArea(.all)
-        .animation(.easeInOut(duration: 0.3), value: categoryName.isEmpty)
     }
 }
 

@@ -385,6 +385,82 @@ final class DataService: ObservableObject {
         return countItems(for: categoryName)
     }
     
+    // MARK: - Category Deletion with Orphan Management
+    
+    /// Supprime une catégorie et réassigne ses items à la catégorie "Misc"
+    func deleteCategory(_ category: Category) {
+        // Récupérer tous les items de cette catégorie avant suppression
+        let itemsToReassign = category.contentItems ?? []
+        
+        if !itemsToReassign.isEmpty {
+            // Trouver ou créer la catégorie "Misc"
+            let miscCategory = findOrCreateMiscCategory()
+            
+            // Réassigner tous les items à "Misc"
+            for item in itemsToReassign {
+                item.category = miscCategory
+                item.updatedAt = Date()
+            }
+        }
+        
+        // Supprimer la catégorie
+        context.delete(category)
+        save()
+    }
+    
+    /// Trouve ou crée la catégorie "Misc" automatique
+    private func findOrCreateMiscCategory() -> Category {
+        // Chercher d'abord si l'utilisateur a créé une catégorie "Misc" manuellement
+        let possibleNames = ["Misc", "Divers", "Général", "General", "Autres"]
+        
+        for name in possibleNames {
+            let descriptor = FetchDescriptor<Category>(
+                predicate: #Predicate { $0.name == name }
+            )
+            
+            do {
+                let categories = try context.fetch(descriptor)
+                if let existingCategory = categories.first {
+                    return existingCategory
+                }
+            } catch {
+                print("Erreur lors de la recherche de catégorie Misc: \(error)")
+            }
+        }
+        
+        // Créer une nouvelle catégorie "Misc" si aucune n'existe
+        let existingCategories = fetchCategories()
+        let miscCategory = Category(
+            name: "Misc",
+            colorHex: "#6B7280", // Gris
+            iconName: "folder",
+            sortOrder: Int32(existingCategories.count),
+            isDefault: existingCategories.isEmpty
+        )
+        
+        context.insert(miscCategory)
+        return miscCategory
+    }
+    
+    /// Nettoie la catégorie "Misc" si elle est vide (pour la cacher)
+    func cleanupEmptyMiscCategory() {
+        let descriptor = FetchDescriptor<Category>(
+            predicate: #Predicate { $0.name == "Misc" }
+        )
+        
+        do {
+            let miscCategories = try context.fetch(descriptor)
+            for miscCategory in miscCategories {
+                if (miscCategory.contentItems ?? []).isEmpty {
+                    context.delete(miscCategory)
+                }
+            }
+            save()
+        } catch {
+            print("Erreur lors du nettoyage de la catégorie Misc: \(error)")
+        }
+    }
+    
     // MARK: - Save Context
     func save() {
         do {

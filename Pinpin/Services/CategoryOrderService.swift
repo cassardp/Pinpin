@@ -72,4 +72,18 @@ class CategoryOrderService: ObservableObject {
         categoryOrder = newOrder
         saveCategoryOrder()
     }
+
+    /// Renomme une catégorie dans l'ordre stocké
+    func renameCategory(oldName: String, newName: String) {
+        guard let index = categoryOrder.firstIndex(of: oldName) else { return }
+        categoryOrder[index] = newName
+        saveCategoryOrder()
+    }
+
+    /// Supprime une catégorie de l'ordre stocké
+    func removeCategory(named name: String) {
+        guard let index = categoryOrder.firstIndex(of: name) else { return }
+        categoryOrder.remove(at: index)
+        saveCategoryOrder()
+    }
 }
