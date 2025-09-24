@@ -117,6 +117,9 @@ struct FilterMenuView: View {
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Color.clear.frame(height: 99)
+            }
             .animation(.easeInOut, value: isEditing)
             }
             
@@ -124,38 +127,60 @@ struct FilterMenuView: View {
             
             
                     HStack {
-                        Menu {
-                            Button {
-                                hapticFeedback()
-                                prepareCreateCategory()
-                            } label: {
-                                Label("Add", systemImage: "plus")
-                            }
-                            
+                        if isEditing {
+                            // Mode édition : bouton checkmark simple
                             Button {
                                 hapticFeedback()
                                 toggleEditing()
                             } label: {
-                                Label(isEditing ? "Done" : "Edit", systemImage: isEditing ? "checkmark" : "pencil")
+                                Image(systemName: "checkmark")
+                                    .font(.title2)
+                                    .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        Circle()
+                                            .fill(.ultraThinMaterial)
+                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                    )
                             }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                                .frame(width: 44, height: 44)
-                                .background(
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                )
+                            .padding(.leading, 16)
+                        } else {
+                            // Mode normal : menu ellipsis
+                            Menu {
+                                Button {
+                                    hapticFeedback()
+                                    prepareCreateCategory()
+                                } label: {
+                                    Label("Add", systemImage: "plus")
+                                }
+                                
+                                Button {
+                                    hapticFeedback()
+                                    toggleEditing()
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .font(.title2)
+                                    .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        Circle()
+                                            .fill(.ultraThinMaterial)
+                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                    )
+                            }
+                            .padding(.leading, 16)
                         }
-                        .padding(.leading, 16)
                         
                         Spacer()
                 }
-                .padding(.bottom, 0)
+                .padding(.bottom, 48)
+                .padding(.leading, 16)
             
         }
+        .ignoresSafeArea(edges: .bottom)
         .onChange(of: isMenuOpen) { _, isOpen in
             guard !isOpen else { return }
             resetEditingState()
