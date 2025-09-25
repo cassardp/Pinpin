@@ -11,10 +11,10 @@ import LinkPresentation
 import SwiftUI
 import Vision
 
-class ShareViewController: UIViewController {
+class ShareViewController: UIViewController, ObservableObject {
     
     private var sharedContent: SharedContentData?
-    private var isProcessingContent = false
+    @Published var isProcessingContent = false
     private var ocrMetadata: [String: String] = [:]
     
     override func viewDidLoad() {
@@ -184,6 +184,7 @@ class ShareViewController: UIViewController {
         
         let categoryModal = CategorySelectionModalWrapper(
             contentData: contentData,
+            isProcessing: .constant(isProcessingContent),
             onCategorySelected: { [weak self] category in
                 self?.saveContent(contentData, to: category)
             },
@@ -228,6 +229,15 @@ class ShareViewController: UIViewController {
     }
     
     private func saveContent(_ contentData: SharedContentData, to category: String) {
+        // Si le traitement est encore en cours, attendre qu'il se termine
+        if isProcessingContent {
+            print("[ShareExtension] Traitement en cours, attente de la fin...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.saveContent(contentData, to: category)
+            }
+            return
+        }
+        
         // Utiliser le contenu final si disponible, sinon le contenu temporaire
         let finalContent = self.sharedContent ?? contentData
         
@@ -251,13 +261,19 @@ class ShareViewController: UIViewController {
         }
         
         // Sauvegarder dans UserDefaults partagés
-        if let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") {
-            var pendingContents = sharedDefaults.array(forKey: "pendingSharedContents") as? [[String: Any]] ?? []
-            pendingContents.append(sharedContent)
-            sharedDefaults.set(pendingContents, forKey: "pendingSharedContents")
-            sharedDefaults.set(true, forKey: "hasNewSharedContent")
-            sharedDefaults.synchronize()
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") else {
+            print("[ShareExtension] Erreur: Impossible d'accéder aux UserDefaults partagés")
+            completeRequest()
+            return
         }
+        
+        var pendingContents = sharedDefaults.array(forKey: "pendingSharedContents") as? [[String: Any]] ?? []
+        pendingContents.append(sharedContent)
+        sharedDefaults.set(pendingContents, forKey: "pendingSharedContents")
+        sharedDefaults.set(true, forKey: "hasNewSharedContent")
+        sharedDefaults.synchronize()
+        
+        print("[ShareExtension] Contenu sauvegardé avec succès dans les UserDefaults partagés")
         
         completeRequest()
     }

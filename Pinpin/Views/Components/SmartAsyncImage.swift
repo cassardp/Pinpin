@@ -62,12 +62,16 @@ struct SmartAsyncImage: View {
         if let thumbnailUrl = item.thumbnailUrl, 
            !thumbnailUrl.isEmpty,
            !thumbnailUrl.hasPrefix("images/"), // Ignorer les anciens chemins locaux
+           !thumbnailUrl.hasPrefix("file:///var/mobile/Media/PhotoData/"), // Ignorer les fichiers temporaires iOS
            let url = URL(string: thumbnailUrl) {
             return url
         }
         
-        // Fallback vers l'URL principale
-        if let urlString = item.url, let url = URL(string: urlString) {
+        // Fallback vers l'URL principale (seulement si c'est une vraie URL web)
+        if let urlString = item.url, 
+           !urlString.hasPrefix("file:///"),
+           let url = URL(string: urlString),
+           url.scheme == "http" || url.scheme == "https" {
             return url
         }
         

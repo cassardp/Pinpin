@@ -13,7 +13,7 @@ struct EmptyStateView: View {
             Spacer()
             
             Text("NOTHING YET • START SHARING!")
-                .font(.caption)
+                .font(.system(size: 14))
                 .foregroundColor(Color(UIColor.systemGray2))
             
             Spacer()

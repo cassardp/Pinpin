@@ -568,6 +568,51 @@ final class DataService: ObservableObject {
         }
     }
     
+    // MARK: - Maintenance
+    
+    /// Nettoie les URLs d'images temporaires invalides
+    func cleanupInvalidImageURLs() {
+        let descriptor = FetchDescriptor<ContentItem>()
+        
+        do {
+            let allItems = try context.fetch(descriptor)
+            var cleanedCount = 0
+            
+            for item in allItems {
+                var needsUpdate = false
+                
+                // Nettoyer thumbnailUrl si c'est un fichier temporaire iOS
+                if let thumbnailUrl = item.thumbnailUrl,
+                   (thumbnailUrl.hasPrefix("file:///var/mobile/Media/PhotoData/") ||
+                    thumbnailUrl.hasPrefix("file:///private/var/mobile/Media/PhotoData/")) {
+                    item.thumbnailUrl = nil
+                    needsUpdate = true
+                }
+                
+                // Nettoyer url si c'est un fichier temporaire iOS
+                if let url = item.url,
+                   (url.hasPrefix("file:///var/mobile/Media/PhotoData/") ||
+                    url.hasPrefix("file:///private/var/mobile/Media/PhotoData/")) {
+                    // Garder seulement le titre, supprimer l'URL temporaire
+                    item.url = nil
+                    needsUpdate = true
+                }
+                
+                if needsUpdate {
+                    cleanedCount += 1
+                }
+            }
+            
+            if cleanedCount > 0 {
+                try context.save()
+                print("[DataService] Nettoyage terminé: \(cleanedCount) items mis à jour")
+            }
+            
+        } catch {
+            print("[DataService] Erreur lors du nettoyage des URLs temporaires: \(error)")
+        }
+    }
+    
     // MARK: - Save Context
     func save() {
         do {

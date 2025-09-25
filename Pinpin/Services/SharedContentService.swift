@@ -9,7 +9,7 @@
 import Foundation
 
 class SharedContentService: ObservableObject {
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
+    private let sharedDefaults: UserDefaults?
     private let dataService: DataService
     
     // Flag pour détecter les nouveaux contenus
@@ -17,10 +17,21 @@ class SharedContentService: ObservableObject {
     
     init(dataService: DataService) {
         self.dataService = dataService
+        // Initialisation sécurisée des UserDefaults partagés
+        self.sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
+        
+        if self.sharedDefaults == nil {
+            print("[SharedContentService] Attention: Impossible d'initialiser les UserDefaults partagés")
+        }
     }
     
     func processPendingSharedContents() async {
-        guard let pendingContents = sharedDefaults?.array(forKey: "pendingSharedContents") as? [[String: Any]],
+        guard let sharedDefaults = sharedDefaults else {
+            print("[SharedContentService] Erreur: UserDefaults partagés non disponibles")
+            return
+        }
+        
+        guard let pendingContents = sharedDefaults.array(forKey: "pendingSharedContents") as? [[String: Any]],
               !pendingContents.isEmpty else {
             // Réinitialiser le flag même s'il n'y a rien à traiter
             print("[SharedContentService] Aucun contenu en attente")
@@ -35,9 +46,9 @@ class SharedContentService: ObservableObject {
         }
         
         // Nettoyer les contenus traités et le flag
-        sharedDefaults?.removeObject(forKey: "pendingSharedContents")
+        sharedDefaults.removeObject(forKey: "pendingSharedContents")
         clearNewContentFlag()
-        sharedDefaults?.synchronize()
+        sharedDefaults.synchronize()
     }
     
     private func processSharedContent(_ contentData: [String: Any]) async {
@@ -75,7 +86,8 @@ class SharedContentService: ObservableObject {
     }
     
     func hasPendingSharedContents() -> Bool {
-        guard let pendingContents = sharedDefaults?.array(forKey: "pendingSharedContents") as? [[String: Any]] else {
+        guard let sharedDefaults = sharedDefaults,
+              let pendingContents = sharedDefaults.array(forKey: "pendingSharedContents") as? [[String: Any]] else {
             return false
         }
         return !pendingContents.isEmpty
@@ -85,7 +97,8 @@ class SharedContentService: ObservableObject {
     
     /// Vérifie s'il y a du nouveau contenu partagé
     func hasNewSharedContent() -> Bool {
-        return sharedDefaults?.bool(forKey: Self.newContentFlagKey) ?? false
+        guard let sharedDefaults = sharedDefaults else { return false }
+        return sharedDefaults.bool(forKey: Self.newContentFlagKey)
     }
     
     /// Réinitialise le flag de nouveau contenu
@@ -95,8 +108,11 @@ class SharedContentService: ObservableObject {
     
     /// Méthode appelée par l'extension pour signaler un nouveau contenu
     static func setNewContentFlag() {
-        let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
-        sharedDefaults?.set(true, forKey: newContentFlagKey)
-        sharedDefaults?.synchronize()
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") else {
+            print("[SharedContentService] Erreur: Impossible d'accéder aux UserDefaults partagés pour setNewContentFlag")
+            return
+        }
+        sharedDefaults.set(true, forKey: newContentFlagKey)
+        sharedDefaults.synchronize()
     }
 }

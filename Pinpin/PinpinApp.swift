@@ -17,6 +17,14 @@ struct PinpinApp: App {
             MainView()
                 .modelContainer(dataService.container)
                 .font(.system(.body, design: .rounded))
+                .onAppear {
+                    // Nettoyage des URLs temporaires au démarrage
+                    Task {
+                        await MainActor.run {
+                            dataService.cleanupInvalidImageURLs()
+                        }
+                    }
+                }
         }
     }
 }

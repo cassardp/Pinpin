@@ -10,6 +10,7 @@ import SwiftData
 
 struct CategorySelectionModalWrapper: View {
     let contentData: SharedContentData
+    @Binding var isProcessing: Bool
     let onCategorySelected: (String) -> Void
     let onCancel: () -> Void
     
@@ -21,13 +22,32 @@ struct CategorySelectionModalWrapper: View {
     private let dataService = DataService.shared
     
     var body: some View {
-        // Categories List - ScrollView prend tout l'espace
-        ScrollView {
-            VStack(spacing: 16) {
-                // Add Category Button (en haut)
-                AddCategoryCard {
-                    showingAddCategory = true
+        VStack(spacing: 0) {
+            // Indicateur de traitement en haut
+            if isProcessing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Processing content...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            
+            // Categories List - ScrollView prend tout l'espace
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Add Category Button (en haut)
+                    AddCategoryCard {
+                        showingAddCategory = true
+                    }
                 
                 if categories.isEmpty {
                     // Message quand pas de catégories
@@ -57,11 +77,12 @@ struct CategorySelectionModalWrapper: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 40)
-            .padding(.bottom, 100)
+                .padding(.horizontal, 20)
+                .padding(.top, 40)
+                .padding(.bottom, 100)
+            }
+            .background(Color(UIColor.systemBackground))
         }
-        .background(Color(UIColor.systemBackground))
         .ignoresSafeArea(.all)
         .onAppear {
             loadCategories()
@@ -109,9 +130,30 @@ struct CategorySelectionModalWrapper: View {
             selectedCategory = categoryName
         }
         
-        // Délai de 0.8 seconde pour laisser voir la sélection et permettre le chargement
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            onCategorySelected(categoryName)
+        // Si le traitement est en cours, attendre qu'il se termine
+        if isProcessing {
+            print("[CategoryModal] Traitement en cours, attente...")
+            // Vérifier toutes les 0.5 secondes si le traitement est terminé
+            checkProcessingAndProceed(categoryName: categoryName)
+        } else {
+            // Délai de 0.8 seconde pour laisser voir la sélection
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                onCategorySelected(categoryName)
+            }
+        }
+    }
+    
+    private func checkProcessingAndProceed(categoryName: String) {
+        if !isProcessing {
+            // Traitement terminé, procéder
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                onCategorySelected(categoryName)
+            }
+        } else {
+            // Continuer à attendre
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                checkProcessingAndProceed(categoryName: categoryName)
+            }
         }
     }
 }

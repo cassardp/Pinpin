@@ -76,71 +76,108 @@ struct FilterMenuView: View {
                     isTextFieldFocused = false
                 }
             
-            // Liste centrée verticalement - solution simple
-            ScrollViewReader { proxy in
-                List {
+            // Liste centrée verticalement avec dégradés de fondu
+            ZStack {
+                ScrollViewReader { proxy in
+                    List {
 
-                // Option "Tout"
-                CategoryListRow(
-                    isSelected: selectedContentType == nil,
-                    title: "All",
-                    isEmpty: false,
-                    isEditing: false,
-                    action: { selectedContentType = nil }
-                )
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                
-                // Types dynamiques avec réorganisation native
-                ForEach(availableTypes, id: \.self) { type in
-                    let category = allCategories.first(where: { $0.name == type })
+                    // Option "Tout"
                     CategoryListRow(
-                        isSelected: selectedContentType == type,
-                        title: type.capitalized,
-                        isEmpty: countForType(type) == 0,
-                        isEditing: isEditing,
-                        action: {
-                            selectedContentType = (selectedContentType == type) ? nil : type
-                        },
-                        onEdit: {
-                            guard let category else { return }
-                            prepareRename(for: category)
-                        },
-                        onDelete: {
-                            guard let category else { return }
-                            prepareDelete(for: category)
-                        },
-                        canDelete: category?.name != "Misc"
+                        isSelected: selectedContentType == nil,
+                        title: "All",
+                        isEmpty: false,
+                        isEditing: false,
+                        action: { selectedContentType = nil }
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    
+                    // Types dynamiques avec réorganisation native
+                    ForEach(availableTypes, id: \.self) { type in
+                        let category = allCategories.first(where: { $0.name == type })
+                        CategoryListRow(
+                            isSelected: selectedContentType == type,
+                            title: type.capitalized,
+                            isEmpty: countForType(type) == 0,
+                            isEditing: isEditing,
+                            action: {
+                                selectedContentType = (selectedContentType == type) ? nil : type
+                            },
+                            onEdit: {
+                                guard let category else { return }
+                                prepareRename(for: category)
+                            },
+                            onDelete: {
+                                guard let category else { return }
+                                prepareDelete(for: category)
+                            },
+                            canDelete: category?.name != "Misc"
+                        )
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    }
+                    .onMove(perform: moveCategories)
                 }
-                .onMove(perform: moveCategories)
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .scrollIndicators(.hidden)
-            .scrollDisabled(isMenuDragging) // Désactiver le scroll pendant le swipe
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentMargins(.top, 60)
-            .contentMargins(.bottom, 220)
-            .animation(.easeInOut, value: isEditing)
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
+                .scrollDisabled(isMenuDragging) // Désactiver le scroll pendant le swipe
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentMargins(.top, 90)
+                .contentMargins(.bottom, 220)
+                .animation(.easeInOut, value: isEditing)
+                }
+                
+                // Dégradé de fondu en haut (ignore la safe area)
+                VStack {
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Color(UIColor.systemBackground), location: 0.0),
+                            .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.3),
+                            .init(color: Color(UIColor.systemBackground).opacity(0.6), location: 0.6),
+                            .init(color: Color.clear, location: 1.0)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 180)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea(.all, edges: .top)
+                    
+                    Spacer()
+                }
+                
+                // Dégradé de fondu en bas
+                VStack {
+                    Spacer()
+                    
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Color.clear, location: 0.0),
+                            .init(color: Color(UIColor.systemBackground).opacity(0.6), location: 0.4),
+                            .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.7),
+                            .init(color: Color(UIColor.systemBackground), location: 1.0)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 150)
+                    .allowsHitTesting(false)
+                }
             }
             
-            // Menu ellipsis en bas à droite
+            // Menu ellipsis en bas à gauche
             VStack {
                 Spacer()
                 
                 HStack {
-                    Spacer()
-                    
                     if isEditing {
                         // Mode édition : bouton checkmark simple
                         Button {
                             hapticFeedback()
                             toggleEditing()
                         } label: {
-                            Image(systemName: "checkmark")
+                            Image(systemName: "xmark")
                                 .font(.title2)
                                 .foregroundColor(.primary)
                                 .frame(width: 44, height: 44)
@@ -150,7 +187,7 @@ struct FilterMenuView: View {
                                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                                 )
                         }
-                        .padding(.trailing, 16)
+                        .padding(.leading, 32)
                     } else {
                         // Mode normal : menu ellipsis
                         Menu {
@@ -187,8 +224,10 @@ struct FilterMenuView: View {
                                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                                 )
                         }
-                        .padding(.trailing, 16)
+                        .padding(.leading, 32)
                     }
+                    
+                    Spacer()
                 }
                 .padding(.bottom, 48)
             }
@@ -303,7 +342,7 @@ func saveNewCategory() {
         modelContext.insert(newCategory)
         do {
             try modelContext.save()
-            selectedContentType = newName
+            selectedContentType = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide
         } catch {
             print("Failed to create category: \(error)")
         }
