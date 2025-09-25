@@ -144,26 +144,8 @@ struct CategoryCard: View {
         HStack(spacing: 32) {
             // Image de prévisualisation ou fallback
                 if let imageURL = firstImageURL {
-                    // Vérifier si c'est un chemin local (images/...)
-                    if imageURL.hasPrefix("images/") {
-                        // Image locale dans App Group
-                        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
-                            let fullURL = containerURL.appendingPathComponent(imageURL)
-                            if let uiImage = UIImage(contentsOfFile: fullURL.path) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            } else {
-                                // Fichier local non trouvé
-                                fallbackIconView
-                            }
-                        } else {
-                            // Pas d'accès App Group
-                            fallbackIconView
-                        }
-                    } else if let url = URL(string: imageURL) {
+                    // Les images locales (images/) ne sont plus supportées, utiliser seulement les URLs distantes
+                    if !imageURL.hasPrefix("images/"), let url = URL(string: imageURL) {
                         // URL web - utiliser AsyncImage
                         AsyncImage(url: url) { phase in
                         switch phase {

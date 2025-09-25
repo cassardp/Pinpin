@@ -108,15 +108,11 @@ struct ContentItemContextMenu: View {
     }
     
     private func loadImageFromItem(completion: @escaping (UIImage?) -> Void) {
-        // Vérifier d'abord si on a une image locale
-        if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
-            if let localURL = SharedImageService.shared.getImageURL(from: thumbnailUrl) as URL?,
-               FileManager.default.fileExists(atPath: localURL.path),
-               let imageData = try? Data(contentsOf: localURL),
-               let image = UIImage(data: imageData) {
-                completion(image)
-                return
-            }
+        // Vérifier d'abord si on a une image dans SwiftData
+        if let imageData = item.imageData,
+           let image = UIImage(data: imageData) {
+            completion(image)
+            return
         }
         
         // Sinon, essayer de charger depuis l'URL distante

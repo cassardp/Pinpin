@@ -125,19 +125,15 @@ class ShareViewController: UIViewController {
                     self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { ocrMetadata in
                         // Stocker les métadonnées OCR pour utilisation ultérieure
                         self?.storeOCRMetadata(ocrMetadata)
-                    }) { imagePath in
-                        if let imagePath = imagePath {
-                            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: imagePath)
-                        } else {
-                            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
-                        }
+                    }) { imageData in
+                        self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, imageData: imageData)
                     }
                     return
                 }
             }
             
             // Pas d'image, créer le contenu sans thumbnail
-            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, thumbnailPath: nil)
+            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, imageData: nil)
         }
     }
     
@@ -147,7 +143,7 @@ class ShareViewController: UIViewController {
             handleURL(detectedURL)
         } else {
             // Traiter comme texte simple
-            updateContentAfterProcessing(title: text, url: nil, description: text, thumbnailPath: nil)
+            updateContentAfterProcessing(title: text, url: nil, description: text, imageData: nil)
         }
     }
     
@@ -169,19 +165,15 @@ class ShareViewController: UIViewController {
                     self?.saveImageFromProvider(imageProvider, extraMetadataHandler: { ocrMetadata in
                         // Stocker les métadonnées OCR pour utilisation ultérieure
                         self?.storeOCRMetadata(ocrMetadata)
-                    }) { imagePath in
-                        if let imagePath = imagePath {
-                            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: imagePath)
-                        } else {
-                            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
-                        }
+                    }) { imageData in
+                        self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, imageData: imageData)
                     }
                     return
                 }
             }
             
             // Si pas de métadonnées, sauvegarder quand même
-            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, thumbnailPath: nil)
+            self?.updateContentAfterProcessing(title: finalTitle, url: imageURL.absoluteString, description: finalDescription, imageData: nil)
         }
     }
     
@@ -219,12 +211,13 @@ class ShareViewController: UIViewController {
         hostingController.didMove(toParent: self)
     }
     
-    private func updateContentAfterProcessing(title: String, url: String?, description: String?, thumbnailPath: String?) {
+    private func updateContentAfterProcessing(title: String, url: String?, description: String?, imageData: Data?) {
         let finalContentData = SharedContentData(
             title: title,
             url: url,
             description: description,
-            thumbnailPath: thumbnailPath
+            thumbnailPath: nil, // Plus utilisé avec SwiftData
+            imageData: imageData
         )
         
         DispatchQueue.main.async { [weak self] in
@@ -247,6 +240,11 @@ class ShareViewController: UIViewController {
             "timestamp": Date().timeIntervalSince1970
         ]
         
+        // Ajouter les données d'image si disponibles
+        if let imageData = finalContent.imageData {
+            sharedContent["imageData"] = imageData
+        }
+        
         // Ajouter les métadonnées OCR si disponibles
         if !ocrMetadata.isEmpty {
             sharedContent["metadata"] = ocrMetadata
@@ -267,8 +265,8 @@ class ShareViewController: UIViewController {
     
     private func saveImageFromProvider(_ imageProvider: NSItemProvider,
                                        extraMetadataHandler: (([String: String]) -> Void)? = nil,
-                                       completion: @escaping (String?) -> Void) {
-        print("[ShareExtension] Début sauvegarde image")
+                                       completion: @escaping (Data?) -> Void) {
+        print("[ShareExtension] Début sauvegarde image en Data")
         
         // Vérifier si c'est une image
         guard imageProvider.canLoadObject(ofClass: UIImage.self) else {
@@ -286,67 +284,68 @@ class ShareViewController: UIViewController {
                 return
             }
             
-            guard let image = object as? UIImage,
-                  let imageData = image.jpegData(compressionQuality: 0.8) else {
-                print("[ShareExtension] Erreur: impossible de convertir en UIImage ou JPEG")
+            guard let image = object as? UIImage else {
+                print("[ShareExtension] Erreur: impossible de convertir en UIImage")
                 completion(nil)
                 return
             }
             
-            print("[ShareExtension] Image chargée avec succès, taille: \(imageData.count) bytes")
+            // Optimiser l'image pour SwiftData (max 1MB)
+            let optimizedData = self.optimizeImageForSwiftData(image)
             
-            // Sauvegarder dans le dossier partagé
-            guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") else {
-                print("[ShareExtension] Erreur: impossible d'accéder au container partagé")
-                completion(nil)
-                return
-            }
+            print("[ShareExtension] Image optimisée avec succès, taille: \(optimizedData.count) bytes")
             
-            print("[ShareExtension] Container URL: \(containerURL)")
-            
-            let imagesDirectory = containerURL.appendingPathComponent("images")
-            
-            // Créer le dossier images s'il n'existe pas
-            do {
-                try FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
-                print("[ShareExtension] Dossier images créé: \(imagesDirectory)")
-            } catch {
-                print("[ShareExtension] Erreur création dossier: \(error)")
-                completion(nil)
-                return
-            }
-            
-            // Nom de fichier unique
-            let fileName = "\(UUID().uuidString).jpg"
-            let fileURL = imagesDirectory.appendingPathComponent(fileName)
-            
-            print("[ShareExtension] Tentative d'écriture: \(fileURL)")
-            
-            do {
-                try imageData.write(to: fileURL)
-                print("[ShareExtension] Image sauvegardée avec succès: \(fileURL)")
+            // Lancer l'OCR automatique sur l'image
+            self.performOCROnImage(image) { ocrText in
+                var metadata: [String: String] = [:]
                 
-                // Lancer l'OCR automatique sur l'image
-                self.performOCROnImage(image) { ocrText in
-                    var metadata: [String: String] = [:]
-                    
-                    if let ocrText = ocrText, !ocrText.isEmpty {
-                        let cleanedText = OCRService.shared.cleanOCRText(ocrText)
-                        metadata["ocr_text"] = cleanedText
-                        print("[ShareExtension] OCR extrait: \(cleanedText)")
-                    }
-                    
-                    // Appeler le handler de métadonnées si fourni
-                    extraMetadataHandler?(metadata)
-                    
-                    // Retourner le chemin relatif pour l'app principale
-                    completion("images/\(fileName)")
+                if let ocrText = ocrText, !ocrText.isEmpty {
+                    let cleanedText = OCRService.shared.cleanOCRText(ocrText)
+                    metadata["ocr_text"] = cleanedText
+                    print("[ShareExtension] OCR extrait: \(cleanedText)")
                 }
-            } catch {
-                print("[ShareExtension] Erreur écriture fichier: \(error)")
-                completion(nil)
+                
+                // Appeler le handler de métadonnées si fourni
+                extraMetadataHandler?(metadata)
+                
+                // Retourner les données de l'image directement
+                completion(optimizedData)
             }
         }
+    }
+    
+    private func optimizeImageForSwiftData(_ image: UIImage) -> Data {
+        // Si l'image fait moins de 1MB en qualité 0.8, la garder telle quelle
+        var compressionQuality: CGFloat = 0.8
+        var compressedData = image.jpegData(compressionQuality: compressionQuality) ?? Data()
+        
+        // Réduire la qualité jusqu'à obtenir moins de 1MB
+        while compressedData.count > 1_000_000 && compressionQuality > 0.1 {
+            compressionQuality -= 0.1
+            compressedData = image.jpegData(compressionQuality: compressionQuality) ?? Data()
+        }
+        
+        // Si toujours trop gros, redimensionner l'image
+        if compressedData.count > 1_000_000 {
+            let maxSize: CGFloat = 1024
+            let size = image.size
+            let ratio = min(maxSize / size.width, maxSize / size.height)
+            
+            if ratio < 1.0 {
+                let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+                UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+                image.draw(in: CGRect(origin: .zero, size: newSize))
+                let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+                
+                if let resized = resizedImage {
+                    compressedData = resized.jpegData(compressionQuality: 0.8) ?? compressedData
+                }
+            }
+        }
+        
+        print("[ShareExtension] Image optimisée: \(compressedData.count) bytes")
+        return compressedData
     }
     
     // MARK: - OCR Methods

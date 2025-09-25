@@ -2,7 +2,7 @@
 //  SmartAsyncImage.swift
 //  Pinpin
 //
-//  Composant intelligent pour afficher des images avec fallback local/distant
+//  Composant pour afficher des images depuis SwiftData ou URLs distantes
 //
 
 import SwiftUI
@@ -12,7 +12,7 @@ struct SmartAsyncImage: View {
     let width: CGFloat?
     let height: CGFloat?
     
-    @State private var localImageURL: URL?
+    @State private var imageFromData: UIImage?
     
     init(
         item: ContentItem,
@@ -26,16 +26,12 @@ struct SmartAsyncImage: View {
     
     var body: some View {
         Group {
-            if let localURL = localImageURL, FileManager.default.fileExists(atPath: localURL.path) {
-                // Afficher l'image locale
-                AsyncImage(url: localURL) { image in
-                    image
-                        .resizable()
-                } placeholder: {
-                    Color.gray.opacity(0.3)
-                }
+            if let imageFromData = imageFromData {
+                // Priorité 1: Image depuis SwiftData
+                Image(uiImage: imageFromData)
+                    .resizable()
             } else if let remoteURL = getRemoteURL() {
-                // Afficher l'image distante
+                // Priorité 2: Image distante
                 AsyncImage(url: remoteURL) { image in
                     image
                         .resizable()
@@ -43,41 +39,35 @@ struct SmartAsyncImage: View {
                     Color.gray.opacity(0.3)
                 }
             } else {
-                // Aucun fallback
+                // Placeholder par défaut
                 Color.gray.opacity(0.3)
             }
         }
         .onAppear {
-            loadLocalImageIfAvailable()
+            loadImageFromData()
         }
     }
     
-    private func loadLocalImageIfAvailable() {
-        // Utiliser directement thumbnailUrl de l'item
-        guard let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty else { return }
+    private func loadImageFromData() {
+        // Charger l'image depuis SwiftData
+        guard let imageData = item.imageData else { return }
         
-        if thumbnailUrl.hasPrefix("images/") {
-            // Image locale
-            if let potentialURL = SharedImageService.shared.getImageURL(from: thumbnailUrl) as URL? {
-                let pathString = potentialURL.path
-                if FileManager.default.fileExists(atPath: pathString) {
-                    localImageURL = potentialURL
-                }
-            }
+        if let uiImage = UIImage(data: imageData) {
+            self.imageFromData = uiImage
         }
     }
     
     private func getRemoteURL() -> URL? {
-        // Utiliser directement thumbnailUrl de l'item
-        guard let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty else {
-            // Fallback vers l'URL principale si pas de thumbnail
-            if let urlString = item.url, let url = URL(string: urlString) {
-                return url
-            }
-            return nil
+        // Vérifier d'abord thumbnailUrl pour les URLs distantes
+        if let thumbnailUrl = item.thumbnailUrl, 
+           !thumbnailUrl.isEmpty,
+           !thumbnailUrl.hasPrefix("images/"), // Ignorer les anciens chemins locaux
+           let url = URL(string: thumbnailUrl) {
+            return url
         }
         
-        if !thumbnailUrl.hasPrefix("images/"), let url = URL(string: thumbnailUrl) {
+        // Fallback vers l'URL principale
+        if let urlString = item.url, let url = URL(string: urlString) {
             return url
         }
         

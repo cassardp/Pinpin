@@ -15,6 +15,7 @@ final class ContentItem {
     var itemDescription: String?
     var url: String?
     var thumbnailUrl: String?
+    var imageData: Data? // Nouvelle propriété pour stocker l'image directement
     var metadata: Data?
     var isHidden: Bool = false
     var userId: UUID?
@@ -30,6 +31,7 @@ final class ContentItem {
         itemDescription: String? = nil,
         url: String? = nil,
         thumbnailUrl: String? = nil,
+        imageData: Data? = nil,
         metadata: Data? = nil,
         isHidden: Bool = false,
         userId: UUID? = nil,
@@ -42,6 +44,7 @@ final class ContentItem {
         self.itemDescription = itemDescription
         self.url = url
         self.thumbnailUrl = thumbnailUrl
+        self.imageData = imageData
         self.metadata = metadata
         self.isHidden = isHidden
         self.userId = userId

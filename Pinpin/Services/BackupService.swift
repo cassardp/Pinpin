@@ -37,6 +37,7 @@ final class BackupService: ObservableObject {
         let url: String?
         let metadata: [String: String]
         let thumbnailUrl: String?
+        let hasImage: Bool // Indique si l'item a une image (fichier séparé)
         let isHidden: Bool
         let createdAt: Date?
         let updatedAt: Date?
@@ -110,6 +111,7 @@ final class BackupService: ObservableObject {
                 url: item.url,
                 metadata: meta,
                 thumbnailUrl: item.thumbnailUrl,
+                hasImage: item.imageData != nil, // Indiquer si l'item a une image
                 isHidden: item.isHidden,
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt
@@ -122,23 +124,26 @@ final class BackupService: ObservableObject {
         let jsonData = try encoder.encode(backup)
         try jsonData.write(to: jsonURL, options: .atomic)
         
-        // 3) Copier les images locales référencées (si existent)
-        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
-            for item in mappedItems {
-                // Utiliser uniquement thumbnailUrl (nouveau système simplifié)
-                if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
-                    let src = containerURL.appendingPathComponent(thumbnailUrl)
-                    if fm.fileExists(atPath: src.path) {
-                        let dst = workingDir.appendingPathComponent(thumbnailUrl)
-                        try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                        if fm.fileExists(atPath: dst.path) {
-                            try? fm.removeItem(at: dst)
-                        }
-                        try fm.copyItem(at: src, to: dst)
-                        print("[BackupService] Image copiée: \(thumbnailUrl)")
-                    }
-                }
+        // 3) Exporter les images SwiftData vers le dossier images/
+        let imagesDir = workingDir.appendingPathComponent("images", isDirectory: true)
+        try fm.createDirectory(at: imagesDir, withIntermediateDirectories: true)
+        
+        var exportedImageCount = 0
+        
+        for item in items {
+            if let imageData = item.imageData {
+                // Utiliser l'ID de l'item comme nom de fichier
+                let imageFileName = "\(item.id.uuidString).jpg"
+                let imageURL = imagesDir.appendingPathComponent(imageFileName)
+                
+                try imageData.write(to: imageURL)
+                exportedImageCount += 1
+                print("[BackupService] Image exportée: \(imageFileName)")
             }
+        }
+        
+        if exportedImageCount > 0 {
+            print("[BackupService] \(exportedImageCount) images exportées dans le dossier images/")
         }
         
         // 4) Retourner le dossier (le partage via Fichiers gère l'enregistrement du paquet)
@@ -177,65 +182,12 @@ final class BackupService: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         let backup = try decoder.decode(BackupFile.self, from: data)
         
-        // Copier tout le dossier images/ dans le container partagé
-        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") {
-            let imagesSourceDir = root.appendingPathComponent("images", isDirectory: true)
-            
-            if fm.fileExists(atPath: imagesSourceDir.path) {
-                print("[BackupService] Import des images depuis \(imagesSourceDir.path)")
-                
-                // Créer le dossier images dans le container si nécessaire
-                let imagesDestDir = containerURL.appendingPathComponent("images", isDirectory: true)
-                try fm.createDirectory(at: imagesDestDir, withIntermediateDirectories: true)
-                
-                // Énumérer tous les fichiers dans le dossier images/
-                if let enumerator = fm.enumerator(at: imagesSourceDir, includingPropertiesForKeys: [.isRegularFileKey]) {
-                    var importedCount = 0
-                    var skippedCount = 0
-                    
-                    for case let fileURL as URL in enumerator {
-                        // Vérifier que c'est un fichier (pas un dossier)
-                        let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey])
-                        guard resourceValues?.isRegularFile == true else { continue }
-                        
-                        // Calculer le chemin relatif depuis le dossier images/
-                        let relativePath = fileURL.path.replacingOccurrences(of: imagesSourceDir.path + "/", with: "")
-                        let destURL = imagesDestDir.appendingPathComponent(relativePath)
-                        
-                        // Créer les dossiers intermédiaires si nécessaire
-                        try fm.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-                        
-                        // Copier le fichier s'il n'existe pas déjà
-                        if fm.fileExists(atPath: destURL.path) {
-                            skippedCount += 1
-                        } else {
-                            try fm.copyItem(at: fileURL, to: destURL)
-                            importedCount += 1
-                            print("[BackupService] Image importée: \(relativePath)")
-                        }
-                    }
-                    
-                    print("[BackupService] Images importées: \(importedCount), ignorées: \(skippedCount)")
-                }
-            } else {
-                print("[BackupService] Aucun dossier images/ trouvé dans la sauvegarde")
-                
-                // Fallback: copier les images individuellement référencées dans les items
-                for item in backup.items {
-                    if let thumbnailUrl = item.thumbnailUrl, !thumbnailUrl.isEmpty, thumbnailUrl.hasPrefix("images/") {
-                        let src = root.appendingPathComponent(thumbnailUrl)
-                        let dst = containerURL.appendingPathComponent(thumbnailUrl)
-                        // créer le dossier si nécessaire
-                        try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                        if fm.fileExists(atPath: dst.path) {
-                            // ne pas écraser si déjà présent
-                        } else if fm.fileExists(atPath: src.path) {
-                            try fm.copyItem(at: src, to: dst)
-                            print("[BackupService] Image individuelle importée: \(thumbnailUrl)")
-                        }
-                    }
-                }
-            }
+        // Importer les images depuis le dossier images/
+        let imagesDir = root.appendingPathComponent("images", isDirectory: true)
+        var importedImageCount = 0
+        
+        if fm.fileExists(atPath: imagesDir.path) {
+            print("[BackupService] Import des images depuis le dossier images/")
         }
         
         // Import des catégories d'abord
@@ -318,6 +270,29 @@ final class BackupService: ObservableObject {
                 }
                 
                 item.thumbnailUrl = bi.thumbnailUrl
+                
+                // Restaurer l'image depuis le fichier si elle existe
+                if bi.hasImage {
+                    let imageFileName = "\(bi.id.uuidString).jpg"
+                    let imageURL = imagesDir.appendingPathComponent(imageFileName)
+                    
+                    if fm.fileExists(atPath: imageURL.path) {
+                        do {
+                            item.imageData = try Data(contentsOf: imageURL)
+                            importedImageCount += 1
+                            print("[BackupService] Image importée: \(imageFileName)")
+                        } catch {
+                            print("[BackupService] Erreur import image \(imageFileName): \(error)")
+                            item.imageData = nil
+                        }
+                    } else {
+                        print("[BackupService] Image manquante: \(imageFileName)")
+                        item.imageData = nil
+                    }
+                } else {
+                    item.imageData = nil
+                }
+                
                 item.isHidden = bi.isHidden
                 item.createdAt = bi.createdAt ?? item.createdAt
                 item.updatedAt = Date()
@@ -325,6 +300,11 @@ final class BackupService: ObservableObject {
                 print("Erreur lors de l'import de l'item \(bi.id): \(error)")
             }
         }
+        
+        if importedImageCount > 0 {
+            print("[BackupService] Import terminé: \(importedImageCount) images importées")
+        }
+        
         dataService.save()
     }
 }

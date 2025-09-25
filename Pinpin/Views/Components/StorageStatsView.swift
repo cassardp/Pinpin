@@ -29,7 +29,7 @@ struct StorageStatsView: View {
                 // Affichage des stats de stockage pour tous les cas
                 let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
                 let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-                Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(SharedImageService.shared.formatFileSize(totalSize).uppercased()) • V\(version) (\(build))")
+                Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(formatFileSize(totalSize).uppercased()) • V\(version) (\(build))")
                     .font(.footnote)
                     .foregroundColor(Color(UIColor.systemGray3))
             }
@@ -57,19 +57,40 @@ struct StorageStatsView: View {
     
     private func loadStorageStats() {
         Task {
-            // Compter tous les items filtrés (pas seulement ceux avec images)
+            // Compter tous les items filtrés
             let totalItemCount = filteredItems.count
             
-            // Calculer la taille des images uniquement
-            let imageStats: (imageCount: Int, totalSize: Int64) =
-                SharedImageService.shared.getStorageStatsForItems(filteredItems)
+            // Calculer la taille des images SwiftData
+            var imageCount = 0
+            var totalSize: Int64 = 0
+            
+            for item in filteredItems {
+                if let imageData = item.imageData {
+                    imageCount += 1
+                    totalSize += Int64(imageData.count)
+                }
+            }
             
             await MainActor.run {
-                self.imageCount = totalItemCount  // Tous les items, pas seulement ceux avec images
-                self.totalSize = imageStats.totalSize  // Taille des images seulement
+                self.imageCount = totalItemCount  // Tous les items
+                self.totalSize = totalSize  // Taille totale des images SwiftData
                 self.isLoading = false
+                
+                // Debug info
+                if imageCount > 0 {
+                    print("📊 Stats: \(imageCount) images SwiftData (\(formatFileSize(totalSize)))")
+                }
             }
         }
+    }
+    
+    private func formatFileSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        formatter.countStyle = .file
+        
+        let formattedString = formatter.string(fromByteCount: bytes)
+        return formattedString.replacingOccurrences(of: ",", with: ".")
     }
     
     /// Méthode publique pour recharger les statistiques

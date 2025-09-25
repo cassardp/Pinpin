@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import UIKit
 
 @MainActor
 final class DataService: ObservableObject {
@@ -133,6 +134,26 @@ final class DataService: ObservableObject {
         metadata: [String: String] = [:],
         thumbnailUrl: String? = nil
     ) {
+        saveContentItemWithImageData(
+            categoryName: categoryName,
+            title: title,
+            description: description,
+            url: url,
+            metadata: metadata,
+            thumbnailUrl: thumbnailUrl,
+            imageData: nil
+        )
+    }
+    
+    func saveContentItemWithImageData(
+        categoryName: String,
+        title: String,
+        description: String? = nil,
+        url: String? = nil,
+        metadata: [String: String] = [:],
+        thumbnailUrl: String? = nil,
+        imageData: Data? = nil
+    ) {
         // Trouver ou créer la catégorie
         let category = findOrCreateCategory(name: categoryName)
         
@@ -151,6 +172,7 @@ final class DataService: ObservableObject {
             itemDescription: description,
             url: url,
             thumbnailUrl: thumbnailUrl,
+            imageData: imageData,
             metadata: metadataData,
             category: category
         )
@@ -460,6 +482,7 @@ final class DataService: ObservableObject {
             print("Erreur lors du nettoyage de la catégorie Misc: \(error)")
         }
     }
+    
     
     // MARK: - Save Context
     func save() {

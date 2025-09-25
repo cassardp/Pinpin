@@ -52,20 +52,25 @@ class SharedContentService: ObservableObject {
         let url = contentData["url"] as? String
         let description = contentData["description"] as? String
         let thumbnailUrl = contentData["thumbnailUrl"] as? String
+        let imageData = contentData["imageData"] as? Data
         let metadata = contentData["metadata"] as? [String: String] ?? [:]
         
         // Sauvegarder directement avec SwiftData
         await MainActor.run {
-            dataService.saveContentItem(
+            dataService.saveContentItemWithImageData(
                 categoryName: category,
                 title: title,
                 description: description,
                 url: url,
                 metadata: metadata,
-                thumbnailUrl: thumbnailUrl
+                thumbnailUrl: thumbnailUrl,
+                imageData: imageData
             )
             
             print("[SharedContentService] Contenu '\(category)' sauvegardé avec succès")
+            if imageData != nil {
+                print("[SharedContentService] Image sauvegardée directement en SwiftData (\(imageData!.count) bytes)")
+            }
         }
     }
     
