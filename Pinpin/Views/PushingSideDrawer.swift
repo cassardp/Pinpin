@@ -11,13 +11,14 @@ import SwiftUI
 struct PushingSideDrawer<Content: View, Drawer: View>: View {
     @Binding var isOpen: Bool
     @Binding var swipeProgress: CGFloat
+    @Binding var isDragging: Bool // Exposer l'état de dragging
     var width: CGFloat = 320
     var isSwipeDisabled: Bool = false // Nouveau paramètre pour désactiver le swipe
     @ViewBuilder var content: () -> Content
     @ViewBuilder var drawer: () -> Drawer
 
     @State private var dragOffset: CGFloat = 0
-    @State private var isDragging: Bool = false
+    @State private var internalIsDragging: Bool = false
     
     // Stricter horizontal swipe detection to avoid diagonal swipes
     private let horizontalBiasRatio: CGFloat = 3.0         // |dx| must be >= ratio * |dy|
@@ -36,14 +37,14 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                 // Le contenu est poussé vers la droite
                 content()
                     .offset(x: totalOffset)
-                    .disabled(isOpen || isDragging)
+                    .disabled(isOpen || internalIsDragging)
 
                 // Le tiroir, ancré à gauche
                 HStack {
                     drawer()
                         .frame(width: width)
                         .offset(x: totalOffset - width)
-                        .allowsHitTesting(!isDragging)
+                        .allowsHitTesting(!internalIsDragging)
                     Spacer(minLength: 0)
                 }
 
@@ -84,7 +85,8 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                             let isMostlyHorizontal = absDx >= horizontalBiasRatio * absDy
                             let verticalUnderLimit = absDy <= maxVerticalDeviation
 
-                            if (isDragging || (hasHorizontalIntent && isMostlyHorizontal && verticalUnderLimit)) {
+                            if (internalIsDragging || (hasHorizontalIntent && isMostlyHorizontal && verticalUnderLimit)) {
+                                internalIsDragging = true
                                 isDragging = true
 
                                 if isOpen {
@@ -108,10 +110,11 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         let dx = value.translation.width
                         
                         defer { 
+                            internalIsDragging = false
                             isDragging = false
                         }
                         
-                        guard isDragging else {
+                        guard internalIsDragging else {
                             dragOffset = 0
                             return
                         }

@@ -20,6 +20,7 @@ struct FilterMenuView: View {
     private let dataService = DataService.shared
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
+    var isMenuDragging: Bool
     var onOpenAbout: () -> Void
     var onOpenSettings: () -> Void
     @State private var isEditing = false
@@ -119,6 +120,7 @@ struct FilterMenuView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
+            .scrollDisabled(isMenuDragging) // Désactiver le scroll pendant le swipe
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentMargins(.top, 60)
             .contentMargins(.bottom, 220)
@@ -421,6 +423,7 @@ struct RenameCategorySheet: View {
     FilterMenuView(
         selectedContentType: .constant(nil),
         isMenuOpen: .constant(false),
+        isMenuDragging: false,
         onOpenAbout: {},
         onOpenSettings: {}
     )

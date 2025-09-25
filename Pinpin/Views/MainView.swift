@@ -17,6 +17,7 @@ struct MainView: View {
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
+    @State private var isMenuDragging = false
     @State private var scrollProgress: CGFloat = 0
     @State private var isSettingsOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
@@ -129,6 +130,7 @@ struct MainView: View {
         PushingSideDrawer(
             isOpen: $isMenuOpen,
             swipeProgress: $menuSwipeProgress,
+            isDragging: $isMenuDragging,
             width: UIScreen.main.bounds.width * 0.8,
             isSwipeDisabled: showSearchBar // Désactiver le swipe en mode recherche
         ) {
@@ -293,6 +295,7 @@ struct MainView: View {
             FilterMenuView(
                 selectedContentType: $selectedContentType,
                 isMenuOpen: $isMenuOpen,
+                isMenuDragging: isMenuDragging,
                 onOpenAbout: { },
                 onOpenSettings: {
                     isSettingsOpen = true
