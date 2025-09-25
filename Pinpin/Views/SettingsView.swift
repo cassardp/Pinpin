@@ -11,6 +11,7 @@ import UIKit
 
 struct SettingsView: View {
     @StateObject private var userPreferences = UserPreferences.shared
+    @StateObject private var dataService = DataService.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @State private var showingBackupManagement: Bool = false
@@ -53,6 +54,47 @@ struct SettingsView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 40)
 
+                // iCloud Sync Status Section
+                VStack(spacing: 0) {
+                    // Section Header
+                    HStack {
+                        Text("iCloud Sync")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 30)
+                    .padding(.bottom, 15)
+                    
+                    // Sync Status Row
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Image(systemName: getSyncIcon())
+                                    .foregroundColor(getSyncColor())
+                                    .font(.system(size: 16))
+                                
+                                Text("Sync Status")
+                                    .font(.body)
+                                    .fontWeight(.regular)
+                            }
+                            
+                            Text(dataService.getiCloudSyncStatus())
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        if dataService.isSyncing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                }
 
                 Spacer(minLength: 0)
                 
@@ -73,6 +115,28 @@ struct SettingsView: View {
                 })
                     .presentationDetents([.fraction(0.5)])
             }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func getSyncIcon() -> String {
+        if !dataService.isiCloudAvailable {
+            return "exclamationmark.triangle.fill"
+        } else if dataService.isiCloudSyncUpToDate() {
+            return "checkmark.circle.fill"
+        } else {
+            return "arrow.triangle.2.circlepath"
+        }
+    }
+    
+    private func getSyncColor() -> Color {
+        if !dataService.isiCloudAvailable {
+            return .red
+        } else if dataService.isiCloudSyncUpToDate() {
+            return .green
+        } else {
+            return .orange
         }
     }
 }

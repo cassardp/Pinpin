@@ -122,7 +122,7 @@ struct CategoryCard: View {
     let isSelected: Bool
     let action: () -> Void
     
-    @State private var firstImageURL: String? = nil
+    @State private var firstImageData: Data? = nil
     @State private var itemCount: Int = 0
     private let dataService = DataService.shared
     
@@ -142,44 +142,17 @@ struct CategoryCard: View {
     
     var body: some View {
         HStack(spacing: 32) {
-            // Image de prévisualisation ou fallback
-                if let imageURL = firstImageURL {
-                    // Les images locales (images/) ne sont plus supportées, utiliser seulement les URLs distantes
-                    if !imageURL.hasPrefix("images/"), let url = URL(string: imageURL) {
-                        // URL web - utiliser AsyncImage
-                        AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 60, height: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        case .failure(_):
-                            // Erreur de chargement
-                            fallbackIconView
-                        case .empty:
-                            // Placeholder pendant le chargement
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.primary.opacity(0.1))
-                                    .frame(width: 60, height: 60)
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            }
-                        @unknown default:
-                            // Fallback
-                            fallbackIconView
-                        }
-                        }
-                    } else {
-                        // URL invalide
-                        fallbackIconView
-                    }
-                } else {
-                    // Fallback : première lettre si pas d'image
-                    fallbackIconView
-                }
+            // Image de prévisualisation depuis SwiftData ou fallback
+            if let imageData = firstImageData, let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                // Fallback : première lettre si pas d'image
+                fallbackIconView
+            }
                 
                 // Titre dans le style FilterMenuView
                 VStack(alignment: .leading, spacing: 2) {
@@ -215,7 +188,7 @@ struct CategoryCard: View {
         .scaleEffect(isSelected ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
         .onAppear {
-            loadFirstImage()
+            loadFirstImageData()
             loadCategoryCount()
         }
     }
@@ -225,9 +198,9 @@ struct CategoryCard: View {
         itemCount = dataService.countItems(for: title)
     }
     
-    private func loadFirstImage() {
-        // Récupérer la première image de la catégorie
-        firstImageURL = dataService.fetchFirstImageURL(for: title)
+    private func loadFirstImageData() {
+        // Récupérer la première image de la catégorie depuis SwiftData
+        firstImageData = dataService.fetchFirstImageData(for: title)
     }
 }
 

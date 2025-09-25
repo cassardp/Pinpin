@@ -145,9 +145,14 @@ final class DataService {
     }
 
     func fetchFirstImageURL(for categoryName: String) -> String? {
+        // Cette méthode est obsolète, utiliser fetchFirstImageData à la place
+        return nil
+    }
+    
+    func fetchFirstImageData(for categoryName: String) -> Data? {
         var descriptor = FetchDescriptor<ContentItem>(
             predicate: #Predicate { item in
-                item.category?.name == categoryName && item.thumbnailUrl != nil
+                item.category?.name == categoryName && item.imageData != nil
             },
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
@@ -155,7 +160,7 @@ final class DataService {
         
         do {
             let items = try context.fetch(descriptor)
-            return uniqueItems(items).first?.thumbnailUrl
+            return uniqueItems(items).first?.imageData
         } catch {
             print("Erreur lors de la récupération de la première image: \(error)")
             return nil

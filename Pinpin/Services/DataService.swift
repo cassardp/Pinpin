@@ -9,6 +9,8 @@ import Foundation
 import SwiftData
 import SwiftUI
 import UIKit
+import CoreData
+import Combine
 
 @MainActor
 final class DataService: ObservableObject {
@@ -64,11 +66,19 @@ final class DataService: ObservableObject {
     @Published var errorMessage: String?
     @Published var hasMoreItems = true
     
+    // MARK: - iCloud Sync Status
+    @Published var isSyncing = false
+    @Published var lastSyncDate: Date?
+    @Published var isiCloudAvailable = false
+    private var syncCancellables = Set<AnyCancellable>()
+    
     private let itemsPerPage = 50
     private var currentLimit = 50
     
     private init() {
         createDefaultCategoriesIfNeeded()
+        checkiCloudAvailability()
+        setupiCloudSyncMonitoring()
     }
     
     // MARK: - Content Items Management
@@ -483,6 +493,80 @@ final class DataService: ObservableObject {
         }
     }
     
+    
+    // MARK: - iCloud Sync Monitoring
+    
+    /// Vérifie la disponibilité d'iCloud
+    private func checkiCloudAvailability() {
+        Task {
+            do {
+                // Vérifier si iCloud est disponible via FileManager
+                if let _ = FileManager.default.ubiquityIdentityToken {
+                    await MainActor.run {
+                        self.isiCloudAvailable = true
+                    }
+                } else {
+                    await MainActor.run {
+                        self.isiCloudAvailable = false
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Configure la surveillance de la synchronisation iCloud
+    private func setupiCloudSyncMonitoring() {
+        NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
+            .sink { [weak self] notification in
+                guard let self = self else { return }
+                
+                if let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event {
+                    
+                    let isFinished = event.endDate != nil
+                    
+                    switch (event.type, isFinished) {
+                    case (.import, false), (.export, false):
+                        // Début d'une synchronisation (import ou export)
+                        Task { @MainActor in
+                            self.isSyncing = true
+                        }
+                        
+                    case (.import, true), (.export, true):
+                        // Fin d'une synchronisation
+                        Task { @MainActor in
+                            self.isSyncing = false
+                            self.lastSyncDate = Date()
+                        }
+                        
+                    default:
+                        break
+                    }
+                }
+            }
+            .store(in: &syncCancellables)
+    }
+    
+    /// Vérifie si la synchronisation iCloud est à jour
+    /// - Returns: true si la sync est OK, false si en cours ou problème
+    func isiCloudSyncUpToDate() -> Bool {
+        return !isSyncing
+    }
+    
+    /// Obtient le statut de synchronisation iCloud sous forme de texte
+    /// - Returns: Description du statut de sync
+    func getiCloudSyncStatus() -> String {
+        if !isiCloudAvailable {
+            return "iCloud not available"
+        } else if isSyncing {
+            return "Syncing..."
+        } else if let lastSync = lastSyncDate {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.locale = Locale(identifier: "en_US")
+            return "Last sync: \(formatter.localizedString(for: lastSync, relativeTo: Date()))"
+        } else {
+            return "Sync status unknown"
+        }
+    }
     
     // MARK: - Save Context
     func save() {
