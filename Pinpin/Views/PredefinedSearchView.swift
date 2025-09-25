@@ -216,7 +216,7 @@ struct PredefinedSearchView: View {
         var cleanDomain = domain.lowercased()
 
         // Enlever les préfixes communs
-        let prefixesToRemove = ["www.", "m.", "mobile.", "app.", "api.", "cdn.", "static.", "media.", "open."]
+        let prefixesToRemove = ["www.", "m.", "mobile.", "app.", "api.", "cdn.", "static.", "media.", "open.", "vm.", "share."]
         for prefix in prefixesToRemove {
             if cleanDomain.hasPrefix(prefix) {
                 cleanDomain = String(cleanDomain.dropFirst(prefix.count))
@@ -227,7 +227,7 @@ struct PredefinedSearchView: View {
         // Enlever les extensions courantes pour un affichage plus propre
         let extensionsToRemove = [
             ".com", ".fr", ".org", ".net", ".co", ".io", ".me", ".tv", ".be", ".de", ".uk", ".ca",
-            ".au",
+            ".au", ".eu",
         ]
         for ext in extensionsToRemove {
             if cleanDomain.hasSuffix(ext) {

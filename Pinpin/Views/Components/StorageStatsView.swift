@@ -75,11 +75,6 @@ struct StorageStatsView: View {
                 self.imageCount = totalItemCount  // Tous les items
                 self.totalSize = totalSize  // Taille totale des images SwiftData
                 self.isLoading = false
-                
-                // Debug info
-                if imageCount > 0 {
-                    print("📊 Stats: \(imageCount) images SwiftData (\(formatFileSize(totalSize)))")
-                }
             }
         }
     }

@@ -31,7 +31,7 @@ struct FilterMenuView: View {
     @State private var isShowingDeleteAlert = false
     @FocusState private var isTextFieldFocused: Bool
     
-    // Récupère toutes les catégories avec ordre personnalisé
+    // Récupère toutes les catégories avec ordre personnalisé et nettoyage anti-doublons
     private var availableTypes: [String] {
         // Filtrer les catégories "Misc" vides pour les cacher
         let visibleCategories = allCategories.filter { category in
@@ -43,10 +43,11 @@ struct FilterMenuView: View {
             return countForType(category.name) > 0
         }
         
-        let categoryNames = visibleCategories.map { $0.name }
+        // Nettoyer les doublons côté SwiftData (sécurité supplémentaire)
+        let uniqueCategories = Array(Set(visibleCategories.map { $0.name }))
         
-        // Appliquer l'ordre personnalisé
-        return categoryOrderService.orderedCategories(from: categoryNames)
+        // Appliquer l'ordre personnalisé avec nettoyage intégré
+        return categoryOrderService.orderedCategories(from: uniqueCategories)
     }
     
     // Compte les items par type
@@ -192,6 +193,13 @@ struct FilterMenuView: View {
             
         }
         .ignoresSafeArea(edges: .bottom)
+        .onAppear {
+            // Nettoyage préventif des doublons au démarrage
+            if categoryOrderService.hasDuplicates() {
+                print("⚠️ Doublons détectés dans FilterMenuView: \(categoryOrderService.getDuplicates())")
+                categoryOrderService.cleanupDuplicates()
+            }
+        }
         .onChange(of: isMenuOpen) { _, isOpen in
             guard !isOpen else { return }
             resetEditingState()
