@@ -73,6 +73,8 @@ struct MainView: View {
     
 
     @State private var selectedContentType: String? = nil
+    
+    // Animation pour les changements de catégorie (géré par .id() et .transition())
 
     // SwiftData Query
     @Query(sort: \ContentItem.createdAt, order: .reverse)
@@ -179,6 +181,8 @@ struct MainView: View {
                                 .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
                                 .animation(.linear(duration: 0.08), value: pinchScale)
                                 .allowsHitTesting(!isPinching)
+                                .transition(.opacity)
+                                .animation(.easeInOut(duration: 0.3), value: selectedContentType)
 
                                 if dataService.isLoadingMore {
                                     HStack {

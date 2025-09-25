@@ -29,6 +29,7 @@ struct FilterMenuView: View {
     @State private var isCreatingCategory = false
     @State private var categoryToDelete: Category?
     @State private var isShowingDeleteAlert = false
+    @FocusState private var isTextFieldFocused: Bool
     
     // Récupère toutes les catégories avec ordre personnalisé
     private var availableTypes: [String] {
@@ -65,12 +66,12 @@ struct FilterMenuView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
+        ZStack {
             // Background
             Color(UIColor.systemBackground)
                 .onTapGesture {
-                    // Perdre le focus du TextField
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    // Perdre le focus du TextField avec SwiftUI natif
+                    isTextFieldFocused = false
                 }
             
             // Liste centrée verticalement - solution simple
@@ -118,75 +119,76 @@ struct FilterMenuView: View {
             .scrollContentBackground(.hidden)
             .scrollIndicators(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentMargins(.top, 99)
-            .contentMargins(.bottom, 199)
+            .contentMargins(.top, 60)
+            .contentMargins(.bottom, 220)
             .animation(.easeInOut, value: isEditing)
             }
             
-            // Menu ellipsis en bas à gauche
-            
-            
-                    HStack {
-                        if isEditing {
-                            // Mode édition : bouton checkmark simple
+            // Menu ellipsis en bas à droite
+            VStack {
+                Spacer()
+                
+                HStack {
+                    Spacer()
+                    
+                    if isEditing {
+                        // Mode édition : bouton checkmark simple
+                        Button {
+                            hapticFeedback()
+                            toggleEditing()
+                        } label: {
+                            Image(systemName: "checkmark")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                )
+                        }
+                        .padding(.trailing, 16)
+                    } else {
+                        // Mode normal : menu ellipsis
+                        Menu {
+                            Button {
+                                hapticFeedback()
+                                onOpenSettings()
+                            } label: {
+                                Label("Settings", systemImage: "gearshape")
+                            }
+                            
+                            Divider()
+                            
                             Button {
                                 hapticFeedback()
                                 toggleEditing()
                             } label: {
-                                Image(systemName: "checkmark")
-                                    .font(.title2)
-                                    .foregroundColor(.primary)
-                                    .frame(width: 44, height: 44)
-                                    .background(
-                                        Circle()
-                                            .fill(.ultraThinMaterial)
-                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                    )
+                                Label("Edit category", systemImage: "pencil")
                             }
-                            .padding(.leading, 16)
-                        } else {
-                            // Mode normal : menu ellipsis
-                            Menu {
-                                Button {
-                                    hapticFeedback()
-                                    onOpenSettings()
-                                } label: {
-                                    Label("Settings", systemImage: "gearshape")
-                                }
-                                
-                                Divider()
-                                
-                                Button {
-                                    hapticFeedback()
-                                    toggleEditing()
-                                } label: {
-                                    Label("Edit", systemImage: "pencil")
-                                }
-                                
-                                Button {
-                                    hapticFeedback()
-                                    prepareCreateCategory()
-                                } label: {
-                                    Label("Add", systemImage: "plus")
-                                }
+                            
+                            Button {
+                                hapticFeedback()
+                                prepareCreateCategory()
                             } label: {
-                                Image(systemName: "ellipsis")
-                                    .font(.title2)
-                                    .foregroundColor(.primary)
-                                    .frame(width: 44, height: 44)
-                                    .background(
-                                        Circle()
-                                            .fill(.ultraThinMaterial)
-                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                    )
+                                Label("Add category", systemImage: "plus")
                             }
-                            .padding(.leading, 16)
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                )
                         }
-                        
-                        Spacer()
+                        .padding(.trailing, 16)
+                    }
                 }
                 .padding(.bottom, 48)
-                .padding(.leading, 16)
+            }
             
         }
         .ignoresSafeArea(edges: .bottom)
