@@ -56,62 +56,35 @@ class ShareViewController: UIViewController, ObservableObject {
             return
         }
         
-        // Traiter le premier attachment pertinent
-        for attachment in attachments {
-            // Priorité 1: URLs
-            if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-                attachment.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] (item, error) in
-                    if let url = item as? URL {
-                        DispatchQueue.main.async {
-                            self?.handleURL(url)
-                        }
-                    } else {
-                        self?.completeRequest()
-                    }
-                }
-                return
-            }
+        if loadItem(from: attachments, type: .url, transform: { $0 as? URL }, handler: { [weak self] url in
+            self?.handleURL(url)
+        }) {
+            return
         }
         
-        // Priorité 2: Texte
-        for attachment in attachments {
-            if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
-                attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { [weak self] (item, error) in
-                    if let text = item as? String {
-                        DispatchQueue.main.async {
-                            self?.handleText(text)
-                        }
-                    } else {
-                        self?.completeRequest()
-                    }
-                }
-                return
-            }
+        if loadItem(from: attachments, type: .plainText, transform: { $0 as? String }, handler: { [weak self] text in
+            self?.handleText(text)
+        }) {
+            return
         }
         
-        // Priorité 3: Images
-        for attachment in attachments {
-            if attachment.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                attachment.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { [weak self] (item, error) in
-                    if let imageURL = item as? URL {
-                        DispatchQueue.main.async {
-                            self?.handleImageURL(imageURL)
-                        }
-                    } else {
-                        self?.completeRequest()
-                    }
-                }
-                return
-            }
+        if loadItem(from: attachments, type: .image, transform: { $0 as? URL }, handler: { [weak self] imageURL in
+            self?.handleImageURL(imageURL)
+        }) {
+            return
         }
         
         completeRequest()
     }
     
     private func handleURL(_ url: URL) {
+        let scopedAccess = beginSecurityScopedAccessIfNeeded(for: url)
         // Utiliser LinkPresentation pour obtenir les métadonnées de base
         let metadataProvider = LPMetadataProvider()
         metadataProvider.startFetchingMetadata(for: url) { [weak self] (metadata, error) in
+            defer {
+                self?.endSecurityScopedAccessIfNeeded(for: url, started: scopedAccess)
+            }
             var title = url.absoluteString
             let description: String? = nil
             
@@ -148,9 +121,13 @@ class ShareViewController: UIViewController, ObservableObject {
     }
     
     private func handleImageURL(_ imageURL: URL) {
+        let scopedAccess = beginSecurityScopedAccessIfNeeded(for: imageURL)
         // Utiliser LinkPresentation même pour les images (comme dans l'ancienne version)
         let metadataProvider = LPMetadataProvider()
         metadataProvider.startFetchingMetadata(for: imageURL) { [weak self] (metadata, error) in
+            defer {
+                self?.endSecurityScopedAccessIfNeeded(for: imageURL, started: scopedAccess)
+            }
             var finalTitle = imageURL.lastPathComponent
             let finalDescription: String? = nil
             
@@ -192,24 +169,7 @@ class ShareViewController: UIViewController, ObservableObject {
                 self?.completeRequest()
             }
         )
-        
-        // Intégrer directement dans le ShareViewController au lieu d'une sheet
-        let hostingController = UIHostingController(rootView: categoryModal)
-        
-        // Ajouter comme enfant du ShareViewController
-        addChild(hostingController)
-        view.addSubview(hostingController.view)
-        
-        // Contraintes pour remplir toute la vue
-        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-        
-        hostingController.didMove(toParent: self)
+        embedCategorySelectionView(categoryModal)
     }
     
     private func updateContentAfterProcessing(title: String, url: String?, description: String?, imageData: Data?) {
@@ -271,7 +231,6 @@ class ShareViewController: UIViewController, ObservableObject {
         pendingContents.append(sharedContent)
         sharedDefaults.set(pendingContents, forKey: "pendingSharedContents")
         sharedDefaults.set(true, forKey: "hasNewSharedContent")
-        sharedDefaults.synchronize()
         
         print("[ShareExtension] Contenu sauvegardé avec succès dans les UserDefaults partagés")
         
@@ -392,5 +351,52 @@ class ShareViewController: UIViewController, ObservableObject {
     
     private func completeRequest() {
         extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+    }
+}
+
+// MARK: - Helpers
+private extension ShareViewController {
+    func loadItem<T>(from attachments: [NSItemProvider], type: UTType, transform: @escaping (NSSecureCoding?) -> T?, handler: @escaping (T) -> Void) -> Bool {
+        for attachment in attachments {
+            if attachment.hasItemConformingToTypeIdentifier(type.identifier) {
+                attachment.loadItem(forTypeIdentifier: type.identifier, options: nil) { [weak self] item, _ in
+                    guard let value = transform(item) else {
+                        self?.completeRequest()
+                        return
+                    }
+                    DispatchQueue.main.async {
+                        handler(value)
+                    }
+                }
+                return true
+            }
+        }
+        return false
+    }
+    
+    func embedCategorySelectionView(_ view: CategorySelectionModalWrapper) {
+        let hostingController = UIHostingController(rootView: view)
+        addChild(hostingController)
+        self.view.addSubview(hostingController.view)
+        
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hostingController.view.topAnchor.constraint(equalTo: self.view.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
+            hostingController.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+            hostingController.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor)
+        ])
+        
+        hostingController.didMove(toParent: self)
+    }
+    
+    func beginSecurityScopedAccessIfNeeded(for url: URL) -> Bool {
+        guard url.isFileURL else { return false }
+        return url.startAccessingSecurityScopedResource()
+    }
+    
+    func endSecurityScopedAccessIfNeeded(for url: URL, started: Bool) {
+        guard started else { return }
+        url.stopAccessingSecurityScopedResource()
     }
 }

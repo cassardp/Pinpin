@@ -7,8 +7,6 @@
 
 import Foundation
 import SwiftData
-import SwiftUI
-import UIKit
 import CoreData
 import Combine
 
@@ -16,8 +14,11 @@ import Combine
 final class DataService: ObservableObject {
     static let shared = DataService()
     
-    private let groupID = "group.com.misericode.pinpin"
-    private let cloudKitContainerID = "iCloud.com.misericode.Pinpin"
+    private enum Constants {
+        static let groupID = "group.com.misericode.pinpin"
+        static let cloudKitContainerID = "iCloud.com.misericode.Pinpin"
+        static let miscCategoryNames = ["Misc", "Divers", "Général", "General", "Autres"]
+    }
     
     // MARK: - SwiftData Container
     private lazy var _container: ModelContainer = {
@@ -27,15 +28,15 @@ final class DataService: ObservableObject {
         // Configuration pour App Group avec CloudKit (synchronisation iCloud)
         let configuration = ModelConfiguration(
             schema: schema,
-            groupContainer: .identifier(groupID),
-            cloudKitDatabase: .private(cloudKitContainerID)
+            groupContainer: .identifier(Constants.groupID),
+            cloudKitDatabase: .private(Constants.cloudKitContainerID)
         )
         
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             return container
         } catch {
-            print("Erreur lors de la création du ModelContainer: \(error)")
+            logError("Erreur lors de la création du ModelContainer: \(error)")
             
             // Fallback vers un container en mémoire pour éviter le crash
             do {
@@ -44,7 +45,7 @@ final class DataService: ObservableObject {
                     isStoredInMemoryOnly: true
                 )
                 let fallbackContainer = try ModelContainer(for: schema, configurations: [fallbackConfig])
-                print("⚠️ Utilisation d'un container en mémoire comme fallback")
+                logError("⚠️ Utilisation d'un container en mémoire comme fallback")
                 return fallbackContainer
             } catch {
                 fatalError("Impossible de créer même un ModelContainer en mémoire: \(error)")
@@ -87,19 +88,15 @@ final class DataService: ObservableObject {
         errorMessage = nil
         currentLimit = itemsPerPage
         
-        let descriptor = FetchDescriptor<ContentItem>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
+        defer { isLoading = false }
         
         do {
-            let items = try context.fetch(descriptor)
-            let unique = uniqueItems(items)
-            checkForMoreItems(currentCount: unique.count)
-            isLoading = false
-            return Array(unique.prefix(currentLimit))
+            let items = try fetchContentItems(limit: currentLimit + 1)
+            updatePaginationState(totalFetched: items.count, limit: currentLimit)
+            return Array(items.prefix(currentLimit))
         } catch {
             errorMessage = "Erreur de chargement: \(error.localizedDescription)"
-            isLoading = false
+            logError("Erreur de chargement: \(error)")
             return []
         }
     }
@@ -110,25 +107,17 @@ final class DataService: ObservableObject {
         isLoadingMore = true
         currentLimit += itemsPerPage
         
-        let descriptor = FetchDescriptor<ContentItem>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
+        defer { isLoadingMore = false }
         
         do {
-            let items = try context.fetch(descriptor)
-            let unique = uniqueItems(items)
-            checkForMoreItems(currentCount: unique.count)
-            isLoadingMore = false
-            return Array(unique.prefix(currentLimit))
+            let items = try fetchContentItems(limit: currentLimit + 1)
+            updatePaginationState(totalFetched: items.count, limit: currentLimit)
+            return Array(items.prefix(currentLimit))
         } catch {
             errorMessage = "Erreur de chargement: \(error.localizedDescription)"
-            isLoadingMore = false
+            logError("Erreur lors du chargement supplémentaire: \(error)")
             return []
         }
-    }
-    
-    private func checkForMoreItems(currentCount: Int) {
-        hasMoreItems = currentCount > currentLimit
     }
     
     func addContentItem(_ item: ContentItem) {
@@ -167,23 +156,13 @@ final class DataService: ObservableObject {
         // Trouver ou créer la catégorie
         let category = findOrCreateCategory(name: categoryName)
         
-        // Convertir metadata en Data
-        var metadataData: Data? = nil
-        if !metadata.isEmpty {
-            do {
-                metadataData = try JSONSerialization.data(withJSONObject: metadata)
-            } catch {
-                print("Erreur lors de la sérialisation des métadonnées: \(error)")
-            }
-        }
-        
         let newItem = ContentItem(
             title: title,
             itemDescription: description,
             url: url,
             thumbnailUrl: thumbnailUrl,
             imageData: imageData,
-            metadata: metadataData,
+            metadata: encodeMetadata(metadata),
             category: category
         )
         
@@ -228,10 +207,9 @@ final class DataService: ObservableObject {
         )
         
         do {
-            let categories = try context.fetch(descriptor)
-            return categories
+            return try context.fetch(descriptor)
         } catch {
-            print("Erreur lors de la récupération des catégories: \(error)")
+            logError("Erreur lors de la récupération des catégories: \(error)")
             return []
         }
     }
@@ -283,18 +261,8 @@ final class DataService: ObservableObject {
     
     /// Trouve ou crée une catégorie par nom
     private func findOrCreateCategory(name: String) -> Category {
-        // Chercher la catégorie existante
-        let descriptor = FetchDescriptor<Category>(
-            predicate: #Predicate { $0.name == name }
-        )
-        
-        do {
-            let categories = try context.fetch(descriptor)
-            if let existingCategory = categories.first {
-                return existingCategory
-            }
-        } catch {
-            print("Erreur lors de la recherche de catégorie: \(error)")
+        if let existingCategory = fetchCategory(named: name) {
+            return existingCategory
         }
         
         // Créer une nouvelle catégorie si elle n'existe pas
@@ -315,8 +283,8 @@ final class DataService: ObservableObject {
     }
     
     private func prepareSharedContainerIfNeeded() {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) else {
-            print("[DataService] Impossible d'accéder au container partagé")
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Constants.groupID) else {
+            logError("Impossible d'accéder au container partagé")
             return
         }
         let libraryURL = containerURL.appendingPathComponent("Library", isDirectory: true)
@@ -324,7 +292,7 @@ final class DataService: ObservableObject {
         do {
             try FileManager.default.createDirectory(at: supportURL, withIntermediateDirectories: true)
         } catch {
-            print("[DataService] Erreur lors de la préparation du container partagé: \(error)")
+            logError("Erreur lors de la préparation du container partagé: \(error)")
         }
     }
     
@@ -345,7 +313,7 @@ final class DataService: ObservableObject {
             let items = try context.fetch(descriptor)
             return uniqueItems(items)
         } catch {
-            print("Erreur lors de la recherche: \(error)")
+            logError("Erreur lors de la recherche: \(error)")
             return []
         }
     }
@@ -362,7 +330,7 @@ final class DataService: ObservableObject {
             let items = try context.fetch(descriptor)
             return uniqueItems(items)
         } catch {
-            print("Erreur lors du filtrage: \(error)")
+            logError("Erreur lors du filtrage: \(error)")
             return []
         }
     }
@@ -380,7 +348,7 @@ final class DataService: ObservableObject {
             let items = try context.fetch(descriptor)
             return items.first?.thumbnailUrl
         } catch {
-            print("Erreur lors de la récupération de la première image: \(error)")
+            logError("Erreur lors de la récupération de la première image: \(error)")
             return nil
         }
     }
@@ -394,7 +362,7 @@ final class DataService: ObservableObject {
             let items = try context.fetch(descriptor)
             return uniqueItems(items).randomElement()
         } catch {
-            print("Erreur lors de la récupération d'un item aléatoire: \(error)")
+            logError("Erreur lors de la récupération d'un item aléatoire: \(error)")
             return nil
         }
     }
@@ -408,7 +376,7 @@ final class DataService: ObservableObject {
             let items = try context.fetch(descriptor)
             return uniqueItems(items).count
         } catch {
-            print("Erreur lors du comptage des items: \(error)")
+            logError("Erreur lors du comptage des items: \(error)")
             return 0
         }
     }
@@ -443,20 +411,9 @@ final class DataService: ObservableObject {
     /// Trouve ou crée la catégorie "Misc" automatique
     private func findOrCreateMiscCategory() -> Category {
         // Chercher d'abord si l'utilisateur a créé une catégorie "Misc" manuellement
-        let possibleNames = ["Misc", "Divers", "Général", "General", "Autres"]
-        
-        for name in possibleNames {
-            let descriptor = FetchDescriptor<Category>(
-                predicate: #Predicate { $0.name == name }
-            )
-            
-            do {
-                let categories = try context.fetch(descriptor)
-                if let existingCategory = categories.first {
-                    return existingCategory
-                }
-            } catch {
-                print("Erreur lors de la recherche de catégorie Misc: \(error)")
+        for name in Constants.miscCategoryNames {
+            if let existingCategory = fetchCategory(named: name) {
+                return existingCategory
             }
         }
         
@@ -476,20 +433,21 @@ final class DataService: ObservableObject {
     
     /// Nettoie la catégorie "Misc" si elle est vide (pour la cacher)
     func cleanupEmptyMiscCategory() {
-        let descriptor = FetchDescriptor<Category>(
-            predicate: #Predicate { $0.name == "Misc" }
+        let miscCategories = uniqueCategories(
+            Constants.miscCategoryNames.compactMap { fetchCategory(named: $0) }
         )
         
-        do {
-            let miscCategories = try context.fetch(descriptor)
-            for miscCategory in miscCategories {
-                if (miscCategory.contentItems ?? []).isEmpty {
-                    context.delete(miscCategory)
-                }
-            }
+        guard !miscCategories.isEmpty else { return }
+        
+        var didDelete = false
+        
+        for miscCategory in miscCategories where (miscCategory.contentItems ?? []).isEmpty {
+            context.delete(miscCategory)
+            didDelete = true
+        }
+        
+        if didDelete {
             save()
-        } catch {
-            print("Erreur lors du nettoyage de la catégorie Misc: \(error)")
         }
     }
     
@@ -604,12 +562,12 @@ final class DataService: ObservableObject {
             }
             
             if cleanedCount > 0 {
-                try context.save()
-                print("[DataService] Nettoyage terminé: \(cleanedCount) items mis à jour")
+                save()
+                logError("Nettoyage terminé: \(cleanedCount) items mis à jour")
             }
             
         } catch {
-            print("[DataService] Erreur lors du nettoyage des URLs temporaires: \(error)")
+            logError("Erreur lors du nettoyage des URLs temporaires: \(error)")
         }
     }
     
@@ -618,8 +576,55 @@ final class DataService: ObservableObject {
         do {
             try context.save()
         } catch {
-            print("Erreur lors de la sauvegarde: \(error)")
+            logError("Erreur lors de la sauvegarde: \(error)")
             errorMessage = "Erreur de sauvegarde: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Private Helpers
+    private func fetchContentItems(limit: Int?) throws -> [ContentItem] {
+        var descriptor = FetchDescriptor<ContentItem>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        if let limit = limit {
+            descriptor.fetchLimit = limit
+        }
+        let items = try context.fetch(descriptor)
+        return uniqueItems(items)
+    }
+    
+    private func updatePaginationState(totalFetched: Int, limit: Int) {
+        hasMoreItems = totalFetched > limit
+    }
+    
+    private func encodeMetadata(_ metadata: [String: String]) -> Data? {
+        guard !metadata.isEmpty else { return nil }
+        do {
+            return try JSONSerialization.data(withJSONObject: metadata)
+        } catch {
+            logError("Erreur lors de la sérialisation des métadonnées: \(error)")
+            return nil
+        }
+    }
+    
+    private func fetchCategory(named name: String) -> Category? {
+        let descriptor = FetchDescriptor<Category>(
+            predicate: #Predicate { $0.name == name }
+        )
+        do {
+            return try context.fetch(descriptor).first
+        } catch {
+            logError("Erreur lors de la recherche de catégorie \(name): \(error)")
+            return nil
+        }
+    }
+    
+    private func uniqueCategories(_ categories: [Category]) -> [Category] {
+        var seen = Set<UUID>()
+        return categories.filter { seen.insert($0.id).inserted }
+    }
+    
+    private func logError(_ message: String) {
+        print("[DataService] \(message)")
     }
 }

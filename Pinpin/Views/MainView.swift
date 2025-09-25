@@ -210,37 +210,19 @@ struct MainView: View {
                             }
                         }
                         .padding(.horizontal, 10)
-                        .onChange(of: selectedContentType) {
-                            withTransaction(Transaction(animation: nil)) {
-                                proxy.scrollTo("top", anchor: .top)
-                            }
-                            // Réafficher la barre quand on change de catégorie
-                            scrollProgress = 0.0
+                        .onChange(of: selectedContentType) { _, _ in
+                            handleCategoryChange(using: proxy)
                         }
-                        .onChange(of: searchQuery) {
-                            if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                withTransaction(Transaction(animation: nil)) {
-                                    proxy.scrollTo("top", anchor: .top)
-                                }
-                            }
+                        .onChange(of: searchQuery) { _, newValue in
+                            handleSearchQueryChange(newValue, using: proxy)
                         }
-                        .onChange(of: isMenuOpen) {
-                            if isMenuOpen {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    showSearchBar = false
-                                }
-                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                            } else {
-                                // Restaurer la barre à la fermeture du menu
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    scrollProgress = 0.0
-                                }
-                            }
+                        .onChange(of: isMenuOpen) { _, newValue in
+                            handleMenuStateChange(isOpen: newValue)
                         }
                         .animation(nil, value: selectedContentType)
                     }
                     .scrollIndicators(.hidden)
-                    .refreshable { _ = dataService.loadContentItems() }
+                    .refreshable { refreshContent() }
                     .scrollDisabled(isMenuOpen || isSettingsOpen)
                     .highPriorityGesture(pinchGesture)
                     .simultaneousGesture(
@@ -272,7 +254,7 @@ struct MainView: View {
                     Color.black.opacity(0.001)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            dismissKeyboard()
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
                                 showSearchBar = false
                             }
@@ -307,31 +289,18 @@ struct MainView: View {
             showSearchBar = false
             
             Task {
-                if sharedContentService.hasNewSharedContent() {
-                    await sharedContentService.processPendingSharedContents()
-                }
+                await processSharedContentIfNeeded()
+                refreshContent()
             }
-            _ = dataService.loadContentItems()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             Task {
-                if sharedContentService.hasNewSharedContent() {
-                    await sharedContentService.processPendingSharedContents()
-                }
+                await processSharedContentIfNeeded()
             }
         }
         // Suivi hauteur clavier pour remonter la searchbar au-dessus
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-            guard let userInfo = notification.userInfo,
-                  let endFrame = (userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue,
-                  let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
-                return
-            }
-            let screenHeight = UIScreen.main.bounds.height
-            let newHeight = max(0, screenHeight - endFrame.origin.y)
-            withAnimation(.easeOut(duration: duration)) {
-                keyboardHeight = newHeight
-            }
+            handleKeyboardNotification(notification)
         }
         .sheet(isPresented: $isSettingsOpen) {
             SettingsView()
@@ -550,4 +519,61 @@ struct MainView: View {
 
 #Preview {
     MainView()
+}
+
+// MARK: - Helpers
+private extension MainView {
+    func handleCategoryChange(using proxy: ScrollViewProxy) {
+        withTransaction(Transaction(animation: nil)) {
+            proxy.scrollTo("top", anchor: .top)
+        }
+        scrollProgress = 0.0
+    }
+    
+    func handleSearchQueryChange(_ newValue: String, using proxy: ScrollViewProxy) {
+        if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            withTransaction(Transaction(animation: nil)) {
+                proxy.scrollTo("top", anchor: .top)
+            }
+        }
+    }
+    
+    func handleMenuStateChange(isOpen: Bool) {
+        if isOpen {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showSearchBar = false
+            }
+            dismissKeyboard()
+        } else {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                scrollProgress = 0.0
+            }
+        }
+    }
+    
+    func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+    
+    func handleKeyboardNotification(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let endFrame = (userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue,
+              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
+            return
+        }
+        let screenHeight = UIScreen.main.bounds.height
+        let newHeight = max(0, screenHeight - endFrame.origin.y)
+        withAnimation(.easeOut(duration: duration)) {
+            keyboardHeight = newHeight
+        }
+    }
+    
+    func refreshContent() {
+        _ = dataService.loadContentItems()
+    }
+    
+    func processSharedContentIfNeeded() async {
+        guard sharedContentService.hasNewSharedContent() else { return }
+        await sharedContentService.processPendingSharedContents()
+    }
 }
