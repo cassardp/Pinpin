@@ -40,10 +40,11 @@ struct CategoryListRow: View {
                         .transition(.move(edge: .leading).combined(with: .opacity))
                 }
 
-                Text(title)
+                Text(title.count > 16 ? String(title.prefix(13)) + "..." : title)
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(isEmpty ? .secondary : .primary)
+                    .lineLimit(1)
             }
             .padding(.vertical, -4)
             
