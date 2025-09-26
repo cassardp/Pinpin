@@ -34,7 +34,6 @@ final class DataService: ObservableObject {
         
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
-            logInfo("✅ ModelContainer créé avec succès (App Group + CloudKit)")
             return container
         } catch {
             logError("Erreur lors de la création du ModelContainer: \(error)")

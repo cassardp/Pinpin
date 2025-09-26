@@ -35,7 +35,6 @@ final class NotificationContentService: ObservableObject {
     
     init(dataService: DataService) {
         self.dataService = dataService
-        print("[NotificationContentService] ✅ Service initialisé avec système de fichiers")
     }
     
     // MARK: - Gestion des contenus en attente
