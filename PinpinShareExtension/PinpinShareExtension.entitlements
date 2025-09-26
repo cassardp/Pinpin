@@ -18,7 +18,7 @@
 		<string>iCloud.com.misericode.Pinpin</string>
 	</array>
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
-	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
+	<string>$(TeamIdentifierPrefix)com.misericode.pinpin.ShareExtension</string>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.misericode.pinpin</string>
