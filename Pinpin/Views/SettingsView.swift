@@ -98,8 +98,8 @@ struct SettingsView: View {
                     showingBackupManagement = true
                 } label: {
                     Text("Manual Backup")
-                        .font(.footnote)
-                        .foregroundColor(.gray)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 .padding(.bottom, 20)
             }
