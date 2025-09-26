@@ -25,7 +25,7 @@ final class DataService: ObservableObject {
         prepareSharedContainerIfNeeded()
         let schema = Schema([ContentItem.self, Category.self])
         
-        // Configuration pour App Group avec CloudKit (synchronisation iCloud)
+        // Configuration avec App Group ET CloudKit (erreur CFPrefs résolue via fichiers)
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(Constants.groupID),
@@ -34,6 +34,7 @@ final class DataService: ObservableObject {
         
         do {
             let container = try ModelContainer(for: schema, configurations: [configuration])
+            logInfo("✅ ModelContainer créé avec succès (App Group + CloudKit)")
             return container
         } catch {
             logError("Erreur lors de la création du ModelContainer: \(error)")
@@ -625,6 +626,10 @@ final class DataService: ObservableObject {
     }
     
     private func logError(_ message: String) {
-        print("[DataService] \(message)")
+        print("[DataService] ❌ \(message)")
+    }
+    
+    private func logInfo(_ message: String) {
+        print("[DataService] ℹ️ \(message)")
     }
 }

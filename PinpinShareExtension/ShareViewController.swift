@@ -191,7 +191,6 @@ class ShareViewController: UIViewController, ObservableObject {
     private func saveContent(_ contentData: SharedContentData, to category: String) {
         // Si le traitement est encore en cours, attendre qu'il se termine
         if isProcessingContent {
-            print("[ShareExtension] Traitement en cours, attente de la fin...")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.saveContent(contentData, to: category)
             }
@@ -220,19 +219,8 @@ class ShareViewController: UIViewController, ObservableObject {
             sharedContent["metadata"] = ocrMetadata
         }
         
-        // Sauvegarder dans UserDefaults partagés
-        guard let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin") else {
-            print("[ShareExtension] Erreur: Impossible d'accéder aux UserDefaults partagés")
-            completeRequest()
-            return
-        }
-        
-        var pendingContents = sharedDefaults.array(forKey: "pendingSharedContents") as? [[String: Any]] ?? []
-        pendingContents.append(sharedContent)
-        sharedDefaults.set(pendingContents, forKey: "pendingSharedContents")
-        sharedDefaults.set(true, forKey: "hasNewSharedContent")
-        
-        print("[ShareExtension] Contenu sauvegardé avec succès dans les UserDefaults partagés")
+        // Sauvegarder avec le nouveau système de fichiers (évite l'erreur CFPrefs)
+        NotificationContentService.saveSharedContent(sharedContent)
         
         completeRequest()
     }

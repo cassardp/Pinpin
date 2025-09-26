@@ -132,7 +132,6 @@ struct CategorySelectionModalWrapper: View {
         
         // Si le traitement est en cours, attendre qu'il se termine
         if isProcessing {
-            print("[CategoryModal] Traitement en cours, attente...")
             // Vérifier toutes les 0.5 secondes si le traitement est terminé
             checkProcessingAndProceed(categoryName: categoryName)
         } else {

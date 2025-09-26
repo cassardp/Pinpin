@@ -12,7 +12,7 @@ import UIKit
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var dataService = DataService.shared
-    @StateObject private var sharedContentService: SharedContentService
+    @StateObject private var notificationContentService: NotificationContentService
     @StateObject private var userPreferences = UserPreferences.shared
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
@@ -123,7 +123,7 @@ struct MainView: View {
     init() {
         let dataService = DataService.shared
         self._dataService = StateObject(wrappedValue: dataService)
-        self._sharedContentService = StateObject(wrappedValue: SharedContentService(dataService: dataService))
+        self._notificationContentService = StateObject(wrappedValue: NotificationContentService(dataService: dataService))
     }
 
     var body: some View {
@@ -573,7 +573,7 @@ private extension MainView {
     }
     
     func processSharedContentIfNeeded() async {
-        guard sharedContentService.hasNewSharedContent() else { return }
-        await sharedContentService.processPendingSharedContents()
+        guard notificationContentService.hasNewSharedContent() else { return }
+        await notificationContentService.processPendingSharedContents()
     }
 }
