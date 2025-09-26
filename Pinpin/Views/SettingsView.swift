@@ -55,27 +55,23 @@ struct SettingsView: View {
                 .padding(.top, 40)
 
                 // iCloud Sync Status Section
+                
+                Spacer(minLength: 0)
+                
                 VStack(spacing: 0) {
-                    // Section Header
-                    HStack {
-                        Text("iCloud Sync")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 30)
-                    .padding(.bottom, 15)
                     
                     // Sync Status Row
                     HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .center, spacing: 4) {
                             HStack(spacing: 8) {
                                 Image(systemName: getSyncIcon())
                                     .foregroundColor(getSyncColor())
                                     .font(.system(size: 16))
                                 
-                                Text("Sync Status")
+                                Text("iCloud")
                                     .font(.body)
                                     .fontWeight(.regular)
                             }
@@ -96,13 +92,12 @@ struct SettingsView: View {
                     .padding(.vertical, 14)
                 }
 
-                Spacer(minLength: 0)
                 
                 // Lien vers la gestion des sauvegardes
                 Button {
                     showingBackupManagement = true
                 } label: {
-                    Text("Backup Management")
+                    Text("Manual Backup")
                         .font(.footnote)
                         .foregroundColor(.gray)
                 }
