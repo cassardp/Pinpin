@@ -123,45 +123,27 @@ struct FilterMenuView: View {
                 .scrollIndicators(.hidden)
                 .scrollDisabled(isMenuDragging) // Désactiver le scroll pendant le swipe
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentMargins(.top, 90)
+                .contentMargins(.top, 30)
                 .contentMargins(.bottom, 220)
                 .animation(.easeInOut, value: isEditing)
                 }
                 
-                // Dégradé de fondu en haut (ignore la safe area)
-                VStack {
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color(UIColor.systemBackground), location: 0.0),
-                            .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.3),
-                            .init(color: Color(UIColor.systemBackground).opacity(0.6), location: 0.6),
-                            .init(color: Color.clear, location: 1.0)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 180)
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea(.all, edges: .top)
-                    
-                    Spacer()
-                }
-                
-                // Dégradé de fondu en bas
+                // Dégradé de fondu en bas pour masquer les catégories sous le bouton
                 VStack {
                     Spacer()
                     
                     LinearGradient(
                         gradient: Gradient(stops: [
                             .init(color: Color.clear, location: 0.0),
-                            .init(color: Color(UIColor.systemBackground).opacity(0.6), location: 0.4),
-                            .init(color: Color(UIColor.systemBackground).opacity(0.9), location: 0.7),
-                            .init(color: Color(UIColor.systemBackground), location: 1.0)
+                            .init(color: Color(UIColor.systemBackground).opacity(0.5), location: 0.2),
+                            .init(color: Color(UIColor.systemBackground).opacity(0.8), location: 0.4),
+                            .init(color: Color(UIColor.systemBackground).opacity(0.95), location: 0.6),
+                            .init(color: Color(UIColor.systemBackground), location: 0.7)
                         ]),
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    .frame(height: 150)
+                    .frame(height: 180)
                     .allowsHitTesting(false)
                 }
             }
@@ -204,7 +186,7 @@ struct FilterMenuView: View {
                                 hapticFeedback()
                                 toggleEditing()
                             } label: {
-                                Label("Edit category", systemImage: "pencil")
+                                Label("Edit categories", systemImage: "pencil")
                             }
                             
                             Button {

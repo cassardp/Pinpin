@@ -105,8 +105,8 @@ class ShareViewController: UIViewController, ObservableObject {
                 }
             }
             
-            // Pas d'image, créer le contenu sans thumbnail
-            self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, imageData: nil)
+            // Pas d'image via LinkPresentation, essayer le fallback
+            self?.tryFallbackImageRetrieval(for: url, title: title, description: description)
         }
     }
     
@@ -309,6 +309,37 @@ class ShareViewController: UIViewController, ObservableObject {
         
         print("[ShareExtension] Image optimisée: \(compressedData.count) bytes")
         return compressedData
+    }
+    
+    // MARK: - Fallback Image Retrieval
+    
+    private func tryFallbackImageRetrieval(for url: URL, title: String, description: String?) {
+        print("[ShareExtension] Tentative de récupération d'image via fallback pour: \(url)")
+        
+        LinkMetadataFallbackService.shared.fetchImageFallback(from: url) { [weak self] image in
+            if let image = image {
+                print("[ShareExtension] Image récupérée via fallback")
+                // Optimiser l'image et lancer l'OCR
+                let optimizedData = self?.optimizeImageForSwiftData(image)
+                
+                self?.performOCROnImage(image) { ocrText in
+                    var metadata: [String: String] = [:]
+                    
+                    if let ocrText = ocrText, !ocrText.isEmpty {
+                        let cleanedText = OCRService.shared.cleanOCRText(ocrText)
+                        metadata["ocr_text"] = cleanedText
+                        print("[ShareExtension] OCR fallback extrait: \(cleanedText)")
+                    }
+                    
+                    self?.storeOCRMetadata(metadata)
+                    self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, imageData: optimizedData)
+                }
+            } else {
+                print("[ShareExtension] Échec du fallback, contenu sans image")
+                // Aucune image trouvée, créer le contenu sans thumbnail
+                self?.updateContentAfterProcessing(title: title, url: url.absoluteString, description: description, imageData: nil)
+            }
+        }
     }
     
     // MARK: - OCR Methods

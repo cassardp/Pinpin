@@ -7,7 +7,6 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import UIKit
 
 struct SettingsView: View {
     @StateObject private var userPreferences = UserPreferences.shared
@@ -94,22 +93,22 @@ struct SettingsView: View {
 
                 
                 // Lien vers la gestion des sauvegardes
-                Button {
-                    showingBackupManagement = true
-                } label: {
-                    Text("Manual Backup")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.bottom, 20)
+                // Button {
+                //     showingBackupManagement = true
+                // } label: {
+                //     Text("Manual Backup")
+                //         .font(.caption)
+                //         .foregroundColor(.secondary)
+                // }
+                // .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .sheet(isPresented: $showingBackupManagement) {
-                BackupManagementView(onOperationComplete: {
-                    showingBackupManagement = false
-                })
-                    .presentationDetents([.fraction(0.5)])
-            }
+            // .sheet(isPresented: $showingBackupManagement) {
+            //     BackupManagementView(onOperationComplete: {
+            //         showingBackupManagement = false
+            //     })
+            //         .presentationDetents([.fraction(0.5)])
+            // }
         }
     }
     
@@ -172,16 +171,6 @@ struct SettingsToggleRow: View {
     }
 }
 
-// Simple UIKit wrapper to present the iOS share sheet
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
 
 #Preview {
     SettingsView()
