@@ -2,7 +2,7 @@
 //  ContentCardView.swift
 //  Pinpin
 //
-//  Vue unifiée simple pour tous les types de contenu
+//  Vue principale qui délègue à des vues spécialisées selon le type de contenu
 //
 
 import SwiftUI
@@ -11,81 +11,81 @@ struct ContentCardView: View {
     let item: ContentItem
     
     var body: some View {
-        if isTikTokContent {
-            tiktokContentView
-        } else if shouldUseSquareFormat {
-            squareContentView
-        } else {
-            standardContentView
+        Group {
+            switch contentType {
+            case .textOnly:
+                TextOnlyContentView(item: item)
+            case .tiktok:
+                TikTokContentView(item: item)
+            case .square:
+                SquareContentView(item: item)
+            case .standard:
+                StandardContentView(item: item)
+            }
         }
     }
     
-    // MARK: - Content Views
+    // MARK: - Content Type Detection
     
-    private var tiktokContentView: some View {
-        VStack(alignment: .leading) {
-            Rectangle()
-                .aspectRatio(9/16, contentMode: .fit)
-                .overlay(
-                    SmartAsyncImage(item: item)
-                        .aspectRatio(contentMode: .fill)
-                        .clipped()
-                )
+    private enum ContentViewType {
+        case textOnly
+        case tiktok
+        case square
+        case standard
+    }
+    
+    private var contentType: ContentViewType {
+        // Vérifier d'abord si c'est du contenu texte uniquement
+        if hasNoVisualContent {
+            return .textOnly
         }
-    }
-    
-    private var squareContentView: some View {
-        VStack(alignment: .leading) {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3)) // Même couleur que le placeholder
-                .aspectRatio(1.0, contentMode: .fit)
-                .overlay(
-                    Group {
-                        if isAppleMusicContent {
-                            // Crop 20% pour Apple Music (garde l'image carrée)
-                            SmartAsyncImage(item: item)
-                                .aspectRatio(contentMode: .fill)
-                                .scaleEffect(1.50) // Zoom pour compenser le crop de 20%
-                                .clipped()
-                        } else {
-                            SmartAsyncImage(item: item)
-                                .aspectRatio(contentMode: .fill)
-                                .clipped()
-                        }
-                    }
-                )
-        }
-    }
-    
-    private var standardContentView: some View {
-        VStack(alignment: .leading) {
-            SmartAsyncImage(item: item)
-                .frame(maxWidth: .infinity)
-                .aspectRatio(contentMode: .fit)
-        }
-    }
-    
-    // MARK: - Computed Properties
-    
-    private var isTikTokContent: Bool {
-        guard let url = item.url else { return false }
-        return url.contains("tiktok.com") || url.contains("vm.tiktok.com")
-    }
-    
-    private var isAppleMusicContent: Bool {
-        guard let url = item.url else { return false }
-        return url.contains("music.apple.com")
-    }
-    
-    private var shouldUseSquareFormat: Bool {
-        guard let url = item.url else { return false }
         
-        // Format carré uniquement pour Apple Music et Apple Books
+        guard let url = item.url else { return .standard }
+        
+        // TikTok content
+        if url.contains("tiktok.com") || url.contains("vm.tiktok.com") {
+            return .tiktok
+        }
+        
+        // Square format content
         let isAppleMusic = url.contains("music.apple.com")
         let isAppleBooks = url.contains("books.apple.com") || 
                           url.contains("itunes.apple.com/book") || 
                           url.contains("itunes.apple.com/audiobook")
         
-        return isAppleMusic || isAppleBooks
+        if isAppleMusic || isAppleBooks {
+            return .square
+        }
+        
+        // Default to standard
+        return .standard
+    }
+    
+    /// Détermine si le contenu n'a pas d'éléments visuels (image/vidéo)
+    private var hasNoVisualContent: Bool {
+        // Pas d'image stockée localement
+        let hasNoImageData = item.imageData == nil
+        
+        // Pas d'URL d'image/thumbnail valide
+        let hasNoThumbnail = item.thumbnailUrl?.isEmpty != false || 
+                            item.thumbnailUrl?.hasPrefix("images/") == true ||
+                            item.thumbnailUrl?.hasPrefix("file:///var/mobile/Media/PhotoData/") == true
+        
+        // Pas d'URL web valide pour une image
+        let hasNoWebImage: Bool = {
+            guard let urlString = item.url,
+                  !urlString.hasPrefix("file:///"),
+                  let url = URL(string: urlString),
+                  url.scheme == "http" || url.scheme == "https" else {
+                return true
+            }
+            return false
+        }()
+        
+        // A du contenu textuel (titre ou description)
+        let hasTextContent = !item.title.isEmpty || 
+                           (item.itemDescription?.isEmpty == false)
+        
+        return hasNoImageData && hasNoThumbnail && hasNoWebImage && hasTextContent
     }
 }
