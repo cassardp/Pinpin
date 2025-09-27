@@ -173,8 +173,10 @@ struct MainView: View {
                                             if let index = filteredItems.firstIndex(of: item) {
                                                 buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
                                                     .overlay(selectionOverlay(for: item))
+                                                    .transition(.scale.combined(with: .opacity))
                                             } else {
                                                 buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
+                                                    .transition(.scale.combined(with: .opacity))
                                             }
                                         }
                                     }
@@ -345,7 +347,7 @@ struct MainView: View {
             }
             Button("Delete", role: .destructive) {
                 if let item = itemToDelete {
-                    withAnimation(.easeInOut(duration: 0.25)) {
+                    withAnimation(.spring(duration: 0.5, bounce: 0.3)) {
                         dataService.deleteContentItem(item)
                         storageStatsRefreshTrigger += 1
                     }
@@ -368,7 +370,7 @@ struct MainView: View {
 
     private func deleteSelectedItems() {
         let itemsToDelete = filteredItems.filter { selectedItems.contains($0.safeId) }
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(.spring(duration: 0.5, bounce: 0.3)) {
             for item in itemsToDelete {
                 dataService.deleteContentItem(item)
             }
