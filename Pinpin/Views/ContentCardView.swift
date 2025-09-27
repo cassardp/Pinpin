@@ -9,12 +9,13 @@ import SwiftUI
 
 struct ContentCardView: View {
     let item: ContentItem
+    let numberOfColumns: Int
     
     var body: some View {
         Group {
             switch contentType {
             case .textOnly:
-                TextOnlyContentView(item: item)
+                TextOnlyContentView(item: item, numberOfColumns: numberOfColumns)
             case .tiktok:
                 TikTokContentView(item: item)
             case .square:

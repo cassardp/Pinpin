@@ -155,7 +155,7 @@ struct ContentItemCard: View {
     // MARK: - Vue unifiée
     
     private var unifiedContentView: some View {
-        ContentCardView(item: item)
+        ContentCardView(item: item, numberOfColumns: numberOfColumns)
     }
     
     // Propriété calculée pour le meilleur titre disponible
