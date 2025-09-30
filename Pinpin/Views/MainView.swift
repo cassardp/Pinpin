@@ -495,7 +495,16 @@ private extension MainView {
     }
     
     func refreshContent() {
-        _ = dataService.loadContentItems()
+        Task {
+            // CloudKit synchronise automatiquement en arrière-plan
+            // Cela peut prendre 2-3 minutes pour les nouveaux items
+            
+            // Recharger les données locales immédiatement
+            await MainActor.run {
+                _ = dataService.loadContentItems()
+                print("[MainView] 🔄 Content refreshed (CloudKit sync is automatic)")
+            }
+        }
     }
     
     func processSharedContentIfNeeded() async {
