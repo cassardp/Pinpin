@@ -57,6 +57,15 @@ struct NotificationContentService {
             // Créer le flag de nouveau contenu
             try Data().write(to: flagURL)
             
+            // Envoyer une notification Darwin pour réveiller l'app principale
+            CFNotificationCenterPostNotification(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                CFNotificationName(rawValue: AppConstants.newContentNotificationName),
+                nil,
+                nil,
+                true
+            )
+            
         } catch {
             // Erreur silencieuse - le partage continuera de fonctionner
         }

@@ -17,6 +17,9 @@ enum AppConstants {
     static let pendingContentFileName = "pending_shared_contents.json"
     static let newContentFlagFileName = "has_new_content.flag"
     
+    // MARK: - Darwin Notifications
+    static let newContentNotificationName = "com.misericode.pinpin.newcontent" as CFString
+    
     // MARK: - Image Optimization
     static let maxImageSize: CGFloat = 1024
     static let maxImageBytes = 1_000_000
@@ -27,8 +30,8 @@ enum AppConstants {
     static let itemsPerPage = 50
     
     // MARK: - Category Names
-    static let miscCategoryNames = ["Misc", "Divers", "Général", "General", "Autres"]
-    static let defaultCategoryName = "Général"
+    static let miscCategoryNames = ["Misc"]
+    static let defaultCategoryName = "Misc"
     
     // MARK: - User Defaults Keys
     static let categoryOrderKey = "categoryOrder"

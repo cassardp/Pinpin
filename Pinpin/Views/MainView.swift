@@ -249,8 +249,20 @@ struct MainView: View {
                 await processSharedContentIfNeeded()
                 refreshContent()
             }
+            
+            // Écouter les notifications Darwin pour les nouveaux contenus
+            startListeningForSharedContent()
+        }
+        .onDisappear {
+            // Arrêter d'écouter les notifications
+            stopListeningForSharedContent()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            Task {
+                await processSharedContentIfNeeded()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("DarwinNewContent"))) { _ in
             Task {
                 await processSharedContentIfNeeded()
             }
@@ -510,5 +522,35 @@ private extension MainView {
     func processSharedContentIfNeeded() async {
         guard notificationContentService.hasNewSharedContent() else { return }
         await notificationContentService.processPendingSharedContents()
+    }
+    
+    // MARK: - Darwin Notifications
+    
+    func startListeningForSharedContent() {
+        // Utiliser DistributedNotificationCenter pour écouter les notifications Darwin
+        // via un wrapper NotificationCenter
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            { _, _, name, _, _ in
+                // Poster dans NotificationCenter local pour que SwiftUI puisse réagir
+                if let name = name {
+                    NotificationCenter.default.post(
+                        name: Notification.Name("DarwinNewContent"),
+                        object: nil
+                    )
+                }
+            },
+            AppConstants.newContentNotificationName,
+            nil,
+            .deliverImmediately
+        )
+    }
+    
+    func stopListeningForSharedContent() {
+        CFNotificationCenterRemoveEveryObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil
+        )
     }
 }

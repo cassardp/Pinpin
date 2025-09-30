@@ -16,32 +16,17 @@ class ShareViewController: NSViewController {
     override var nibName: NSNib.Name? {
         return nil
     }
-
-    // UI Elements
-    private var categoryPopup: NSPopUpButton!
-    private var titleLabel: NSTextField!
-    private var saveButton: NSButton!
-    private var cancelButton: NSButton!
-    
-    // Data
-    private var pendingURL: URL?
-    private var pendingTitle: String?
-    private var pendingImageData: Data?
-    private var availableCategories: [Category] = []
     
     override func loadView() {
-        // Créer une vue avec taille appropriée
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 180))
+        // Créer une vue minimale (invisible)
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 1, height: 1))
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        view.layer?.backgroundColor = NSColor.clear.cgColor
         
         self.view = view
         
-        // Créer l'interface
-        setupUI()
-        
-        // Charger les catégories et traiter l'URL
-        loadCategoriesAndProcessURL()
+        // Traiter l'URL directement (pas d'UI)
+        processURL()
     }
     
     private func dismissViewController() {
@@ -146,6 +131,20 @@ class ShareViewController: NSViewController {
     
     private func saveToSwiftData(url: URL, title: String, imageData: Data?) {
         Task { @MainActor in
+            // Vérifier si on a accès à l'App Group avant de continuer
+            guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") else {
+                print("❌ Accès App Group refusé ou non configuré")
+                closeImmediately()
+                return
+            }
+            
+            // Vérifier si on peut accéder au dossier
+            guard FileManager.default.isReadableFile(atPath: groupURL.path) else {
+                print("❌ Pas de permission de lecture sur l'App Group")
+                closeImmediately()
+                return
+            }
+            
             do {
                 let schema = Schema([ContentItem.self, Category.self])
                 
@@ -155,12 +154,13 @@ class ShareViewController: NSViewController {
                     groupContainer: .identifier("group.com.misericode.pinpin"),
                     cloudKitDatabase: .private("iCloud.com.misericode.Pinpin")
                 )
+                
                 let container = try ModelContainer(for: schema, configurations: [configuration])
                 let context = container.mainContext
                 
-                // Trouver ou créer la catégorie "Général"
+                // Trouver ou créer la catégorie "Misc"
                 let categoryDescriptor = FetchDescriptor<Category>(
-                    predicate: #Predicate { $0.name == "Général" }
+                    predicate: #Predicate { $0.name == "Misc" }
                 )
                 let categories = try context.fetch(categoryDescriptor)
                 let category: Category
@@ -168,7 +168,7 @@ class ShareViewController: NSViewController {
                 if let existingCategory = categories.first {
                     category = existingCategory
                 } else {
-                    category = Category(name: "Général")
+                    category = Category(name: "Misc")
                     context.insert(category)
                 }
                 
@@ -183,10 +183,22 @@ class ShareViewController: NSViewController {
                 context.insert(item)
                 try context.save()
                 
-                // Afficher une notification système
+                // Envoyer une notification Darwin pour réveiller l'app iOS
+                CFNotificationCenterPostNotification(
+                    CFNotificationCenterGetDarwinNotifyCenter(),
+                    CFNotificationName(rawValue: "com.misericode.pinpin.newcontent" as CFString),
+                    nil,
+                    nil,
+                    true
+                )
+                
+                // Succès ! Afficher une notification et fermer
+                print("✅ Contenu sauvegardé avec succès")
                 showNotification(title: "Added to Pinpin", subtitle: title)
                 closeImmediately()
+                
             } catch {
+                print("❌ Erreur lors de la sauvegarde: \(error.localizedDescription)")
                 closeImmediately()
             }
         }
