@@ -17,8 +17,6 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 8) {
             // Header
             HStack {
-                Image(systemName: "pin.fill")
-                    .foregroundStyle(.blue)
                 Text("Pinpin")
                     .font(.headline)
                 Spacer()
@@ -35,6 +33,7 @@ struct MenuBarView: View {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
+            .padding(8)
         }
         .frame(width: 250)
         .padding(.vertical, 8)

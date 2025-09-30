@@ -42,7 +42,7 @@ struct PinpinMacApp: App {
 
     var body: some Scene {
         // Menu Bar App (pas de fenêtre par défaut)
-        MenuBarExtra("Pinpin", systemImage: "pin.fill") {
+        MenuBarExtra("Pinpin", image: "MenuBarIcon") {
             MenuBarView()
                 .modelContainer(sharedModelContainer)
         }
