@@ -12,7 +12,7 @@ class CategoryOrderService: ObservableObject {
     static let shared = CategoryOrderService()
     
     private let userDefaults: UserDefaults
-    private let categoryOrderKey = "categoryOrder"
+    private let categoryOrderKey = AppConstants.categoryOrderKey
     
     @Published var categoryOrder: [String] = []
     

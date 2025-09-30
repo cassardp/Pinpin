@@ -206,6 +206,7 @@ struct FilterMenuView: View {
                                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                                 )
                         }
+                        .menuStyle(.button)
                         .padding(.leading, 32)
                     }
                     
@@ -232,10 +233,10 @@ struct FilterMenuView: View {
             RenameCategorySheet(
                 name: $renameText,
                 onCancel: resetRenameState,
-onSave: handleSaveAction
+                onSave: handleSaveAction
             )
         }
-.alert("Delete category?", isPresented: $isShowingDeleteAlert, presenting: categoryToDelete) { category in
+        .alert("Delete category?", isPresented: $isShowingDeleteAlert, presenting: categoryToDelete) { category in
             Button("Cancel", role: .cancel, action: resetDeleteState)
             Button("Delete", role: .destructive) { deleteCategory(category) }
         } message: { category in
@@ -247,7 +248,7 @@ onSave: handleSaveAction
 
 // MARK: - Private helpers
 private extension FilterMenuView {
-func toggleEditing() {
+    func toggleEditing() {
         hapticFeedback()
         withAnimation(.easeInOut) {
             isEditing.toggle()
@@ -257,8 +258,8 @@ func toggleEditing() {
     func hapticFeedback() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
-
-func resetEditingState() {
+    
+    func resetEditingState() {
         guard isEditing else { return }
         isEditing = false
     }

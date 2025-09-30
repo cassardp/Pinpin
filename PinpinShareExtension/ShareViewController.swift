@@ -254,7 +254,7 @@ class ShareViewController: UIViewController, ObservableObject {
             }
             
             // Optimiser l'image pour SwiftData (max 1MB)
-            let optimizedData = self.optimizeImageForSwiftData(image)
+            let optimizedData = ImageOptimizationService.shared.optimize(image)
             
             print("[ShareExtension] Image optimisée avec succès, taille: \(optimizedData.count) bytes")
             
@@ -277,39 +277,6 @@ class ShareViewController: UIViewController, ObservableObject {
         }
     }
     
-    private func optimizeImageForSwiftData(_ image: UIImage) -> Data {
-        // Si l'image fait moins de 1MB en qualité 0.8, la garder telle quelle
-        var compressionQuality: CGFloat = 0.8
-        var compressedData = image.jpegData(compressionQuality: compressionQuality) ?? Data()
-        
-        // Réduire la qualité jusqu'à obtenir moins de 1MB
-        while compressedData.count > 1_000_000 && compressionQuality > 0.1 {
-            compressionQuality -= 0.1
-            compressedData = image.jpegData(compressionQuality: compressionQuality) ?? Data()
-        }
-        
-        // Si toujours trop gros, redimensionner l'image
-        if compressedData.count > 1_000_000 {
-            let maxSize: CGFloat = 1024
-            let size = image.size
-            let ratio = min(maxSize / size.width, maxSize / size.height)
-            
-            if ratio < 1.0 {
-                let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
-                UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
-                image.draw(in: CGRect(origin: .zero, size: newSize))
-                let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
-                UIGraphicsEndImageContext()
-                
-                if let resized = resizedImage {
-                    compressedData = resized.jpegData(compressionQuality: 0.8) ?? compressedData
-                }
-            }
-        }
-        
-        print("[ShareExtension] Image optimisée: \(compressedData.count) bytes")
-        return compressedData
-    }
     
     // MARK: - Fallback Image Retrieval
     
@@ -320,7 +287,7 @@ class ShareViewController: UIViewController, ObservableObject {
             if let image = image {
                 print("[ShareExtension] Image récupérée via fallback")
                 // Optimiser l'image et lancer l'OCR
-                let optimizedData = self?.optimizeImageForSwiftData(image)
+                let optimizedData = ImageOptimizationService.shared.optimize(image)
                 
                 self?.performOCROnImage(image) { ocrText in
                     var metadata: [String: String] = [:]

@@ -14,31 +14,26 @@ struct MainView: View {
     @StateObject private var dataService = DataService.shared
     @StateObject private var notificationContentService: NotificationContentService
     @StateObject private var userPreferences = UserPreferences.shared
+    @StateObject private var viewModel = MainViewModel()
+    
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
     @State private var isMenuDragging = false
-    @State private var scrollProgress: CGFloat = 0
     @State private var isSettingsOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
-    @State private var searchQuery: String = ""
-    @State private var showSearchBar: Bool = false
     @State private var showFloatingBar: Bool = true
     @State private var scrollOffset: CGFloat = 0
     @State private var lastScrollOffset: CGFloat = 0
-    @AppStorage("numberOfColumns") private var numberOfColumns: Int = 2
+    @AppStorage("numberOfColumns") private var numberOfColumns: Int = AppConstants.defaultColumns
 
     // Bornes de colonnes
-    private let minColumns: Int = 2
-    private let maxColumns: Int = 4
+    private let minColumns: Int = AppConstants.minColumns
+    private let maxColumns: Int = AppConstants.maxColumns
 
     // État du pinch
     @State private var pinchScale: CGFloat = 1.0
     @State private var isPinching: Bool = false
-    
-    // Multi-sélection
-    @State private var isSelectionMode: Bool = false
-    @State private var selectedItems: Set<UUID> = []
     
     // Confirmation de suppression individuelle
     @State private var showDeleteConfirmation: Bool = false
@@ -73,51 +68,13 @@ struct MainView: View {
     }
     
 
-    @State private var selectedContentType: String? = nil
-    
-    // Animation pour les changements de catégorie (géré par .id() et .transition())
-
     // SwiftData Query
     @Query(sort: \ContentItem.createdAt, order: .reverse)
     private var allContentItems: [ContentItem]
 
-    // Items filtrés
+    // Items filtrés via ViewModel
     private var filteredItems: [ContentItem] {
-        let items = allContentItems
-        let typeFiltered: [ContentItem]
-        if let selectedType = selectedContentType {
-            typeFiltered = items.filter { $0.category?.name == selectedType }
-        } else {
-            typeFiltered = items
-        }
-
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return typeFiltered }
-
-        return typeFiltered.filter { item in
-            let title = item.title.lowercased()
-            let description = (item.metadataDict["best_description"] ?? item.itemDescription ?? "").lowercased()
-            let url = item.url?.lowercased() ?? ""
-            // Appliquer la même transformation que dans PredefinedSearchView : _ → espace
-            let metadataValues = item.metadataDict.values
-                .joined(separator: " ")
-                .lowercased()
-                .replacingOccurrences(of: "_", with: " ")
-            
-            // Gestion spéciale pour Twitter/X
-            if query == "twitter" {
-                // Pour Twitter/X, chercher sur x.com (format de stockage réel) mais afficher "twitter"
-                return title.contains("twitter") || title.contains("x.com") 
-                    || description.contains("twitter") || description.contains("x.com")
-                    || url.contains("x.com")
-                    || metadataValues.contains("twitter") || metadataValues.contains("x.com")
-            }
-            
-            return title.contains(query)
-                || description.contains(query)
-                || url.contains(query)
-                || metadataValues.contains(query)
-        }
+        viewModel.filteredItems(from: allContentItems)
     }
 
     init() {
@@ -132,14 +89,14 @@ struct MainView: View {
             swipeProgress: $menuSwipeProgress,
             isDragging: $isMenuDragging,
             width: UIScreen.main.bounds.width * 0.8,
-            isSwipeDisabled: showSearchBar // Désactiver le swipe en mode recherche
+            isSwipeDisabled: viewModel.showSearchBar // Désactiver le swipe en mode recherche
         ) {
             // Contenu principal
             ZStack {
                 Color(UIColor.systemBackground)
                 
                 // Zone invisible en haut pour réafficher la barre
-                if scrollProgress > 0.5 {
+                if viewModel.scrollProgress > 0.5 {
                     VStack {
                         Rectangle()
                             .fill(Color.clear)
@@ -147,7 +104,7 @@ struct MainView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    scrollProgress = 0.0
+                                    viewModel.scrollProgress = 0.0
                                 }
                             }
                         Spacer()
@@ -181,12 +138,12 @@ struct MainView: View {
                                         }
                                     }
                                 }
-                                .id(selectedContentType ?? "all")
+                                .id(viewModel.selectedContentType ?? "all")
                                 .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
                                 .animation(.linear(duration: 0.08), value: pinchScale)
                                 .allowsHitTesting(!isPinching)
                                 .transition(.opacity)
-                                .animation(.easeInOut(duration: 0.3), value: selectedContentType)
+                                .animation(.easeInOut(duration: 0.3), value: viewModel.selectedContentType)
 
                                 if dataService.isLoadingMore {
                                     HStack {
@@ -202,7 +159,7 @@ struct MainView: View {
 
                                 if !filteredItems.isEmpty {
                                     StorageStatsView(
-                                        selectedContentType: selectedContentType,
+                                        selectedContentType: viewModel.selectedContentType,
                                         filteredItems: filteredItems
                                     )
                                     .padding(.top, 50)
@@ -212,16 +169,16 @@ struct MainView: View {
                             }
                         }
                         .padding(.horizontal, 10)
-                        .onChange(of: selectedContentType) { _, _ in
+                        .onChange(of: viewModel.selectedContentType) { _, _ in
                             handleCategoryChange(using: proxy)
                         }
-                        .onChange(of: searchQuery) { _, newValue in
+                        .onChange(of: viewModel.searchQuery) { _, newValue in
                             handleSearchQueryChange(newValue, using: proxy)
                         }
                         .onChange(of: isMenuOpen) { _, newValue in
                             handleMenuStateChange(isOpen: newValue)
                         }
-                        .animation(nil, value: selectedContentType)
+                        .animation(nil, value: viewModel.selectedContentType)
                     }
                     .scrollIndicators(.hidden)
                     .refreshable { refreshContent() }
@@ -232,18 +189,18 @@ struct MainView: View {
                             .onChanged { value in
                                 let dy = value.translation.height
                                 if dy < -30 { // Scroll vers le haut (masquer)
-                                    scrollProgress = 1.0
+                                    viewModel.scrollProgress = 1.0
                                 } else if dy > 30 { // Scroll vers le bas (afficher)
-                                    scrollProgress = 0.0
+                                    viewModel.scrollProgress = 0.0
                                 }
                             }
                             .onEnded { value in
                                 let dy = value.translation.height
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                     if dy < -50 { // Si scroll vers le haut assez fort, garder masqué
-                                        scrollProgress = 1.0
+                                        viewModel.scrollProgress = 1.0
                                     } else if dy > 50 { // Si scroll vers le bas assez fort, afficher
-                                        scrollProgress = 0.0
+                                        viewModel.scrollProgress = 0.0
                                     }
                                     // Sinon, garder l'état actuel
                                 }
@@ -252,14 +209,12 @@ struct MainView: View {
                 }
 
                 // ✅ Overlay pour fermer searchbar
-                if showSearchBar {
+                if viewModel.showSearchBar {
                     Color.black.opacity(0.001)
                         .ignoresSafeArea()
                         .onTapGesture {
                             dismissKeyboard()
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
-                                showSearchBar = false
-                            }
+                            viewModel.closeSearch()
                         }
                 }
             }
@@ -277,7 +232,7 @@ struct MainView: View {
             )
         } drawer: {
             FilterMenuView(
-                selectedContentType: $selectedContentType,
+                selectedContentType: $viewModel.selectedContentType,
                 isMenuOpen: $isMenuOpen,
                 isMenuDragging: isMenuDragging,
                 onOpenAbout: { },
@@ -287,8 +242,8 @@ struct MainView: View {
             )
         }
         .onAppear {
-            searchQuery = ""
-            showSearchBar = false
+            viewModel.clearSearch()
+            viewModel.closeSearch()
             
             Task {
                 await processSharedContentIfNeeded()
@@ -312,23 +267,24 @@ struct MainView: View {
         .safeAreaInset(edge: .bottom) {
             if showFloatingBar {
                 FloatingSearchBar(
-                    searchQuery: $searchQuery,
-                    showSearchBar: $showSearchBar,
-                    isSelectionMode: $isSelectionMode,
-                    selectedItems: $selectedItems,
+                    searchQuery: $viewModel.searchQuery,
+                    showSearchBar: $viewModel.showSearchBar,
+                    isSelectionMode: $viewModel.isSelectionMode,
+                    selectedItems: $viewModel.selectedItems,
                     showSettings: $isSettingsOpen,
                     menuSwipeProgress: menuSwipeProgress,
-                    scrollProgress: scrollProgress,
-                    selectedContentType: selectedContentType,
+                    scrollProgress: viewModel.scrollProgress,
+                    selectedContentType: viewModel.selectedContentType,
                     totalPinsCount: filteredItems.count,
                     onSelectAll: {
-                        selectedItems = Set(filteredItems.map { $0.safeId })
+                        viewModel.selectAll(from: filteredItems)
                     },
                     onDeleteSelected: {
-                        deleteSelectedItems()
+                        viewModel.deleteSelectedItems(from: filteredItems)
+                        storageStatsRefreshTrigger += 1
                     },
                     onRestoreBar: {
-                        scrollProgress = 0.0
+                        viewModel.scrollProgress = 0.0
                     },
                     onShareCategory: {
                         shareCurrentCategory()
@@ -359,40 +315,10 @@ struct MainView: View {
         }
     }
 
-    // MARK: - Sélection
-    private func toggleItemSelection(_ itemId: UUID) {
-        if selectedItems.contains(itemId) {
-            selectedItems.remove(itemId)
-        } else {
-            selectedItems.insert(itemId)
-        }
-    }
-
-    private func deleteSelectedItems() {
-        let itemsToDelete = filteredItems.filter { selectedItems.contains($0.safeId) }
-        withAnimation(.spring(duration: 0.5, bounce: 0.3)) {
-            for item in itemsToDelete {
-                dataService.deleteContentItem(item)
-            }
-            selectedItems.removeAll()
-            isSelectionMode = false
-            storageStatsRefreshTrigger += 1
-        }
-    }
+    // MARK: - Sélection (déléguée au ViewModel)
     
     private func shareCurrentCategory() {
-        let itemsToShare = filteredItems
-        let categoryName = selectedContentType?.capitalized ?? "All"
-        
-        var shareText = "My \(categoryName) pins:\n\n"
-        
-        for item in itemsToShare {
-            let title = item.title.isEmpty ? "Untitled" : item.title
-            let url = (item.url?.isEmpty ?? true) ? "No URL" : (item.url ?? "No URL")
-            shareText += "• \(title)\n  \(url)\n\n"
-        }
-        
-        shareText += "Shared from Pinpin"
+        let shareText = viewModel.shareCurrentCategory(items: filteredItems)
         
         let activityViewController = UIActivityViewController(
             activityItems: [shareText],
@@ -421,8 +347,8 @@ struct MainView: View {
             item: item,
             cornerRadius: cornerRadius,
             numberOfColumns: numberOfColumns,
-            isSelectionMode: isSelectionMode,
-            onSelectionTap: { toggleItemSelection(item.safeId) }
+            isSelectionMode: viewModel.isSelectionMode,
+            onSelectionTap: { viewModel.toggleItemSelection(item.safeId) }
         )
         .id(item.safeId)
         .allowsHitTesting(!isPinching)
@@ -434,7 +360,7 @@ struct MainView: View {
         }
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: cornerRadius))
         .contextMenu {
-            if !isSelectionMode {
+            if !viewModel.isSelectionMode {
                 ContentItemContextMenu(
                     item: item,
                     dataService: dataService,
@@ -451,15 +377,15 @@ struct MainView: View {
     // MARK: - Overlay sélection
     private func selectionOverlay(for item: ContentItem) -> some View {
         Group {
-            if isSelectionMode {
+            if viewModel.isSelectionMode {
                 VStack {
                     HStack {
                         
                         Button(action: {
-                            toggleItemSelection(item.safeId)
+                            viewModel.toggleItemSelection(item.safeId)
                         }) {
-                            Image(systemName: selectedItems.contains(item.safeId) ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(selectedItems.contains(item.safeId) ? .red : .gray)
+                            Image(systemName: viewModel.selectedItems.contains(item.safeId) ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(viewModel.selectedItems.contains(item.safeId) ? .red : .gray)
                                 .font(.system(size: 22))
                                 .background(Color.white.opacity(0.8))
                                 .clipShape(Circle())
@@ -529,7 +455,7 @@ private extension MainView {
         withTransaction(Transaction(animation: nil)) {
             proxy.scrollTo("top", anchor: .top)
         }
-        scrollProgress = 0.0
+        viewModel.scrollProgress = 0.0
     }
     
     func handleSearchQueryChange(_ newValue: String, using proxy: ScrollViewProxy) {
@@ -542,13 +468,11 @@ private extension MainView {
     
     func handleMenuStateChange(isOpen: Bool) {
         if isOpen {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                showSearchBar = false
-            }
+            viewModel.closeSearch()
             dismissKeyboard()
         } else {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                scrollProgress = 0.0
+                viewModel.scrollProgress = 0.0
             }
         }
     }

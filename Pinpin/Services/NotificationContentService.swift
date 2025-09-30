@@ -13,12 +13,8 @@ final class NotificationContentService: ObservableObject {
     private let dataService: DataService
     private let fileManager = FileManager.default
     
-    // Constantes pour les fichiers de notification
-    private enum Constants {
-        static let groupID = "group.com.misericode.pinpin"
-        static let pendingContentFileName = "pending_shared_contents.json"
-        static let newContentFlagFileName = "has_new_content.flag"
-    }
+    // Utilise les constantes partagées
+    private typealias Constants = AppConstants
     
     // URLs des fichiers dans l'App Group
     private lazy var containerURL: URL? = {
@@ -127,7 +123,7 @@ final class NotificationContentService: ObservableObject {
     
     /// Méthode appelée par l'extension pour sauvegarder un nouveau contenu
     static func saveSharedContent(_ contentData: [String: Any]) {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Constants.groupID) else {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppConstants.groupID) else {
             print("[NotificationContentService] ❌ Impossible d'accéder au container partagé")
             return
         }
@@ -162,7 +158,7 @@ final class NotificationContentService: ObservableObject {
     
     /// Vérifie s'il y a des contenus en attente (pour l'extension)
     static func hasPendingContents() -> Bool {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Constants.groupID) else {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppConstants.groupID) else {
             return false
         }
         
