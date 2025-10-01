@@ -155,6 +155,9 @@
 			exceptions = (
 				4E3973542E8BC35A001357EA /* Exceptions for "PinpinMacShareExtension" folder in "PinpinMacShareExtension" target */,
 			);
+			explicitFileTypes = {
+				AppIcon.icns = image.png;
+			};
 			path = PinpinMacShareExtension;
 			sourceTree = "<group>";
 		};
