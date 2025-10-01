@@ -141,8 +141,6 @@ struct MainView: View {
                                             }
                                         }
                                     }
-                                    .padding(.horizontal, 10)
-                                    .padding(.bottom, 100)
                                 }
                                 .id(viewModel.selectedContentType ?? "all")
                                 .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
@@ -160,8 +158,23 @@ struct MainView: View {
                                             .foregroundColor(.secondary)
                                         Spacer()
                                     }
+                                    .padding(.vertical, 20)
+                                }
+
+                                if !filteredItems.isEmpty {
+                                    StorageStatsView(
+                                        selectedContentType: viewModel.selectedContentType,
+                                        filteredItems: filteredItems
+                                    )
+                                    .padding(.top, 50)
+                                    .padding(.bottom, 30)
+                                    .id(storageStatsRefreshTrigger)
                                 }
                             }
+                        }
+                        .padding(.horizontal, 10)
+                        .onChange(of: viewModel.selectedContentType) { _, _ in
+                            handleCategoryChange(using: proxy)
                         }
                         .onChange(of: viewModel.searchQuery) { _, newValue in
                             handleSearchQueryChange(newValue, using: proxy)
@@ -169,6 +182,7 @@ struct MainView: View {
                         .onChange(of: isMenuOpen) { _, newValue in
                             handleMenuStateChange(isOpen: newValue)
                         }
+                        .animation(nil, value: viewModel.selectedContentType)
                         // Solution Apple : forcer le refresh avec .id() quand les données changent
                         .id(syncService.lastSaveDate)
                     }
