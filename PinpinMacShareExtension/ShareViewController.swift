@@ -183,19 +183,19 @@ class ShareViewController: NSViewController {
                 context.insert(item)
                 try context.save()
                 
-                // Envoyer une notification Darwin pour réveiller l'app iOS
-                CFNotificationCenterPostNotification(
-                    CFNotificationCenterGetDarwinNotifyCenter(),
-                    CFNotificationName(rawValue: "com.misericode.pinpin.newcontent" as CFString),
-                    nil,
-                    nil,
-                    true
-                )
+                print("✅ Contenu sauvegardé: \(title)")
                 
-                // Succès ! Afficher une notification et fermer
-                print("✅ Contenu sauvegardé avec succès")
-                showNotification(title: "Added to Pinpin", subtitle: title)
-                closeImmediately()
+                // NSUserNotification est deprecated mais c'est la seule API qui fonctionne dans les Share Extensions
+                // UNUserNotification ne fonctionne pas dans les extensions (permissions refusées)
+                let notification = NSUserNotification()
+                notification.title = "Added to Pinpin"
+                notification.informativeText = title
+                notification.soundName = NSUserNotificationDefaultSoundName
+                NSUserNotificationCenter.default.deliver(notification)
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.closeImmediately()
+                }
                 
             } catch {
                 print("❌ Erreur lors de la sauvegarde: \(error.localizedDescription)")
@@ -207,29 +207,6 @@ class ShareViewController: NSViewController {
     private func closeImmediately() {
         DispatchQueue.main.async { [weak self] in
             self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-        }
-    }
-    
-    private func showNotification(title: String, subtitle: String) {
-        let center = UNUserNotificationCenter.current()
-        
-        // Demander la permission
-        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
-            guard granted else { return }
-            
-            // Créer la notification
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.subtitle = subtitle
-            content.sound = .default
-            
-            let request = UNNotificationRequest(
-                identifier: UUID().uuidString,
-                content: content,
-                trigger: nil
-            )
-            
-            center.add(request)
         }
     }
 

@@ -115,6 +115,13 @@
 			);
 			target = 4E9460E82DFADAC400FFE8F8 /* Pinpin */;
 		};
+		4EE50E2F2E8D1DA3008F1C76 /* Exceptions for "PinpinMac" folder in "PinpinMacShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = 4E3973432E8BC35A001357EA /* PinpinMacShareExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -129,6 +136,9 @@
 		};
 		4E3972AA2E8BBDBC001357EA /* PinpinMac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4EE50E2F2E8D1DA3008F1C76 /* Exceptions for "PinpinMac" folder in "PinpinMacShareExtension" target */,
+			);
 			path = PinpinMac;
 			sourceTree = "<group>";
 		};
@@ -493,6 +503,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = PinpinMac/PinpinMac.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -544,6 +555,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = PinpinMac/PinpinMac.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;

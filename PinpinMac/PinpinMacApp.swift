@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct PinpinMacApp: App {
@@ -62,5 +63,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Cacher l'icône du Dock (Menu Bar App uniquement)
         NSApp.setActivationPolicy(.accessory)
+        
+        // Demander la permission pour les notifications
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if granted {
+                print("✅ Notifications autorisées (macOS)")
+            }
+        }
     }
 }

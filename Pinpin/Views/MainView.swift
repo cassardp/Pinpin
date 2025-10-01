@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 import UIKit
 
 struct MainView: View {
@@ -521,7 +522,20 @@ private extension MainView {
     
     func processSharedContentIfNeeded() async {
         guard notificationContentService.hasNewSharedContent() else { return }
+        
+        // Compter les items avant traitement
+        let itemsBefore = dataService.loadContentItems().count
+        
         await notificationContentService.processPendingSharedContents()
+        
+        // Compter les items après traitement
+        let itemsAfter = dataService.loadContentItems().count
+        let newItemsCount = itemsAfter - itemsBefore
+        
+        // Afficher une notification si de nouveaux items ont été ajoutés
+        if newItemsCount > 0 {
+            await showNewContentNotification(count: newItemsCount)
+        }
     }
     
     // MARK: - Darwin Notifications
@@ -534,7 +548,7 @@ private extension MainView {
             nil,
             { _, _, name, _, _ in
                 // Poster dans NotificationCenter local pour que SwiftUI puisse réagir
-                if let name = name {
+                if name != nil {
                     NotificationCenter.default.post(
                         name: Notification.Name("DarwinNewContent"),
                         object: nil
@@ -552,5 +566,32 @@ private extension MainView {
             CFNotificationCenterGetDarwinNotifyCenter(),
             nil
         )
+    }
+    
+    // MARK: - System Notifications
+    
+    func showNewContentNotification(count: Int) async {
+        #if os(macOS)
+        let center = UNUserNotificationCenter.current()
+        
+        // Vérifier la permission
+        let settings = await center.notificationSettings()
+        guard settings.authorizationStatus == .authorized else { return }
+        
+        // Créer la notification
+        let content = UNMutableNotificationContent()
+        content.title = "Added to Pinpin"
+        content.body = count == 1 ? "1 new item" : "\(count) new items"
+        content.sound = .default
+        
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        )
+        
+        try? await center.add(request)
+        print("✅ Notification système affichée: \(count) item(s)")
+        #endif
     }
 }
