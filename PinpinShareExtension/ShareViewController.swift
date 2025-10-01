@@ -10,12 +10,28 @@ import UniformTypeIdentifiers
 import LinkPresentation
 import SwiftUI
 import Vision
+import SwiftData
 
 class ShareViewController: UIViewController, ObservableObject {
     
     private var sharedContent: SharedContentData?
     @Published var isProcessingContent = false
     private var ocrMetadata: [String: String] = [:]
+    
+    // SwiftData container partagé (recommandation Apple)
+    private lazy var modelContainer: ModelContainer = {
+        let schema = Schema([ContentItem.self, Category.self])
+        let configuration = ModelConfiguration(
+            schema: schema,
+            groupContainer: .identifier(AppConstants.groupID),
+            cloudKitDatabase: .automatic // Utilise le container iCloud principal des entitlements
+        )
+        do {
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
+            fatalError("Impossible de créer ModelContainer dans l'extension: \(error)")
+        }
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -200,29 +216,55 @@ class ShareViewController: UIViewController, ObservableObject {
         // Utiliser le contenu final si disponible, sinon le contenu temporaire
         let finalContent = self.sharedContent ?? contentData
         
-        var sharedContent: [String: Any] = [
-            "category": category,
-            "title": finalContent.title,
-            "url": finalContent.url ?? "",
-            "description": finalContent.description ?? "",
-            "thumbnailUrl": finalContent.thumbnailPath ?? "",
-            "timestamp": Date().timeIntervalSince1970
-        ]
-        
-        // Ajouter les données d'image si disponibles
-        if let imageData = finalContent.imageData {
-            sharedContent["imageData"] = imageData
+        // Sauvegarder directement dans SwiftData
+        Task { @MainActor in
+            let context = modelContainer.mainContext
+            
+            // Trouver ou créer la catégorie
+            let categoryFetch = FetchDescriptor<Category>(
+                predicate: #Predicate<Category> { cat in
+                    cat.name == category
+                }
+            )
+            
+            let existingCategories = try? context.fetch(categoryFetch)
+            let categoryObject: Category
+            
+            if let existing = existingCategories?.first {
+                categoryObject = existing
+            } else {
+                categoryObject = Category(name: category)
+                context.insert(categoryObject)
+            }
+            
+            // Créer le ContentItem
+            let newItem = ContentItem(
+                title: finalContent.title,
+                itemDescription: finalContent.description,
+                url: finalContent.url,
+                thumbnailUrl: finalContent.thumbnailPath,
+                imageData: finalContent.imageData,
+                metadata: self.encodeMetadata(self.ocrMetadata),
+                category: categoryObject
+            )
+            
+            context.insert(newItem)
+            
+            // Sauvegarder immédiatement
+            do {
+                try context.save()
+                print("[ShareExtension] ✅ Item sauvegardé dans SwiftData")
+            } catch {
+                print("[ShareExtension] ❌ Erreur sauvegarde: \(error)")
+            }
+            
+            self.completeRequest()
         }
-        
-        // Ajouter les métadonnées OCR si disponibles
-        if !ocrMetadata.isEmpty {
-            sharedContent["metadata"] = ocrMetadata
-        }
-        
-        // Sauvegarder avec le nouveau système de fichiers (évite l'erreur CFPrefs)
-        NotificationContentService.saveSharedContent(sharedContent)
-        
-        completeRequest()
+    }
+    
+    private func encodeMetadata(_ metadata: [String: String]) -> Data? {
+        guard !metadata.isEmpty else { return nil }
+        return try? JSONEncoder().encode(metadata)
     }
     
     

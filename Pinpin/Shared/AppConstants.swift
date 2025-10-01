@@ -9,16 +9,9 @@ import Foundation
 import CoreGraphics
 
 enum AppConstants {
-    // MARK: - App Groups & CloudKit
+    // MARK: - App Group
     static let groupID = "group.com.misericode.pinpin"
-    static let cloudKitContainerID = "iCloud.com.misericode.Pinpin"
     
-    // MARK: - File Names
-    static let pendingContentFileName = "pending_shared_contents.json"
-    static let newContentFlagFileName = "has_new_content.flag"
-    
-    // MARK: - Darwin Notifications
-    static let newContentNotificationName = "com.misericode.pinpin.newcontent" as CFString
     
     // MARK: - Image Optimization
     static let maxImageSize: CGFloat = 1024

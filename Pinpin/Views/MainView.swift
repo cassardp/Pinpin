@@ -13,9 +13,9 @@ import UIKit
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var dataService = DataService.shared
-    @StateObject private var notificationContentService: NotificationContentService
     @StateObject private var userPreferences = UserPreferences.shared
     @StateObject private var viewModel = MainViewModel()
+    @StateObject private var syncService: SwiftDataSyncService
     
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
@@ -81,7 +81,10 @@ struct MainView: View {
     init() {
         let dataService = DataService.shared
         self._dataService = StateObject(wrappedValue: dataService)
-        self._notificationContentService = StateObject(wrappedValue: NotificationContentService(dataService: dataService))
+        
+        // Initialiser le service de sync avec le contexte
+        let context = dataService.container.mainContext
+        self._syncService = StateObject(wrappedValue: SwiftDataSyncService(modelContext: context))
     }
 
     var body: some View {
@@ -182,7 +185,9 @@ struct MainView: View {
                         .animation(nil, value: viewModel.selectedContentType)
                     }
                     .scrollIndicators(.hidden)
-                    .refreshable { refreshContent() }
+                    .refreshable {
+                        await refreshContentAsync()
+                    }
                     .scrollDisabled(isMenuOpen || isSettingsOpen)
                     .highPriorityGesture(pinchGesture)
                     .simultaneousGesture(
@@ -245,27 +250,24 @@ struct MainView: View {
         .onAppear {
             viewModel.clearSearch()
             viewModel.closeSearch()
+            refreshContent()
             
-            Task {
-                await processSharedContentIfNeeded()
-                refreshContent()
-            }
-            
-            // Écouter les notifications Darwin pour les nouveaux contenus
-            startListeningForSharedContent()
+            // Démarrer l'écoute des changements externes
+            syncService.startListening()
         }
         .onDisappear {
-            // Arrêter d'écouter les notifications
-            stopListeningForSharedContent()
+            syncService.stopListening()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            Task {
-                await processSharedContentIfNeeded()
-            }
+            // Vider le cache pour détecter les changements de l'extension
+            modelContext.rollback()
+            refreshContent()
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("DarwinNewContent"))) { _ in
-            Task {
-                await processSharedContentIfNeeded()
+        // Écouter les changements externes (extension)
+        .onChange(of: syncService.hasNewChanges) { _, hasChanges in
+            if hasChanges {
+                print("[✅ SwiftDataSync] Nouveaux changements détectés - rechargement...")
+                refreshContent()
             }
         }
         // Suivi hauteur clavier pour remonter la searchbar au-dessus
@@ -508,90 +510,23 @@ private extension MainView {
     }
     
     func refreshContent() {
-        Task {
-            // CloudKit synchronise automatiquement en arrière-plan
-            // Cela peut prendre 2-3 minutes pour les nouveaux items
+        // Vider le cache pour forcer la lecture depuis le disque
+        modelContext.rollback()
+        
+        // SwiftData + CloudKit synchronisent automatiquement
+        _ = dataService.loadContentItems()
+        print("[MainView] 🔄 Content refreshed")
+    }
+    
+    func refreshContentAsync() async {
+        await MainActor.run {
+            print("[MainView] 🔄 Pull-to-refresh...")
             
-            // Recharger les données locales immédiatement
-            await MainActor.run {
-                _ = dataService.loadContentItems()
-                print("[MainView] 🔄 Content refreshed (CloudKit sync is automatic)")
-            }
+            // Vider le cache et recharger
+            modelContext.rollback()
+            _ = dataService.loadContentItems()
+            
+            print("[MainView] ✅ Pull-to-refresh terminé")
         }
-    }
-    
-    func processSharedContentIfNeeded() async {
-        guard notificationContentService.hasNewSharedContent() else { return }
-        
-        // Compter les items avant traitement
-        let itemsBefore = dataService.loadContentItems().count
-        
-        await notificationContentService.processPendingSharedContents()
-        
-        // Compter les items après traitement
-        let itemsAfter = dataService.loadContentItems().count
-        let newItemsCount = itemsAfter - itemsBefore
-        
-        // Afficher une notification si de nouveaux items ont été ajoutés
-        if newItemsCount > 0 {
-            await showNewContentNotification(count: newItemsCount)
-        }
-    }
-    
-    // MARK: - Darwin Notifications
-    
-    func startListeningForSharedContent() {
-        // Utiliser DistributedNotificationCenter pour écouter les notifications Darwin
-        // via un wrapper NotificationCenter
-        CFNotificationCenterAddObserver(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            nil,
-            { _, _, name, _, _ in
-                // Poster dans NotificationCenter local pour que SwiftUI puisse réagir
-                if name != nil {
-                    NotificationCenter.default.post(
-                        name: Notification.Name("DarwinNewContent"),
-                        object: nil
-                    )
-                }
-            },
-            AppConstants.newContentNotificationName,
-            nil,
-            .deliverImmediately
-        )
-    }
-    
-    func stopListeningForSharedContent() {
-        CFNotificationCenterRemoveEveryObserver(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            nil
-        )
-    }
-    
-    // MARK: - System Notifications
-    
-    func showNewContentNotification(count: Int) async {
-        #if os(macOS)
-        let center = UNUserNotificationCenter.current()
-        
-        // Vérifier la permission
-        let settings = await center.notificationSettings()
-        guard settings.authorizationStatus == .authorized else { return }
-        
-        // Créer la notification
-        let content = UNMutableNotificationContent()
-        content.title = "Added to Pinpin"
-        content.body = count == 1 ? "1 new item" : "\(count) new items"
-        content.sound = .default
-        
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-        
-        try? await center.add(request)
-        print("✅ Notification système affichée: \(count) item(s)")
-        #endif
     }
 }
