@@ -15,10 +15,9 @@ import CoreData
 final class SwiftDataSyncService: ObservableObject {
     private var cancellable: AnyCancellable?
     private let modelContext: ModelContext
-    private var isProcessing = false
-    private var lastProcessedDate = Date.distantPast
     
-    @Published var hasNewChanges = false
+    // Solution officielle Apple pour forcer le refresh
+    @Published var lastSaveDate = Date()
     
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -26,14 +25,12 @@ final class SwiftDataSyncService: ObservableObject {
     
     /// Démarre l'écoute des changements externes (depuis l'extension)
     func startListening() {
-        // Écouter les changements du store persistant avec debounce
+        // Solution officielle Apple : écouter NSManagedObjectContextDidSave
         cancellable = NotificationCenter.default
-            .publisher(for: .NSPersistentStoreRemoteChange)
-            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main) // Grouper les notifications
+            .publisher(for: .NSManagedObjectContextDidSave)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                Task { @MainActor in
-                    self?.handleRemoteChange()
-                }
+                self?.handleRemoteChange()
             }
         
         print("[SwiftDataSync] 🎧 Écoute des changements externes démarrée")
@@ -48,37 +45,12 @@ final class SwiftDataSyncService: ObservableObject {
     
     /// Traite les changements détectés
     private func handleRemoteChange() {
-        // Éviter le traitement multiple
-        guard !isProcessing else {
-            print("[SwiftDataSync] ⏭️ Traitement déjà en cours, ignoré")
-            return
-        }
+        print("[SwiftDataSync] 🔔 Changement détecté")
         
-        // Éviter de traiter trop souvent (minimum 2 secondes entre chaque traitement)
-        let timeSinceLastProcess = Date().timeIntervalSince(lastProcessedDate)
-        guard timeSinceLastProcess > 2.0 else {
-            print("[SwiftDataSync] ⏭️ Trop récent (\(String(format: "%.1f", timeSinceLastProcess))s), ignoré")
-            return
-        }
-        
-        isProcessing = true
-        lastProcessedDate = Date()
-        
-        print("[SwiftDataSync] 🔔 Changement externe détecté - traitement...")
-        
-        // Forcer le contexte à vider son cache et relire depuis le disque
+        // Vider le cache pour forcer la lecture depuis le disque
         modelContext.rollback()
         
-        // Notifier qu'il y a de nouveaux changements
-        hasNewChanges = true
-        
-        // Réinitialiser après un court délai
-        Task {
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-            await MainActor.run {
-                self.hasNewChanges = false
-                self.isProcessing = false
-            }
-        }
+        // Forcer le refresh des vues avec .id()
+        lastSaveDate = Date()
     }
 }
