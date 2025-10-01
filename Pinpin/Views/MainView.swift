@@ -261,9 +261,9 @@ struct MainView: View {
             syncService.stopListening()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            // Vider le cache pour détecter les changements de l'extension
-            modelContext.rollback()
-            refreshContent()
+            // Force un refresh complet au retour en foreground
+            // Important pour iOS 17 où la détection automatique peut être partielle
+            syncService.forceRefresh()
         }
         // Note : Le refresh automatique est géré par .id(syncService.lastSaveDate) sur la grille
         // Suivi hauteur clavier pour remonter la searchbar au-dessus
