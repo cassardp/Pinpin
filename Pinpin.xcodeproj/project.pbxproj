@@ -605,6 +605,7 @@
 		4E3973522E8BC35A001357EA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PinpinMacShareExtension/PinpinMacShareExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -640,6 +641,7 @@
 		4E3973532E8BC35A001357EA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PinpinMacShareExtension/PinpinMacShareExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
