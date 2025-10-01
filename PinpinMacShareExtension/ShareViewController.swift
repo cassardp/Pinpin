@@ -10,6 +10,7 @@ import UniformTypeIdentifiers
 import SwiftData
 import LinkPresentation
 import UserNotifications
+import Vision
 
 class ShareViewController: NSViewController {
 
@@ -93,18 +94,22 @@ class ShareViewController: NSViewController {
                 if let imageProvider = metadata?.imageProvider {
                     _ = imageProvider.loadObject(ofClass: NSImage.self) { image, _ in
                         var imageData: Data? = nil
+                        var ocrText: String? = nil
+                        
                         if let nsImage = image as? NSImage {
                             // Redimensionner et compresser l'image (comme sur iOS)
                             let maxSize: CGFloat = 800
                             let size = nsImage.size
                             let ratio = min(maxSize / size.width, maxSize / size.height)
                             
+                            let finalImage: NSImage
                             if ratio < 1 {
                                 let newSize = NSSize(width: size.width * ratio, height: size.height * ratio)
                                 let resizedImage = NSImage(size: newSize)
                                 resizedImage.lockFocus()
                                 nsImage.draw(in: NSRect(origin: .zero, size: newSize))
                                 resizedImage.unlockFocus()
+                                finalImage = resizedImage
                                 
                                 if let tiffData = resizedImage.tiffRepresentation,
                                    let bitmapImage = NSBitmapImageRep(data: tiffData) {
@@ -113,23 +118,35 @@ class ShareViewController: NSViewController {
                                 }
                             } else {
                                 // Image déjà petite, juste compresser
+                                finalImage = nsImage
                                 if let tiffData = nsImage.tiffRepresentation,
                                    let bitmapImage = NSBitmapImageRep(data: tiffData) {
                                     imageData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
                                 }
                             }
+                            
+                            // Lancer l'OCR sur l'image
+                            let semaphore = DispatchSemaphore(value: 0)
+                            OCRService.shared.extractText(from: finalImage) { extractedText in
+                                if let text = extractedText, !text.isEmpty {
+                                    ocrText = OCRService.shared.cleanOCRText(text)
+                                    print("[ShareExtension] OCR extrait: \(ocrText ?? "")")
+                                }
+                                semaphore.signal()
+                            }
+                            semaphore.wait()
                         }
                         
-                        self?.saveToSwiftData(url: url, title: finalTitle, imageData: imageData)
+                        self?.saveToSwiftData(url: url, title: finalTitle, imageData: imageData, ocrText: ocrText)
                     }
                 } else {
-                    self?.saveToSwiftData(url: url, title: finalTitle, imageData: nil)
+                    self?.saveToSwiftData(url: url, title: finalTitle, imageData: nil, ocrText: nil)
                 }
             }
         }
     }
     
-    private func saveToSwiftData(url: URL, title: String, imageData: Data?) {
+    private func saveToSwiftData(url: URL, title: String, imageData: Data?, ocrText: String?) {
         Task { @MainActor in
             // Vérifier si on a accès à l'App Group avant de continuer
             guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") else {
@@ -172,11 +189,19 @@ class ShareViewController: NSViewController {
                     context.insert(category)
                 }
                 
+                // Préparer les métadonnées OCR
+                var metadata: Data? = nil
+                if let ocrText = ocrText {
+                    let metadataDict = ["ocr_text": ocrText]
+                    metadata = try? JSONEncoder().encode(metadataDict)
+                }
+                
                 // Créer le ContentItem
                 let item = ContentItem(
                     title: title,
                     url: url.absoluteString,
                     imageData: imageData,
+                    metadata: metadata,
                     category: category
                 )
                 
