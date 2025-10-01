@@ -222,9 +222,6 @@ class ShareViewController: UIViewController, ObservableObject {
         // Sauvegarder avec le nouveau système de fichiers (évite l'erreur CFPrefs)
         NotificationContentService.saveSharedContent(sharedContent)
         
-        // Afficher une notification système
-        showSuccessNotification(title: finalContent.title)
-        
         completeRequest()
     }
     
