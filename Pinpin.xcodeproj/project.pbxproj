@@ -108,6 +108,13 @@
 			);
 			target = 4E9460E82DFADAC400FFE8F8 /* Pinpin */;
 		};
+		4E9F65DF2E8D2E39008D09A5 /* Exceptions for "PinpinMac" folder in "PinpinMac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
+		};
 		4EC6B14A2E82F4A1005E3771 /* Exceptions for "Pinpin" folder in "Pinpin" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -137,6 +144,7 @@
 		4E3972AA2E8BBDBC001357EA /* PinpinMac */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				4E9F65DF2E8D2E39008D09A5 /* Exceptions for "PinpinMac" folder in "PinpinMac" target */,
 				4EE50E2F2E8D1DA3008F1C76 /* Exceptions for "PinpinMac" folder in "PinpinMacShareExtension" target */,
 			);
 			path = PinpinMac;
