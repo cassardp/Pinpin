@@ -83,10 +83,7 @@ struct ContentCardView: View {
             return false
         }()
         
-        // A du contenu textuel (titre ou description)
-        let hasTextContent = !item.title.isEmpty || 
-                           (item.itemDescription?.isEmpty == false)
-        
-        return hasNoImageData && hasNoThumbnail && hasNoWebImage && hasTextContent
+        // Retourne true dès qu'il n'y a aucune image disponible
+        return hasNoImageData && hasNoThumbnail && hasNoWebImage
     }
 }
