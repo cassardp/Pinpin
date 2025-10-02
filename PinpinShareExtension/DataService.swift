@@ -144,11 +144,6 @@ final class DataService {
         }
     }
 
-    func fetchFirstImageURL(for categoryName: String) -> String? {
-        // Cette méthode est obsolète, utiliser fetchFirstImageData à la place
-        return nil
-    }
-    
     func fetchFirstImageData(for categoryName: String) -> Data? {
         var descriptor = FetchDescriptor<ContentItem>(
             predicate: #Predicate { item in

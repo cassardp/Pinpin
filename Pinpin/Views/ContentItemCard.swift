@@ -14,6 +14,7 @@ struct ContentItemCard: View {
     let numberOfColumns: Int
     let isSelectionMode: Bool
     let onSelectionTap: (() -> Void)?
+    @State private var hapticTrigger: Int = 0
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -37,9 +38,7 @@ struct ContentItemCard: View {
                     .padding(8)
                     .onTapGesture {
                         UIPasteboard.general.string = url
-                        // Feedback haptique léger
-                        let generator = UIImpactFeedbackGenerator(style: .light)
-                        generator.impactOccurred()
+                        hapticTrigger += 1
                     }
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .move(edge: .bottom)),
@@ -50,6 +49,7 @@ struct ContentItemCard: View {
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: cornerRadius)
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: userPreferences.showURLs)
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)
                 .onEnded { _ in
@@ -175,12 +175,5 @@ struct ContentItemCard: View {
         }
         
         return nil
-    }
-    
-    // MARK: - Computed Properties pour les catégories
-    
-    private var categoryColor: Color {
-        // Couleur générique pour toutes les catégories
-        return .accentColor
     }
 }

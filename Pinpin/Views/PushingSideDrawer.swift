@@ -19,6 +19,7 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var internalIsDragging: Bool = false
+    @State private var hapticTrigger: Int = 0
     
     // Stricter horizontal swipe detection to avoid diagonal swipes
     private let horizontalBiasRatio: CGFloat = 3.0         // |dx| must be >= ratio * |dy|
@@ -54,16 +55,17 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         Spacer(minLength: 0)
                         Color.clear
                             .contentShape(Rectangle())
-                            .onTapGesture { 
-                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                                withAnimation(.snappy(duration: 0.22)) { 
-                                    isOpen = false 
-                                } 
+                            .onTapGesture {
+                                hapticTrigger += 1
+                                withAnimation(.snappy(duration: 0.22)) {
+                                    isOpen = false
+                                }
                             }
                             .frame(width: geo.size.width - width)
                     }
                 }
             }
+            .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
             .onChange(of: progress) {
                 swipeProgress = progress
             }
@@ -124,14 +126,14 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                                 // Fermer si swipe gauche > 25% de la largeur OU vitesse rapide
                                 let velocity = value.predictedEndTranslation.width - dx
                                 if dx < -width * 0.25 || velocity < -200 {
-                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                    hapticTrigger += 1
                                     isOpen = false
                                 }
                             } else {
                                 // Ouvrir si swipe droite > 25% de la largeur OU vitesse rapide
                                 let velocity = value.predictedEndTranslation.width - dx
                                 if dx > width * 0.25 || velocity > 200 {
-                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                                    hapticTrigger += 1
                                     isOpen = true
                                 }
                             }

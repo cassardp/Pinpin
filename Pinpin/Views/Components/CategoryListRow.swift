@@ -9,6 +9,7 @@ struct CategoryListRow: View {
     let onEdit: (() -> Void)?
     let onDelete: (() -> Void)?
     let canDelete: Bool
+    @State private var hapticTrigger: Int = 0
     
     init(
         isSelected: Bool,
@@ -67,8 +68,9 @@ struct CategoryListRow: View {
         .padding(.leading, 16)
         .padding(.trailing, 16)
         .contentShape(Rectangle())
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .onTapGesture {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            hapticTrigger += 1
             withAnimation(.easeInOut) {
                 if isEditing, let onEdit {
                     onEdit()

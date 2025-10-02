@@ -27,6 +27,7 @@ struct MainView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var lastScrollOffset: CGFloat = 0
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = AppConstants.defaultColumns
+    @State private var hapticTrigger: Int = 0
 
     // Bornes de colonnes
     private let minColumns: Int = AppConstants.minColumns
@@ -282,6 +283,7 @@ struct MainView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
             handleKeyboardNotification(notification)
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .sheet(isPresented: $isSettingsOpen) {
             SettingsView()
                 .presentationDetents([.medium, .large], selection: $settingsDetent)
@@ -456,7 +458,7 @@ struct MainView: View {
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.9, blendDuration: 0.15)) {
                         numberOfColumns = newColumns
                     }
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    hapticTrigger += 1
                 }
                 
                 withAnimation(.easeInOut(duration: 0.18)) {

@@ -139,6 +139,7 @@ struct SettingsToggleRow: View {
     let title: String
     let subtitle: String
     @Binding var isOn: Bool
+    @State private var hapticTrigger: Int = 0
     
     var body: some View {
         HStack {
@@ -155,8 +156,7 @@ struct SettingsToggleRow: View {
             }
             .onTapGesture {
                 isOn.toggle()
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                hapticTrigger += 1
             }
             
             Spacer()
@@ -168,6 +168,7 @@ struct SettingsToggleRow: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
         .cornerRadius(12)
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
     }
 }
 

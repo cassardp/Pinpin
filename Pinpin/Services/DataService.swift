@@ -50,11 +50,11 @@ final class DataService: ObservableObject {
     var context: ModelContext {
         _container.mainContext
     }
-    
+
     // MARK: - Repositories
     private lazy var contentItemRepository = ContentItemRepository(context: context)
     private lazy var categoryRepository = CategoryRepository(context: context)
-    
+
     // MARK: - Services
     let cloudSyncService = CloudSyncService()
     

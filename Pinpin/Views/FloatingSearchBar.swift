@@ -13,6 +13,7 @@ struct FloatingSearchBar: View {
     @Namespace private var searchTransitionNS
     @State private var isAnimatingSearchOpen: Bool = false
     @State private var showDeleteConfirmation: Bool = false
+    @State private var hapticTrigger: Int = 0
 
     // Data
     var selectedContentType: String?
@@ -35,7 +36,7 @@ struct FloatingSearchBar: View {
         ZStack {
             if showSearchBar {
                 searchBar
-                    .transition(.opacity)
+                    .transition(.identity)
                     .onAppear {
                         // Synchronisation parfaite - pas de délai
                         isSearchFocused = true
@@ -53,6 +54,7 @@ struct FloatingSearchBar: View {
         .animation(unifiedAnimation, value: showSearchBar)
         .animation(unifiedAnimation, value: isAnimatingSearchOpen)
         .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
@@ -94,12 +96,14 @@ struct FloatingSearchBar: View {
             // Contenu de la barre de recherche au premier plan
             VStack(spacing: 0) {
                 // Capsules de recherche prédéfinies (sans padding horizontal)
-                PredefinedSearchView(
-                    searchQuery: $searchQuery, 
-                    selectedContentType: selectedContentType,
-                    onSearchSelected: dismissSearch
-                )
-                
+                if showSearchBar {
+                    PredefinedSearchView(
+                        searchQuery: $searchQuery,
+                        selectedContentType: selectedContentType,
+                        onSearchSelected: dismissSearch
+                    )
+                }
+
                 // Barre de recherche principale (avec padding horizontal)
                 HStack(spacing: 12) {
                     Image(systemName: "magnifyingglass")
@@ -124,11 +128,8 @@ struct FloatingSearchBar: View {
                         .onSubmit { dismissSearch() }
 
                     if !searchQuery.isEmpty {
-                        Button { 
-                            // Haptic feedback léger pour le reset
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                            impactFeedback.impactOccurred()
-                            
+                        Button {
+                            hapticTrigger += 1
                             searchQuery = "" 
                         } label: {
                             Image(systemName: "xmark.circle.fill")
@@ -158,9 +159,7 @@ struct FloatingSearchBar: View {
 
             // Gauche : Share / Cancel
             Button(action: {
-                // Haptic feedback léger
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                hapticTrigger += 1
                 
                 if isSelectionMode {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -186,9 +185,7 @@ struct FloatingSearchBar: View {
 
             // Centre : Search
             Button(action: {
-                // Haptic feedback léger
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                hapticTrigger += 1
                 
                 // D'abord restaurer la barre à sa taille normale
                 onRestoreBar()
@@ -235,9 +232,7 @@ struct FloatingSearchBar: View {
                             .font(.system(size: 14))
                             .foregroundColor(.white)
                             .onTapGesture {
-                                // Haptic feedback léger pour le reset
-                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                                impactFeedback.impactOccurred()
+                                hapticTrigger += 1
                                 
                                 // Restaurer la barre à sa taille normale
                                 onRestoreBar()
@@ -266,9 +261,7 @@ struct FloatingSearchBar: View {
 
             // Droite : Selection / Delete
             Button(action: {
-                // Haptic feedback léger
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                hapticTrigger += 1
                 
                 if isSelectionMode {
                     if selectedItems.isEmpty {

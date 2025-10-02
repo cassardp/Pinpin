@@ -11,6 +11,7 @@ struct PredefinedSearchView: View {
     private var allContentItems: [ContentItem]
 
     @State private var domains: [String] = []
+    @State private var hapticTrigger: Int = 0
 
     // Recherches à afficher (domaines uniquement)
     private var searchesToDisplay: [String] {
@@ -22,9 +23,7 @@ struct PredefinedSearchView: View {
             HStack(spacing: 6) {
                 ForEach(Array(searchesToDisplay.enumerated()), id: \.element) { index, displayTerm in
                     Button(action: {
-                        // Haptic feedback léger
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
+                        hapticTrigger += 1
 
                         withAnimation(.easeInOut(duration: 0.2)) {
                             // Utiliser le terme de recherche approprié
@@ -54,6 +53,7 @@ struct PredefinedSearchView: View {
         }
         .padding(.bottom, 8)
         .transition(.move(edge: .top).combined(with: .opacity))
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .onAppear {
             generateDynamicSearches()
         }
@@ -260,18 +260,6 @@ struct PredefinedSearchView: View {
             return "twitter"
         default:
             return domain
-        }
-    }
-    
-    // MARK: - Search Term Mapping (Legacy - not used)
-    private func getSearchTerm(for displayTerm: String) -> String {
-        // Cette fonction n'est plus utilisée - remplacée par getSearchTermForDomain
-        // Conservée pour compatibilité
-        switch displayTerm.lowercased() {
-        case "twitter":
-            return "x"
-        default:
-            return displayTerm
         }
     }
 

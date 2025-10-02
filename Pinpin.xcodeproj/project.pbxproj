@@ -66,6 +66,7 @@
 			membershipExceptions = (
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
+				Shared/Services/OCRService.swift,
 			);
 			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
 		};
@@ -74,6 +75,7 @@
 			membershipExceptions = (
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
+				Shared/Services/OCRService.swift,
 			);
 			target = 4E3973432E8BC35A001357EA /* PinpinMacShareExtension */;
 		};
@@ -91,6 +93,7 @@
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
 				Shared/Services/ImageOptimizationService.swift,
+				Shared/Services/OCRService.swift,
 			);
 			target = 4E19DB772DFC174F00357543 /* PinpinShareExtension */;
 		};

@@ -17,6 +17,7 @@ struct BackupManagementView: View {
     }
     @State private var exportURL: URL? = nil
     @State private var alertMessage: String? = nil
+    @State private var hapticTrigger: Int = 0
     
     let onOperationComplete: (() -> Void)?
     
@@ -56,8 +57,7 @@ struct BackupManagementView: View {
                 Button {
                     print("[BackupManagementView] Bouton Import appuyé")
                     showingImporter = true
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
+                    hapticTrigger += 1
                 } label: {
                     VStack(spacing: 16) {
                         Image(systemName: "tray.and.arrow.down")
@@ -78,6 +78,7 @@ struct BackupManagementView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 40)
+        .sensoryFeedback(.impact(weight: .medium), trigger: hapticTrigger)
         .fileImporter(isPresented: $showingImporter, allowedContentTypes: [UTType.folder], allowsMultipleSelection: false) { result in
             print("[BackupManagementView] fileImporter callback appelé")
             switch result {

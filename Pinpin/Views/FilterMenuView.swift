@@ -12,10 +12,10 @@ struct FilterMenuView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ContentItem.createdAt, order: .reverse)
     private var contentItems: [ContentItem]
-    
+
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
-    
+
     private let dataService = DataService.shared
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
@@ -30,6 +30,7 @@ struct FilterMenuView: View {
     @State private var categoryToDelete: Category?
     @State private var isShowingDeleteAlert = false
     @FocusState private var isTextFieldFocused: Bool
+    @State private var hapticTrigger: Int = 0
     
     // Récupère toutes les catégories directement depuis SwiftData (ordre natif via sortOrder)
     private var availableTypes: [String] {
@@ -55,31 +56,30 @@ struct FilterMenuView: View {
     
     // Méthode pour déplacer les catégories (fonctionnalité native SwiftUI)
     private func moveCategories(from source: IndexSet, to destination: Int) {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-        
+        hapticTrigger += 1
+
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             var categories = allCategories
             categories.move(fromOffsets: source, toOffset: destination)
-            
+
             // Mettre à jour les sortOrder
             for (index, category) in categories.enumerated() {
                 category.sortOrder = Int32(index)
             }
-            
+
             try? modelContext.save()
         }
     }
     
     var body: some View {
-        ZStack {
-            // Background
-            Color(UIColor.systemBackground)
-                .onTapGesture {
-                    // Perdre le focus du TextField avec SwiftUI natif
-                    isTextFieldFocused = false
-                }
-            
+        let backgroundView = Color(UIColor.systemBackground)
+            .onTapGesture {
+                isTextFieldFocused = false
+            }
+
+        return ZStack {
+            backgroundView
+
             // Liste centrée verticalement avec dégradés de fondu
             ZStack {
                 ScrollViewReader { proxy in
@@ -160,7 +160,6 @@ struct FilterMenuView: View {
                     if isEditing {
                         // Mode édition : bouton checkmark simple
                         Button {
-                            hapticFeedback()
                             toggleEditing()
                         } label: {
                             Image(systemName: "xmark")
@@ -178,23 +177,22 @@ struct FilterMenuView: View {
                         // Mode normal : menu ellipsis
                         Menu {
                             Button {
-                                hapticFeedback()
+                                hapticTrigger += 1
                                 onOpenSettings()
                             } label: {
                                 Label("Settings", systemImage: "gearshape")
                             }
-                            
+
                             Divider()
-                            
+
                             Button {
-                                hapticFeedback()
                                 toggleEditing()
                             } label: {
                                 Label("Edit categories", systemImage: "pencil")
                             }
-                            
+
                             Button {
-                                hapticFeedback()
+                                hapticTrigger += 1
                                 prepareCreateCategory()
                             } label: {
                                 Label("Add category", systemImage: "plus")
@@ -221,7 +219,7 @@ struct FilterMenuView: View {
             
         }
         .ignoresSafeArea(edges: .bottom)
-
+        .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .onChange(of: isMenuOpen) { _, isOpen in
             guard !isOpen else { return }
             resetEditingState()
@@ -247,14 +245,10 @@ struct FilterMenuView: View {
 // MARK: - Private helpers
 private extension FilterMenuView {
     func toggleEditing() {
-        hapticFeedback()
+        hapticTrigger += 1
         withAnimation(.easeInOut) {
             isEditing.toggle()
         }
-    }
-    
-    func hapticFeedback() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
     
     func resetEditingState() {

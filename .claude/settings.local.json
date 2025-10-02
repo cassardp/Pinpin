@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(rm:*)",
+      "Bash(git checkout:*)",
+      "WebSearch",
+      "WebFetch(domain:www.hackingwithswift.com)",
+      "WebFetch(domain:swiftwithmajid.com)",
+      "Bash(xcodebuild:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
