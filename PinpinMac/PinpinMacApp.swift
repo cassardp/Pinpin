@@ -15,18 +15,18 @@ struct PinpinMacApp: App {
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([ContentItem.self, Category.self])
-        
+
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier("group.com.misericode.pinpin"),
             cloudKitDatabase: .automatic
         )
-        
+
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
             print("[PinpinMac] ❌ Erreur création ModelContainer: \(error)")
-            
+
             // Fallback en mémoire
             do {
                 let fallbackConfig = ModelConfiguration(
@@ -63,7 +63,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Cacher l'icône du Dock (Menu Bar App uniquement)
         NSApp.setActivationPolicy(.accessory)
-        
+
         // Demander la permission pour les notifications
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
             if granted {

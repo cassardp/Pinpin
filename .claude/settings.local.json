@@ -7,7 +7,13 @@
       "WebSearch",
       "WebFetch(domain:www.hackingwithswift.com)",
       "WebFetch(domain:swiftwithmajid.com)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "WebFetch(domain:mjtsai.com)",
+      "WebFetch(domain:fatbobman.com)",
+      "WebFetch(domain:dev.to)",
+      "Bash(chmod:*)",
+      "Bash(find:*)",
+      "Bash(defaults delete:*)"
     ],
     "deny": [],
     "ask": []
