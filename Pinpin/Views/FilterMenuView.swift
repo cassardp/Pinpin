@@ -89,7 +89,7 @@ struct FilterMenuView: View {
                     CategoryListRow(
                         isSelected: selectedContentType == nil,
                         title: "All",
-                        isEmpty: false,
+                        isEmpty: contentItems.isEmpty,
                         isEditing: false,
                         action: { selectedContentType = nil }
                     )

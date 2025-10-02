@@ -69,6 +69,29 @@ struct MainView: View {
         }
     }
     
+    // Écran courant via la fenêtre active (évite UIScreen.main déprécié)
+    private var keyWindowScene: UIWindowScene? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+    }
+
+    private var screenBounds: CGRect {
+        if let scene = keyWindowScene {
+            return scene.screen.bounds
+        }
+        // Fallback si aucune scène active (ex: previews) — éviter UIScreen.main déprécié
+        if let anyScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            return anyScene.screen.bounds
+        }
+        // Dernier recours : utiliser les sessions ouvertes pour trouver un écran
+        if let session = UIApplication.shared.openSessions.first,
+           let windowScene = session.scene as? UIWindowScene {
+            return windowScene.screen.bounds
+        }
+        // Fallback final avec des dimensions par défaut
+        return CGRect(x: 0, y: 0, width: 390, height: 844)
+    }
 
     // SwiftData Query
     @Query(sort: \ContentItem.createdAt, order: .reverse)
@@ -98,7 +121,7 @@ struct MainView: View {
             isOpen: $isMenuOpen,
             swipeProgress: $menuSwipeProgress,
             isDragging: $isMenuDragging,
-            width: UIScreen.main.bounds.width * 0.8,
+            width: screenBounds.width * 0.8,
             isSwipeDisabled: viewModel.showSearchBar // Désactiver le swipe en mode recherche
         ) {
             // Contenu principal
@@ -132,7 +155,7 @@ struct MainView: View {
                                     EmptyStateView()
                                         .frame(width: geometry.size.width, height: geometry.size.height)
                                 }
-                                .frame(height: UIScreen.main.bounds.height - 150)
+                                .frame(height: screenBounds.height - 150)
                             } else {
                                 VStack(spacing: 0) {
                                     PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
@@ -218,7 +241,7 @@ struct MainView: View {
                             .onEnded { value in
                                 let dy = value.translation.height
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    if dy < -50 { // Si scroll vers le haut assez fort, garder masqué
+                                    if dy < -50 { // Si scroll vers l'haut assez fort, garder masqué
                                         viewModel.scrollProgress = 1.0
                                     } else if dy > 50 { // Si scroll vers le bas assez fort, afficher
                                         viewModel.scrollProgress = 0.0
@@ -512,7 +535,7 @@ private extension MainView {
               let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
             return
         }
-        let screenHeight = UIScreen.main.bounds.height
+        let screenHeight = screenBounds.height
         let newHeight = max(0, screenHeight - endFrame.origin.y)
         withAnimation(.easeOut(duration: duration)) {
             keyboardHeight = newHeight
@@ -550,3 +573,4 @@ private extension MainView {
         }
     }
 }
+

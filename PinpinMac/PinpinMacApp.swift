@@ -18,8 +18,8 @@ struct PinpinMacApp: App {
 
         let configuration = ModelConfiguration(
             schema: schema,
-            groupContainer: .identifier("group.com.misericode.pinpin"),
-            cloudKitDatabase: .automatic
+            groupContainer: .identifier(AppConstants.groupID),
+            cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
 
         do {

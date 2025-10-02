@@ -277,6 +277,16 @@ final class DataService: ObservableObject {
         }
     }
     
+    func createDefaultCategories() {
+        print("[DataService] 🎨 Création des catégories par défaut...")
+        
+        for categoryName in AppConstants.defaultCategories {
+            addCategory(name: categoryName)
+        }
+        
+        print("[DataService] ✅ \(AppConstants.defaultCategories.count) catégories créées")
+    }
+    
     // MARK: - Search and Filter
     
     func searchContentItems(query: String) -> [ContentItem] {

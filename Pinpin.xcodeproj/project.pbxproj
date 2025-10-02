@@ -64,6 +64,7 @@
 		4E1835D72E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMac" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Shared/AppConstants.swift,
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
 				Shared/Services/OCRService.swift,
@@ -73,6 +74,7 @@
 		4E1835D82E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMacShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Shared/AppConstants.swift,
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
 				Shared/Services/OCRService.swift,

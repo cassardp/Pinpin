@@ -31,9 +31,23 @@ enum AppConstants {
     
     // MARK: - User Defaults Keys
     static let numberOfColumnsKey = "numberOfColumns"
+    static let hasCreatedDefaultCategoriesKey = "hasCreatedDefaultCategories"
     
     // MARK: - Layout
     static let minColumns = 2
     static let maxColumns = 4
     static let defaultColumns = 2
+    
+    // MARK: - Default Categories
+    static let defaultCategories: [String] = [
+        "Home",
+        "Fashion",
+        "Food",
+        "Tech",
+        "Ideas",
+        "Outdoor",
+        "Music",
+        "Books",
+        "Car"
+    ]
 }
