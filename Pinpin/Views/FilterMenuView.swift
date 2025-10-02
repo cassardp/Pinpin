@@ -16,7 +16,6 @@ struct FilterMenuView: View {
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
     
-    @StateObject private var categoryOrderService = CategoryOrderService.shared
     private let dataService = DataService.shared
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
@@ -32,7 +31,7 @@ struct FilterMenuView: View {
     @State private var isShowingDeleteAlert = false
     @FocusState private var isTextFieldFocused: Bool
     
-    // Récupère toutes les catégories avec ordre personnalisé et nettoyage anti-doublons
+    // Récupère toutes les catégories directement depuis SwiftData (ordre natif via sortOrder)
     private var availableTypes: [String] {
         // Filtrer les catégories "Misc" vides pour les cacher
         let visibleCategories = allCategories.filter { category in
@@ -44,11 +43,8 @@ struct FilterMenuView: View {
             return countForType(category.name) > 0
         }
         
-        // Nettoyer les doublons côté SwiftData (sécurité supplémentaire)
-        let uniqueCategories = Array(Set(visibleCategories.map { $0.name }))
-        
-        // Appliquer l'ordre personnalisé avec nettoyage intégré
-        return categoryOrderService.orderedCategories(from: uniqueCategories)
+        // Le tri est déjà fait par @Query(sort: \Category.sortOrder)
+        return visibleCategories.map { $0.name }
     }
     
     // Compte les items par type
@@ -63,7 +59,15 @@ struct FilterMenuView: View {
         generator.impactOccurred()
         
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            categoryOrderService.reorderCategories(from: source, to: destination)
+            var categories = allCategories
+            categories.move(fromOffsets: source, toOffset: destination)
+            
+            // Mettre à jour les sortOrder
+            for (index, category) in categories.enumerated() {
+                category.sortOrder = Int32(index)
+            }
+            
+            try? modelContext.save()
         }
     }
     
@@ -217,13 +221,7 @@ struct FilterMenuView: View {
             
         }
         .ignoresSafeArea(edges: .bottom)
-        .onAppear {
-            // Nettoyage préventif des doublons au démarrage
-            if categoryOrderService.hasDuplicates() {
-                print("⚠️ Doublons détectés dans FilterMenuView: \(categoryOrderService.getDuplicates())")
-                categoryOrderService.cleanupDuplicates()
-            }
-        }
+
         .onChange(of: isMenuOpen) { _, isOpen in
             guard !isOpen else { return }
             resetEditingState()
@@ -299,7 +297,6 @@ func saveRenamedCategory(_ category: Category) {
         
         do {
             try modelContext.save()
-            categoryOrderService.renameCategory(oldName: oldName, newName: newName)
             if selectedContentType == oldName {
                 selectedContentType = newName
             }
@@ -340,7 +337,6 @@ func saveNewCategory() {
 func deleteCategory(_ category: Category) {
         let name = category.name
         dataService.deleteCategory(category)
-        categoryOrderService.removeCategory(named: name)
         
         if selectedContentType == name {
             selectedContentType = nil

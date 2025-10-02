@@ -27,7 +27,6 @@ enum AppConstants {
     static let defaultCategoryName = "Misc"
     
     // MARK: - User Defaults Keys
-    static let categoryOrderKey = "categoryOrder"
     static let numberOfColumnsKey = "numberOfColumns"
     
     // MARK: - Layout

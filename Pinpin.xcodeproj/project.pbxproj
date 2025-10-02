@@ -61,6 +61,22 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4E1835D72E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/Models/Category.swift,
+				Shared/Models/ContentItem.swift,
+			);
+			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
+		};
+		4E1835D82E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMacShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/Models/Category.swift,
+				Shared/Models/ContentItem.swift,
+			);
+			target = 4E3973432E8BC35A001357EA /* PinpinMacShareExtension */;
+		};
 		4E19DB972DFC1AA600357543 /* Exceptions for "PinpinShareExtension" folder in "PinpinShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -71,33 +87,17 @@
 		4E3972172E8BB30D001357EA /* Exceptions for "Pinpin" folder in "PinpinShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Models/Category.swift,
-				Models/ContentItem.swift,
 				Shared/AppConstants.swift,
+				Shared/Models/Category.swift,
+				Shared/Models/ContentItem.swift,
 				Shared/Services/ImageOptimizationService.swift,
 			);
 			target = 4E19DB772DFC174F00357543 /* PinpinShareExtension */;
-		};
-		4E3972B82E8BBE78001357EA /* Exceptions for "Pinpin" folder in "PinpinMac" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/Category.swift,
-				Models/ContentItem.swift,
-			);
-			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
 		};
 		4E3973542E8BC35A001357EA /* Exceptions for "PinpinMacShareExtension" folder in "PinpinMacShareExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-			);
-			target = 4E3973432E8BC35A001357EA /* PinpinMacShareExtension */;
-		};
-		4E3973612E8BCFF7001357EA /* Exceptions for "Pinpin" folder in "PinpinMacShareExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/Category.swift,
-				Models/ContentItem.swift,
 			);
 			target = 4E3973432E8BC35A001357EA /* PinpinMacShareExtension */;
 		};
@@ -166,8 +166,8 @@
 			exceptions = (
 				4EC6B14A2E82F4A1005E3771 /* Exceptions for "Pinpin" folder in "Pinpin" target */,
 				4E3972172E8BB30D001357EA /* Exceptions for "Pinpin" folder in "PinpinShareExtension" target */,
-				4E3972B82E8BBE78001357EA /* Exceptions for "Pinpin" folder in "PinpinMac" target */,
-				4E3973612E8BCFF7001357EA /* Exceptions for "Pinpin" folder in "PinpinMacShareExtension" target */,
+				4E1835D72E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMac" target */,
+				4E1835D82E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMacShareExtension" target */,
 			);
 			path = Pinpin;
 			sourceTree = "<group>";
