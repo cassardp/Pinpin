@@ -17,6 +17,7 @@ final class MainViewModel: ObservableObject {
     @Published var selectedItems: Set<UUID> = []
     @Published var showSearchBar: Bool = false
     @Published var scrollProgress: CGFloat = 0
+    @Published var displayLimit: Int = 50
     
     // MARK: - Dependencies
     private var dataService: DataService {
@@ -29,7 +30,7 @@ final class MainViewModel: ObservableObject {
     
     // MARK: - Filtering Logic
     
-    /// Filtre les items selon la catégorie et la recherche
+    /// Filtre les items selon la catégorie et la recherche avec pagination
     func filteredItems(from allItems: [ContentItem]) -> [ContentItem] {
         // Filtrage par catégorie
         let typeFiltered: [ContentItem]
@@ -41,11 +42,49 @@ final class MainViewModel: ObservableObject {
         
         // Filtrage par recherche
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return typeFiltered }
+        let searchFiltered: [ContentItem]
+        if query.isEmpty {
+            searchFiltered = typeFiltered
+        } else {
+            searchFiltered = typeFiltered.filter { item in
+                matchesSearchQuery(item: item, query: query)
+            }
+        }
+        
+        // Pagination côté UI
+        return Array(searchFiltered.prefix(displayLimit))
+    }
+    
+    /// Compte total des items (avant pagination) pour savoir s'il y en a plus
+    func totalItemsCount(from allItems: [ContentItem]) -> Int {
+        // Filtrage par catégorie
+        let typeFiltered: [ContentItem]
+        if let selectedType = selectedContentType {
+            typeFiltered = allItems.filter { $0.category?.name == selectedType }
+        } else {
+            typeFiltered = allItems
+        }
+        
+        // Filtrage par recherche
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return typeFiltered.count }
         
         return typeFiltered.filter { item in
             matchesSearchQuery(item: item, query: query)
+        }.count
+    }
+    
+    /// Charge plus d'items (augmente la limite)
+    func loadMoreIfNeeded(currentIndex: Int, totalItems: Int, totalBeforePagination: Int) {
+        // Charger plus si on arrive vers la fin (10 items avant)
+        if currentIndex >= totalItems - 10 && displayLimit < totalBeforePagination {
+            displayLimit += 50
         }
+    }
+    
+    /// Reset la pagination (au changement de catégorie ou recherche)
+    func resetPagination() {
+        displayLimit = 50
     }
     
     /// Vérifie si un item correspond à la requête de recherche
@@ -114,12 +153,14 @@ final class MainViewModel: ObservableObject {
     
     func clearSearch() {
         searchQuery = ""
+        resetPagination()
     }
     
     // MARK: - Category Management
     
     func selectCategory(_ category: String?) {
         selectedContentType = category
+        resetPagination()
     }
     
     func clearCategory() {

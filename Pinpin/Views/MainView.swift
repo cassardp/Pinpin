@@ -77,6 +77,11 @@ struct MainView: View {
     private var filteredItems: [ContentItem] {
         viewModel.filteredItems(from: allContentItems)
     }
+    
+    // Total avant pagination
+    private var totalItemsCount: Int {
+        viewModel.totalItemsCount(from: allContentItems)
+    }
 
     init() {
         let dataService = DataService.shared
@@ -135,6 +140,13 @@ struct MainView: View {
                                                 buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
                                                     .overlay(selectionOverlay(for: item))
                                                     .transition(.scale.combined(with: .opacity))
+                                                    .onAppear {
+                                                        viewModel.loadMoreIfNeeded(
+                                                            currentIndex: index,
+                                                            totalItems: filteredItems.count,
+                                                            totalBeforePagination: totalItemsCount
+                                                        )
+                                                    }
                                             } else {
                                                 buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
                                                     .transition(.scale.combined(with: .opacity))
@@ -149,7 +161,7 @@ struct MainView: View {
                                 .transition(.opacity)
                                 .animation(.easeInOut(duration: 0.3), value: viewModel.selectedContentType)
 
-                                if dataService.isLoadingMore {
+                                if viewModel.displayLimit < totalItemsCount {
                                     HStack {
                                         Spacer()
                                         ProgressView().scaleEffect(0.8)
