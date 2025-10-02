@@ -12,6 +12,9 @@ enum AppConstants {
     // MARK: - App Group
     static let groupID = "group.com.misericode.pinpin"
     
+    // MARK: - CloudKit
+    static let cloudKitContainerID = "iCloud.com.misericode.Pinpin"
+    
     
     // MARK: - Image Optimization
     static let maxImageSize: CGFloat = 1024
