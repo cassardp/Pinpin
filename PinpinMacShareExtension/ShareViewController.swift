@@ -169,7 +169,7 @@ class ShareViewController: NSViewController {
                 let configuration = ModelConfiguration(
                     schema: schema,
                     groupContainer: .identifier("group.com.misericode.pinpin"),
-                    cloudKitDatabase: .private("iCloud.com.misericode.Pinpin")
+                    cloudKitDatabase: .automatic
                 )
                 
                 let container = try ModelContainer(for: schema, configurations: [configuration])
@@ -209,7 +209,7 @@ class ShareViewController: NSViewController {
                 try context.save()
                 
                 print("✅ Contenu sauvegardé: \(title)")
-                
+
                 // NSUserNotification est deprecated mais c'est la seule API qui fonctionne dans les Share Extensions
                 // UNUserNotification ne fonctionne pas dans les extensions (permissions refusées)
                 let notification = NSUserNotification()
@@ -217,7 +217,7 @@ class ShareViewController: NSViewController {
                 notification.informativeText = title
                 notification.soundName = NSUserNotificationDefaultSoundName
                 NSUserNotificationCenter.default.deliver(notification)
-                
+
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     self.closeImmediately()
                 }

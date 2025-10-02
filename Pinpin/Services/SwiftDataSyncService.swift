@@ -19,15 +19,15 @@ import CoreData
 final class SwiftDataSyncService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let modelContext: ModelContext
-    
+
     // Solution officielle Apple pour forcer le refresh
     // Changé en Date.now pour être plus précis
     @Published var lastSaveDate = Date.now
-    
+
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
-    
+
     /// Démarre l'écoute des changements externes (depuis l'extension)
     func startListening() {
         // Solution officielle Apple : écouter NSManagedObjectContextDidSave
@@ -39,7 +39,7 @@ final class SwiftDataSyncService: ObservableObject {
                 self?.handleRemoteChange(notification: notification)
             }
             .store(in: &cancellables)
-        
+
         // Écouter aussi les changements d'objets pour une détection plus fine
         NotificationCenter.default
             .publisher(for: .NSManagedObjectContextObjectsDidChange)
@@ -49,10 +49,10 @@ final class SwiftDataSyncService: ObservableObject {
                 self?.handleObjectsChange(notification: notification)
             }
             .store(in: &cancellables)
-        
+
         print("[SwiftDataSync] 🎧 Écoute des changements externes démarrée")
     }
-    
+
     /// Arrête l'écoute
     func stopListening() {
         cancellables.removeAll()

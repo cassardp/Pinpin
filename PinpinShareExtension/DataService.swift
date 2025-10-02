@@ -11,18 +11,16 @@ import SwiftData
 @MainActor
 final class DataService {
     static let shared = DataService()
-    
-    private let groupID = "group.com.misericode.pinpin"
-    
+
     // MARK: - SwiftData Container
     lazy var container: ModelContainer = {
         prepareSharedContainerIfNeeded()
         let schema = Schema([ContentItem.self, Category.self])
-        
+
         // Configuration pour App Group AVEC CloudKit (même config que l'app principale)
         let configuration = ModelConfiguration(
             schema: schema,
-            groupContainer: .identifier(groupID),
+            groupContainer: .identifier(AppConstants.groupID),
             cloudKitDatabase: .automatic // ✅ Apple gère automatiquement
         )
         
@@ -168,7 +166,7 @@ final class DataService {
     }
     
     private func prepareSharedContainerIfNeeded() {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) else {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppConstants.groupID) else {
             print("[ShareExtension][DataService] ❌ IMPOSSIBLE d'accéder au container partagé")
             return
         }

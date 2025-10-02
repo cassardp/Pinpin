@@ -56,6 +56,8 @@ final class DataService: ObservableObject {
     private lazy var categoryRepository = CategoryRepository(context: context)
 
     // MARK: - Services
+    // Note: CloudSyncService est conservé uniquement pour l'affichage du statut dans SettingsView
+    // SwiftData avec .automatic gère la vraie synchronisation CloudKit
     let cloudSyncService = CloudSyncService()
     
     // MARK: - State Management

@@ -7,15 +7,14 @@
 
 import SwiftUI
 import SwiftData
-import UserNotifications
 
 struct MenuBarView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ContentItem.createdAt, order: .reverse) private var items: [ContentItem]
     @Environment(\.openWindow) private var openWindow
-    
-    @State private var lastItemCount = 0
-    
+
+    @State private var syncService: SwiftDataSyncService?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header
@@ -29,9 +28,9 @@ struct MenuBarView: View {
             }
             .padding(.horizontal)
             .padding(.top, 8)
-            
+
             Divider()
-            
+
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
@@ -40,48 +39,17 @@ struct MenuBarView: View {
         }
         .frame(width: 250)
         .padding(.vertical, 8)
+        .id(syncService?.lastSaveDate)
         .onAppear {
-            lastItemCount = items.count
             print("📊 MenuBarView: \(items.count) items au démarrage")
+
+            // Initialiser et démarrer le service de sync
+            let service = SwiftDataSyncService(modelContext: modelContext)
+            service.startListening()
+            syncService = service
         }
-        .onChange(of: items.count) { oldValue, newValue in
-            let addedItems = newValue - oldValue
-            if addedItems > 0 {
-                print("✅ Nouveaux items détectés: \(addedItems) (de \(oldValue) à \(newValue))")
-                Task {
-                    await showNotification(count: addedItems)
-                }
-            }
-        }
-    }
-    
-    private func showNotification(count: Int) async {
-        let center = UNUserNotificationCenter.current()
-        
-        // Vérifier la permission
-        let settings = await center.notificationSettings()
-        guard settings.authorizationStatus == .authorized else {
-            print("⚠️ Notifications non autorisées")
-            return
-        }
-        
-        // Créer la notification
-        let content = UNMutableNotificationContent()
-        content.title = "Added to Pinpin"
-        content.body = count == 1 ? "1 new item" : "\(count) new items"
-        content.sound = .default
-        
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
-        )
-        
-        do {
-            try await center.add(request)
-            print("✅ Notification système affichée: \(count) item(s)")
-        } catch {
-            print("❌ Erreur notification: \(error)")
+        .onDisappear {
+            syncService?.stopListening()
         }
     }
 }
