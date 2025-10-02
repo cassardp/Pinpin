@@ -21,7 +21,7 @@ final class DataService: ObservableObject {
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(AppConstants.groupID),
-            cloudKitDatabase: .automatic // Utilise le container iCloud principal des entitlements
+            cloudKitDatabase: .automatic // ✅ Apple gère tout automatiquement
         )
         
         do {

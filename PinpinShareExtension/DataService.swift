@@ -19,11 +19,11 @@ final class DataService {
         prepareSharedContainerIfNeeded()
         let schema = Schema([ContentItem.self, Category.self])
         
-        // Configuration pour App Group sans CloudKit
+        // Configuration pour App Group AVEC CloudKit (même config que l'app principale)
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(groupID),
-            cloudKitDatabase: .none
+            cloudKitDatabase: .automatic // ✅ Apple gère automatiquement
         )
         
         do {
@@ -174,15 +174,20 @@ final class DataService {
     
     private func prepareSharedContainerIfNeeded() {
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) else {
-            print("[ShareExtension][DataService] Impossible d'accéder au container partagé")
+            print("[ShareExtension][DataService] ❌ IMPOSSIBLE d'accéder au container partagé")
             return
         }
+        print("[ShareExtension][DataService] ✅ Container URL: \(containerURL.path)")
+        
         let libraryURL = containerURL.appendingPathComponent("Library", isDirectory: true)
         let supportURL = libraryURL.appendingPathComponent("Application Support", isDirectory: true)
+        print("[ShareExtension][DataService] 📁 Support URL: \(supportURL.path)")
+        
         do {
             try FileManager.default.createDirectory(at: supportURL, withIntermediateDirectories: true)
+            print("[ShareExtension][DataService] ✅ Répertoire créé/vérifié")
         } catch {
-            print("[ShareExtension][DataService] Erreur préparation container partagé: \(error)")
+            print("[ShareExtension][DataService] ❌ Erreur préparation: \(error)")
         }
     }
     
@@ -190,8 +195,9 @@ final class DataService {
     func save() {
         do {
             try context.save()
+            print("[ShareExtension][DataService] ✅ Sauvegarde réussie!")
         } catch {
-            print("Erreur lors de la sauvegarde dans l'extension: \(error)")
+            print("[ShareExtension][DataService] ❌ Erreur sauvegarde: \(error)")
         }
     }
 }

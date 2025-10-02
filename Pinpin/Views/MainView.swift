@@ -515,14 +515,24 @@ private extension MainView {
     }
     
     func refreshContentAsync() async {
+        print("[MainView] 🔄 Pull-to-refresh démarré...")
+        
         await MainActor.run {
-            print("[MainView] 🔄 Pull-to-refresh...")
-            
-            // Vider le cache et recharger
+            // Vider le cache SwiftData pour forcer la lecture depuis le disque
             modelContext.rollback()
+        }
+        
+        // Petit délai pour laisser CloudKit synchroniser
+        try? await Task.sleep(for: .milliseconds(500))
+        
+        await MainActor.run {
+            // Forcer le refresh du SwiftDataSyncService
+            syncService.forceRefresh()
+            
+            // Recharger les données
             _ = dataService.loadContentItems()
             
-            print("[MainView] ✅ Pull-to-refresh terminé")
+            print("[MainView] ✅ Pull-to-refresh terminé!")
         }
     }
 }
