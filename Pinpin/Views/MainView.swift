@@ -320,6 +320,7 @@ struct MainView: View {
                     isSelectionMode: $viewModel.isSelectionMode,
                     selectedItems: $viewModel.selectedItems,
                     showSettings: $isSettingsOpen,
+                    isMenuOpen: $isMenuOpen,
                     menuSwipeProgress: menuSwipeProgress,
                     scrollProgress: viewModel.scrollProgress,
                     selectedContentType: viewModel.selectedContentType,
@@ -334,10 +335,7 @@ struct MainView: View {
                     onRestoreBar: {
                         viewModel.scrollProgress = 0.0
                     },
-                    onShareCategory: {
-                        shareCurrentCategory()
-                    },
-                    bottomPadding: keyboardHeight > 0 ? 0 : 12
+                    bottomPadding: keyboardHeight > 0 ? -4 : 0
                 )
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .move(edge: .bottom)),
@@ -365,28 +363,7 @@ struct MainView: View {
 
     // MARK: - Sélection (déléguée au ViewModel)
     
-    private func shareCurrentCategory() {
-        let shareText = viewModel.shareCurrentCategory(items: filteredItems)
-        
-        let activityViewController = UIActivityViewController(
-            activityItems: [shareText],
-            applicationActivities: nil
-        )
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootViewController = window.rootViewController {
-            
-            // Configuration pour iPad
-            if let popover = activityViewController.popoverPresentationController {
-                popover.sourceView = window
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            
-            rootViewController.present(activityViewController, animated: true)
-        }
-    }
+    
 
     // MARK: - Card
     @ViewBuilder
@@ -434,7 +411,7 @@ struct MainView: View {
                         }) {
                             Image(systemName: viewModel.selectedItems.contains(item.safeId) ? "checkmark.circle.fill" : "circle")
                                 .foregroundColor(viewModel.selectedItems.contains(item.safeId) ? .red : .gray)
-                                .font(.system(size: 22))
+                                .font(.system(size: 20))
                                 .background(Color.white.opacity(0.8))
                                 .clipShape(Circle())
                         }
@@ -493,9 +470,6 @@ struct MainView: View {
 }
 
 
-#Preview {
-    MainView()
-}
 
 // MARK: - Helpers
 private extension MainView {

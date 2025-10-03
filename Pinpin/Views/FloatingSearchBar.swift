@@ -7,6 +7,7 @@ struct FloatingSearchBar: View {
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
     @Binding var showSettings: Bool
+    @Binding var isMenuOpen: Bool
     var menuSwipeProgress: CGFloat
     var scrollProgress: CGFloat
     @FocusState private var isSearchFocused: Bool
@@ -14,6 +15,7 @@ struct FloatingSearchBar: View {
     @State private var isAnimatingSearchOpen: Bool = false
     @State private var showDeleteConfirmation: Bool = false
     @State private var hapticTrigger: Int = 0
+    @State private var isCategoriesEditing: Bool = false
 
     // Data
     var selectedContentType: String?
@@ -23,7 +25,6 @@ struct FloatingSearchBar: View {
     let onSelectAll: () -> Void
     let onDeleteSelected: () -> Void
     let onRestoreBar: () -> Void
-    let onShareCategory: () -> Void
 
     // Insets
     var bottomPadding: CGFloat = 12
@@ -48,9 +49,9 @@ struct FloatingSearchBar: View {
             }
         }
         .padding(.bottom, bottomPadding)
-        .opacity(1 - menuSwipeProgress) // Seulement le menu affecte l'opacity
-        .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2)) // Pas de scale en mode sélection
-        .offset(y: isSelectionMode ? 0 : scrollProgress * 30) // Pas de décalage en mode sélection
+        // Toujours visible même lors de l'ouverture du menu
+        .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2)) // Réduction de la réduction de taille
+        .offset(y: isSelectionMode ? 0 : scrollProgress * 16) // Réduction du décalage vertical
         .animation(unifiedAnimation, value: showSearchBar)
         .animation(unifiedAnimation, value: isAnimatingSearchOpen)
         .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
@@ -62,6 +63,19 @@ struct FloatingSearchBar: View {
             }
         } message: {
             Text("Are you sure you want to delete \(selectedItems.count) item\(selectedItems.count > 1 ? "s" : "")? This action cannot be undone.")
+        }
+        // Synchroniser l'état d'édition des catégories (provenant du FilterMenuView)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestEditCategories"))) { _ in
+            isCategoriesEditing = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCreateCategory"))) { _ in
+            isCategoriesEditing = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCloseEditing"))) { _ in
+            isCategoriesEditing = false
+        }
+        .onChange(of: isMenuOpen) { _, open in
+            if !open { isCategoriesEditing = false }
         }
     }
     
@@ -105,47 +119,73 @@ struct FloatingSearchBar: View {
                 }
 
                 // Barre de recherche principale (avec padding horizontal)
-                HStack(spacing: 12) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary.opacity(0.5))
 
-                    ZStack(alignment: .leading) {
-                        if searchQuery.isEmpty {
-                            Text(placeholderText)
+                        ZStack(alignment: .leading) {
+                            if searchQuery.isEmpty {
+                                Text(placeholderText)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(.primary.opacity(0.5))
+                            }
+                            TextField("", text: $searchQuery)
                                 .font(.system(size: 17, weight: .medium))
-                                .foregroundColor(.primary.opacity(0.3))
-                        }
-                        TextField("", text: $searchQuery)
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
-                        .focused($isSearchFocused)
-                        .textFieldStyle(.plain)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .submitLabel(.search)
-                        .onSubmit { dismissSearch() }
-
-                    if !searchQuery.isEmpty {
-                        Button {
-                            hapticTrigger += 1
-                            searchQuery = "" 
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 16))
                                 .foregroundColor(.primary)
                         }
+                            .focused($isSearchFocused)
+                            .textFieldStyle(.plain)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .submitLabel(.search)
+                            .onSubmit { dismissSearch() }
+
+                        if !searchQuery.isEmpty {
+                            Button {
+                                hapticTrigger += 1
+                                searchQuery = "" 
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.ultraThinMaterial)
+                            .background(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .fill(Color(UIColor.systemBackground).opacity(0.3))
+                            )
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
+                    )
+                    
+                    // Bouton xmark pour fermer le clavier
+                    Button {
+                        hapticTrigger += 1
+                        dismissSearch()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .background(
+                                        Circle()
+                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 28)
-                        .fill(.thickMaterial)
-                        .stroke(.black.opacity(0.15), lineWidth: 0.5)
-                        .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-                )
                 .padding(.bottom, 12)
                 .padding(.horizontal, 16) // Padding pour la barre de recherche seulement
             }
@@ -155,35 +195,101 @@ struct FloatingSearchBar: View {
     // MARK: - Row compacte
     private var controlsRow: some View {
         HStack {
-            Spacer()
-
-            // Gauche : Share / Cancel
-            Button(action: {
-                hapticTrigger += 1
-                
+            // Gauche : Ellipsis menu / Cancel
+            Group {
                 if isSelectionMode {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        isSelectionMode = false
-                        selectedItems.removeAll()
+                    Button(action: {
+                        hapticTrigger += 1
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isSelectionMode = false
+                            selectedItems.removeAll()
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .background(
+                                        Circle()
+                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
+                    }
+                } else if isCategoriesEditing {
+                    Button(action: {
+                        hapticTrigger += 1
+                        NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestCloseEditing"), object: nil)
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .background(
+                                        Circle()
+                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
                     }
                 } else {
-                    onShareCategory()
+                    Menu {
+                        Button {
+                            hapticTrigger += 1
+                            showSettings = true
+                        } label: {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+
+                        Divider()
+
+                        Button {
+                            hapticTrigger += 1
+                            isMenuOpen = true
+                            NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestEditCategories"), object: nil)
+                        } label: {
+                            Label("Edit categories", systemImage: "pencil")
+                        }
+
+                        Button {
+                            hapticTrigger += 1
+                            isMenuOpen = true
+                            NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestCreateCategory"), object: nil)
+                        } label: {
+                            Label("Add category", systemImage: "plus")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .background(
+                                        Circle()
+                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
+                    }
+                    .menuStyle(.button)
                 }
-            }) {
-                Image(systemName: isSelectionMode ? "xmark" : "square.and.arrow.up")
-                    .font(.system(size: 18, weight: .medium))
-                    .padding(.bottom, 4)
-                    .foregroundColor(.primary)
-                    .frame(width: 48, height: 48)
-                    .background(
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                    )
             }
             .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
+            // Si le menu est ouvert, pousser le bouton gauche à gauche et masquer le reste
+            if isMenuOpen {
+                Spacer()
+            }
 
-            // Centre : Search
+            // Centre : Search (masqué quand le menu est ouvert)
+            if !isMenuOpen {
             Button(action: {
                 hapticTrigger += 1
                 
@@ -200,13 +306,15 @@ struct FloatingSearchBar: View {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.primary.opacity(0.5))
                         Text("Search")
                             .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.primary.opacity(0.5))
+                        Spacer()
                     }
                     .frame(height: 48)
                     .padding(.horizontal, 24)
+                    .frame(maxWidth: .infinity) // Étendre la zone visuelle du bouton
                     .contentTransition(.opacity)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.98)),
@@ -215,19 +323,26 @@ struct FloatingSearchBar: View {
                     .background(
                         RoundedRectangle(cornerRadius: 28)
                             .fill(.ultraThinMaterial)
+                            .background(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .fill(Color(UIColor.systemBackground).opacity(0.3))
+                            )
                             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
                 } else {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16))
+                            .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
                         Text(searchQuery)
-                            .font(.system(size: 18, weight: .medium))
+                            .font(.system(size: 17, weight: .medium))
                             .foregroundColor(.white)
                             .lineLimit(1)
                             .truncationMode(.tail)
+                        
+                        Spacer()
+                        
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
                             .foregroundColor(.white)
@@ -244,6 +359,7 @@ struct FloatingSearchBar: View {
                     }
                     .frame(height: 48)
                     .padding(.horizontal, 22)
+                    .frame(maxWidth: .infinity) // Étendre la zone visuelle du bouton
                     .contentTransition(.opacity)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.98)),
@@ -258,8 +374,11 @@ struct FloatingSearchBar: View {
                 }
             }
             .animation(unifiedAnimation, value: searchQuery)
+            .frame(maxWidth: .infinity) // Prend toute la largeur disponible entre les boutons gauche et droit
+            } // end if !isMenuOpen
 
-            // Droite : Selection / Delete
+            // Droite : Selection / Delete (masqué quand le menu est ouvert)
+            if !isMenuOpen {
             Button(action: {
                 hapticTrigger += 1
                 
@@ -310,16 +429,19 @@ struct FloatingSearchBar: View {
                         } else {
                             RoundedRectangle(cornerRadius: 22)
                                 .fill(.ultraThinMaterial)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 22)
+                                        .fill(Color(UIColor.systemBackground).opacity(0.3))
+                                )
                                 .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                     }
                 )
             }
             .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
-
-            Spacer()
+            } // end if !isMenuOpen
         }
-        .padding(.horizontal, 16) // Padding pour les contrôles seulement
+        .padding(.horizontal, 28) // Padding pour les contrôles seulement
     }
 
     // MARK: - Helper

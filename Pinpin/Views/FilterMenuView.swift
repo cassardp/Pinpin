@@ -152,70 +152,7 @@ struct FilterMenuView: View {
                 }
             }
             
-            // Menu ellipsis en bas à gauche
-            VStack {
-                Spacer()
-                
-                HStack {
-                    if isEditing {
-                        // Mode édition : bouton checkmark simple
-                        Button {
-                            toggleEditing()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                                .frame(width: 44, height: 44)
-                                .background(
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                )
-                        }
-                        .padding(.leading, 32)
-                    } else {
-                        // Mode normal : menu ellipsis
-                        Menu {
-                            Button {
-                                hapticTrigger += 1
-                                onOpenSettings()
-                            } label: {
-                                Label("Settings", systemImage: "gearshape")
-                            }
-
-                            Divider()
-
-                            Button {
-                                toggleEditing()
-                            } label: {
-                                Label("Edit categories", systemImage: "pencil")
-                            }
-
-                            Button {
-                                hapticTrigger += 1
-                                prepareCreateCategory()
-                            } label: {
-                                Label("Add category", systemImage: "plus")
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                                .frame(width: 44, height: 44)
-                                .background(
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                )
-                        }
-                        .menuStyle(.button)
-                        .padding(.leading, 32)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.bottom, 48)
-            }
+            // Pas de bouton local de fermeture d'édition (géré via FloatingSearchBar)
             
         }
         .ignoresSafeArea(edges: .bottom)
@@ -225,6 +162,17 @@ struct FilterMenuView: View {
             resetEditingState()
         }
         .onDisappear(perform: resetEditingState)
+        // Notifications reçues depuis FloatingSearchBar
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestEditCategories"))) { _ in
+            if !isEditing { toggleEditing() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCreateCategory"))) { _ in
+            if !isEditing { toggleEditing() }
+            prepareCreateCategory()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCloseEditing"))) { _ in
+            resetEditingState()
+        }
         .sheet(isPresented: $isShowingRenameSheet) {
             RenameCategorySheet(
                 name: $renameText,
