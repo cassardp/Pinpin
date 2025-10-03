@@ -15,6 +15,17 @@ class ImageUploadService {
             return
         }
         
+        // Log de la taille de l'image
+        let imageSizeKB = Double(imageData.count) / 1024.0
+        let imageSizeMB = imageSizeKB / 1024.0
+        let dimensions = "\(Int(image.size.width))x\(Int(image.size.height))"
+        
+        if imageSizeMB >= 1.0 {
+            print("📊 Image à uploader: \(String(format: "%.2f", imageSizeMB)) MB (\(dimensions))")
+        } else {
+            print("📊 Image à uploader: \(String(format: "%.1f", imageSizeKB)) KB (\(dimensions))")
+        }
+        
         // ImgBB utilise base64 dans le form data
         let base64String = imageData.base64EncodedString()
         

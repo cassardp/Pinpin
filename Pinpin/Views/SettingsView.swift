@@ -48,6 +48,8 @@ struct SettingsView: View {
                         subtitle: "",
                         isOn: $userPreferences.forceDarkMode
                     )
+                    
+                    
 
                 }
                 .padding(.horizontal, 20)

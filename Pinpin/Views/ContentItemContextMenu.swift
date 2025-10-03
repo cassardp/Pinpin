@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import SafariServices
 
 struct ContentItemContextMenu: View {
     let item: ContentItem
@@ -11,6 +12,13 @@ struct ContentItemContextMenu: View {
     // Initialisation directe des catégories pour éviter le délai d'affichage
     private var categoryNames: [String] {
         dataService.fetchCategoryNames()
+    }
+    
+    // Afficher "Search Similar" seulement si une image exploitable est disponible
+    private var canSearchSimilar: Bool {
+        if item.imageData != nil { return true }
+        if let t = item.thumbnailUrl, !t.isEmpty, !t.hasPrefix("images/"), !t.hasPrefix("file://") { return true }
+        return false
     }
     
     var body: some View {
@@ -39,11 +47,19 @@ struct ContentItemContextMenu: View {
                 Label(item.safeCategoryName.capitalized, systemImage: "folder")
             }
             
-            // Search Similar
-            Button(action: {
-                searchSimilarProducts()
-            }) {
-                Label("Search Similar", systemImage: "binoculars")
+            // Search Similar with submenu (liste par défaut)
+            if canSearchSimilar {
+                Menu {
+                    ForEach(SearchSite.defaultSites) { site in
+                        Button(action: {
+                            searchSimilarProducts(query: site.query)
+                        }) {
+                            Label(site.name, systemImage: site.iconName)
+                        }
+                    }
+                } label: {
+                    Label("Search Similar", systemImage: "binoculars")
+                }
             }
             
             Divider()
@@ -78,7 +94,7 @@ struct ContentItemContextMenu: View {
         onStorageStatsRefresh()
     }
     
-    private func searchSimilarProducts() {
+    private func searchSimilarProducts(query: String?) {
         // Extraire l'image du ContentItem
         loadImageFromItem { image in
             guard let image = image else {
@@ -91,17 +107,17 @@ struct ContentItemContextMenu: View {
             
             // Upload vers ImgBB
             ImageUploadService.shared.uploadImage(image) { result in
-                // Fermer la capsule de chargement
-                DispatchQueue.main.async {
-                    Self.hideLoadingCapsule()
-                }
-                
                 switch result {
                 case .success(let imageURL):
-                    // Ouvrir Google Lens avec l'URL de l'image
-                    Self.openGoogleLens(with: imageURL)
+                    // Ouvrir Google Lens avec l'URL de l'image et la query optionnelle
+                    // La capsule reste visible jusqu'à l'ouverture du Safari VC
+                    Self.openGoogleLens(with: imageURL, query: query)
                 case .failure(let error):
                     print("❌ Erreur upload ImgBB: \(error.localizedDescription)")
+                    // Fermer la capsule en cas d'erreur
+                    DispatchQueue.main.async {
+                        Self.hideLoadingCapsule()
+                    }
                 }
             }
         }
@@ -132,15 +148,70 @@ struct ContentItemContextMenu: View {
         }
     }
     
-    private static func openGoogleLens(with imageURL: String) {
-        // URL Google Lens avec l'image uploadée
+    private static func openGoogleLens(with imageURL: String, query: String?) {
+        // URL Google Lens avec l'image uploadée + query text optionnelle
         let encodedImageURL = imageURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let googleLensURL = "https://lens.google.com/uploadbyurl?url=\(encodedImageURL)"
         
-        print("🔍 Ouverture Google Lens avec URL: \(imageURL)")
+        var googleLensURL = "https://lens.google.com/uploadbyurl?url=\(encodedImageURL)"
+        
+        // Ajouter la query si spécifiée
+        if let query = query, !query.isEmpty {
+            let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            googleLensURL += "&q=\(encodedQuery)"
+            print("🔍 Ouverture Google Lens avec URL: \(imageURL)")
+            print("📝 Query de recherche: \(query)")
+        } else {
+            print("🔍 Ouverture Google Lens avec URL: \(imageURL)")
+            print("📝 Sans query spécifique (All)")
+        }
         
         if let url = URL(string: googleLensURL) {
-            UIApplication.shared.open(url)
+            print("🚀 Tentative d'ouverture de Google Lens avec SFSafariViewController...")
+            
+            // Utiliser SFSafariViewController pour simuler un navigateur natif
+            DispatchQueue.main.async {
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first,
+                   let rootViewController = window.rootViewController {
+                    
+                    let safariVC = SFSafariViewController(url: url)
+                    
+                    // Presentation style: large sheet where possible
+                    if UIDevice.current.userInterfaceIdiom == .pad {
+                        // iPad: form sheet with preferred size
+                        safariVC.modalPresentationStyle = .formSheet
+                        safariVC.preferredContentSize = CGSize(width: 900, height: 1200)
+                    } else {
+                        // iPhone: page sheet with large detent (iOS 16+)
+                        safariVC.modalPresentationStyle = .pageSheet
+                    }
+                    
+                    if #available(iOS 16.0, *) {
+                        if let sheet = safariVC.sheetPresentationController {
+                            // Two sizes: half (medium) and full (large)
+                            sheet.detents = [.medium(), .large()]
+                            sheet.selectedDetentIdentifier = .large
+                            sheet.prefersGrabberVisible = true
+                            sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+                            sheet.preferredCornerRadius = 16
+                        }
+                    }
+                    
+                    // Présenter depuis le rootViewController ou le topmost
+                    var topController = rootViewController
+                    while let presented = topController.presentedViewController {
+                        topController = presented
+                    }
+                    
+                    topController.present(safariVC, animated: true) {
+                        print("✅ Safari View Controller présenté avec succès")
+                        // Fermer la capsule une fois le Safari VC affiché
+                        Self.hideLoadingCapsule()
+                    }
+                } else {
+                    print("❌ Impossible de trouver le view controller")
+                }
+            }
         } else {
             print("❌ URL Google Lens invalide")
         }

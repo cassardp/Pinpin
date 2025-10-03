@@ -227,13 +227,16 @@ struct PredefinedSearchView: View {
         // Enlever les extensions courantes pour un affichage plus propre
         let extensionsToRemove = [
             ".com", ".fr", ".org", ".net", ".co", ".io", ".me", ".tv", ".be", ".de", ".uk", ".ca",
-            ".au", ".eu",
+            ".au", ".eu", ".apple", ".pt",
         ]
-        for ext in extensionsToRemove {
-            if cleanDomain.hasSuffix(ext) {
-                cleanDomain = String(cleanDomain.dropLast(ext.count))
-                break
-            }
+        // Supprimer en cascade tant qu'un suffixe correspond (ex: ".com" puis ".apple")
+        while let ext = extensionsToRemove.first(where: { cleanDomain.hasSuffix($0) }) {
+            cleanDomain = String(cleanDomain.dropLast(ext.count))
+        }
+
+        // Nettoyer un éventuel point terminal (ex: "books.")
+        if cleanDomain.hasSuffix(".") {
+            cleanDomain.removeLast()
         }
 
         return cleanDomain
