@@ -163,7 +163,7 @@ struct MainView: View {
                                             if let index = filteredItems.firstIndex(of: item) {
                                                 buildContentCard(for: item, at: index, cornerRadius: dynamicCornerRadius)
                                                     .overlay(selectionOverlay(for: item))
-                                                    .transition(.scale.combined(with: .opacity))
+                                                    .transition(.opacity)
                                                     .onAppear {
                                                         viewModel.loadMoreIfNeeded(
                                                             currentIndex: index,
@@ -173,7 +173,7 @@ struct MainView: View {
                                                     }
                                             } else {
                                                 buildContentCard(for: item, at: 0, cornerRadius: dynamicCornerRadius)
-                                                    .transition(.scale.combined(with: .opacity))
+                                                    .transition(.opacity)
                                             }
                                         }
                                     }
