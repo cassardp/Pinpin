@@ -457,13 +457,27 @@ private extension MainView {
     }
 
     func createNewTextNote() {
-        // Créer un nouvel item textonly vide
+        let categoryRepo = CategoryRepository(context: modelContext)
+
+        // Déterminer la catégorie : si selectedContentType est nil (All), utiliser Misc
+        // Sinon, utiliser la catégorie en cours
+        let targetCategory: Category?
+        if let selectedType = viewModel.selectedContentType {
+            // Chercher la catégorie correspondante dans allCategories
+            targetCategory = allCategories.first { $0.name == selectedType }
+        } else {
+            // On est dans "All", utiliser Misc
+            targetCategory = try? categoryRepo.findOrCreateMiscCategory()
+        }
+
+        // Créer un nouvel item textonly vide avec la catégorie appropriée
         let newItem = ContentItem(
             title: "",
             itemDescription: nil,
             url: nil,
             thumbnailUrl: nil,
-            imageData: nil
+            imageData: nil,
+            category: targetCategory
         )
 
         // L'ajouter au contexte

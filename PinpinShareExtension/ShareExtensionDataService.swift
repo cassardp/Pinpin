@@ -56,7 +56,7 @@ final class ShareExtensionDataService {
             return try categoryRepo.fetchNames()
         } catch {
             print("Erreur lors de la récupération des catégories dans l'extension: \(error)")
-            return ["Général"] // Fallback
+            return ["Misc"] // Fallback
         }
     }
 

@@ -216,7 +216,7 @@ struct PredefinedSearchView: View {
         var cleanDomain = domain.lowercased()
 
         // Enlever les préfixes communs
-        let prefixesToRemove = ["www.", "m.", "mobile.", "app.", "api.", "cdn.", "static.", "media.", "open.", "vm.", "share."]
+        let prefixesToRemove = ["www.", "m.", "mobile.", "app.", "api.", "cdn.", "static.", "media.", "open.", "vm.", "share.", ".fr"]
         for prefix in prefixesToRemove {
             if cleanDomain.hasPrefix(prefix) {
                 cleanDomain = String(cleanDomain.dropFirst(prefix.count))

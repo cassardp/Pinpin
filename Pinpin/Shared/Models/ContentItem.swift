@@ -114,6 +114,6 @@ extension ContentItem {
     
     /// Nom de catégorie sécurisé pour compatibilité
     var safeCategoryName: String {
-        return category?.name ?? "Général"
+        return category?.name ?? "Misc"
     }
 }

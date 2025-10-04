@@ -7,9 +7,23 @@
 
 import SwiftUI
 
+// MARK: - View Extension
+extension View {
+    /// Applique conditionnellement une transformation à une vue
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
 struct TextOnlyContentView: View {
     let item: ContentItem
     let numberOfColumns: Int
+    let isSelectionMode: Bool
     @State private var showingEditSheet = false
     
     var body: some View {
@@ -39,11 +53,14 @@ struct TextOnlyContentView: View {
                 .fill(Color(.systemGray6))
         )
         .contentShape(Rectangle())
-        .onTapGesture {
-            showingEditSheet = true
-        }
-        .sheet(isPresented: $showingEditSheet) {
-            TextEditSheet(item: item)
+        .if(!isSelectionMode) { view in
+            view
+                .onTapGesture {
+                    showingEditSheet = true
+                }
+                .sheet(isPresented: $showingEditSheet) {
+                    TextEditSheet(item: item)
+                }
         }
     }
     
