@@ -16,11 +16,13 @@ struct FloatingSearchBar: View {
     var selectedContentType: String?
     var totalPinsCount: Int = 0
     var bottomPadding: CGFloat = 12
-    
+    var availableCategories: [String] = []
+
     // MARK: - Actions
     let onSelectAll: () -> Void
     let onDeleteSelected: () -> Void
     let onRestoreBar: () -> Void
+    let onMoveToCategory: (String) -> Void
     
     // MARK: - State
     @FocusState private var isSearchFocused: Bool
@@ -45,7 +47,10 @@ struct FloatingSearchBar: View {
         ZStack {
             if showSearchBar {
                 searchBar
-                    .transition(.identity)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)).combined(with: .move(edge: .bottom)),
+                        removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom))
+                    ))
                     .onAppear {
                         // Synchronisation parfaite - pas de délai
                         isSearchFocused = true
@@ -53,12 +58,14 @@ struct FloatingSearchBar: View {
                     }
             } else {
                 controlsRow
-                    .transition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96)),
+                        removal: .opacity.combined(with: .scale(scale: 0.96))
+                    ))
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(.bottom, bottomPadding)
-        .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2))
-        .offset(y: isSelectionMode ? 0 : scrollProgress * 16)
         .background(
             VStack(spacing: 0) {
                 LinearGradient(
@@ -73,8 +80,9 @@ struct FloatingSearchBar: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity)
             .ignoresSafeArea()
         )
         .animation(unifiedAnimation, value: showSearchBar)
@@ -140,6 +148,10 @@ struct FloatingSearchBar: View {
                         selectedContentType: selectedContentType,
                         onSearchSelected: dismissSearch
                     )
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)),
+                        removal: .opacity.combined(with: .move(edge: .top))
+                    ))
                 }
 
                 // Barre de recherche principale (avec padding horizontal)
@@ -242,7 +254,7 @@ struct FloatingSearchBar: View {
                             }
                             Spacer()
                         }
-                        
+
                         Divider()
 
                         Button {
@@ -264,91 +276,147 @@ struct FloatingSearchBar: View {
                     .menuStyle(.button)
                 }
             }
-            .opacity(shouldShowControls ? 1.0 : 0.0)
+            .opacity(isMenuOpen || isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))
             // Si le menu est ouvert, pousser le bouton gauche à gauche et masquer le reste
             if isMenuOpen {
                 Spacer()
             }
 
-            // Centre : Search (masqué quand le menu est ouvert)
+            // Centre : Search ou Move (masqué quand le menu est ouvert)
             if !isMenuOpen {
-            Button(action: openSearch) {
-                if searchQuery.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.4))
-                        Text("Search")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.4))
-                        Spacer()
-                    }
-                    .frame(height: 48)
-                    .padding(.horizontal, 24)
-                    .frame(maxWidth: .infinity) // Étendre la zone visuelle du bouton
-                    .contentTransition(.opacity)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                        removal: .opacity.combined(with: .scale(scale: 0.98))
-                    ))
-                    .background(
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(.regularMaterial)
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-                    )
-                } else {
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white)
-                        Text(searchQuery)
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        
-                        Spacer()
-                        
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white)
-                            .onTapGesture {
-                                hapticTrigger += 1
-                                
-                                // Restaurer la barre à sa taille normale
-                                onRestoreBar()
-                                
-                                withAnimation(unifiedAnimation) {
-                                    searchQuery = ""
+                if isSelectionMode {
+                    if !selectedItems.isEmpty {
+                        // Bouton Move en mode sélection avec items
+                        Menu {
+                            ForEach(availableCategories, id: \.self) { category in
+                                Button {
+                                    hapticTrigger += 1
+                                    onMoveToCategory(category)
+                                } label: {
+                                    Label(category.capitalized, systemImage: "folder")
                                 }
                             }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("\(selectedItems.count)")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.primary)
+                                Image(systemName: "folder")
+                                    .font(.system(size: 17))
+                                    .foregroundColor(.primary)
+                                    .padding(.bottom, 1)
+                            }
+                            .frame(height: 48)
+                            .frame(minWidth: 48)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .fill(.regularMaterial)
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
+                        }
+                        .menuStyle(.button)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity.combined(with: .scale(scale: 0.98))
+                        ))
                     }
-                    .frame(height: 48)
-                    .padding(.horizontal, 22)
-                    .frame(maxWidth: .infinity) // Étendre la zone visuelle du bouton
-                    .contentTransition(.opacity)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                        removal: .opacity.combined(with: .scale(scale: 0.98))
-                    ))
-                    .background(
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(.ultraThickMaterial)
-                            .colorScheme(.dark)
-                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-                    )
+
+                    Spacer()
+                } else {
+                    // Bouton Search normal
+                    Button(action: openSearch) {
+                        if searchQuery.isEmpty {
+                            HStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: scrollProgress > 0.5 ? 20 : 18, weight: .medium))
+                                    .foregroundColor(scrollProgress > 0.5 ? .primary : .primary.opacity(0.4))
+
+                                if scrollProgress < 0.5 {
+                                    Text("Search")
+                                        .font(.system(size: 17, weight: .medium))
+                                        .foregroundColor(.primary.opacity(0.4))
+                                        .opacity(CGFloat(1 - (scrollProgress * 2)))
+                                    Spacer()
+                                }
+                            }
+                            .frame(height: scrollProgress > 0.5 ? 54 : 48)
+                            .padding(.horizontal, scrollProgress > 0.5 ? 0 : CGFloat(24 - (24 * scrollProgress * 2)))
+                            .frame(maxWidth: scrollProgress > 0.5 ? 54 : .infinity)
+                            .contentTransition(.opacity)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                                removal: .opacity.combined(with: .scale(scale: 0.98))
+                            ))
+                            .background(
+                                Group {
+                                    if scrollProgress > 0.5 {
+                                        Circle()
+                                            .fill(.regularMaterial)
+                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 28)
+                                            .fill(.regularMaterial)
+                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
+                                    }
+                                }
+                            )
+                        } else {
+                            HStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.white)
+
+                                Text(searchQuery)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+
+                                Spacer()
+
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.white)
+                                    .onTapGesture {
+                                        hapticTrigger += 1
+
+                                        // Restaurer la barre à sa taille normale
+                                        onRestoreBar()
+
+                                        withAnimation(unifiedAnimation) {
+                                            searchQuery = ""
+                                        }
+                                    }
+                            }
+                            .frame(height: 48)
+                            .padding(.horizontal, 22)
+                            .frame(maxWidth: .infinity)
+                            .contentTransition(.opacity)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                                removal: .opacity.combined(with: .scale(scale: 0.98))
+                            ))
+                            .background(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .fill(.ultraThickMaterial)
+                                    .colorScheme(.dark)
+                                    .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
+                            )
+                        }
+                    }
+                    .animation(unifiedAnimation, value: searchQuery)
+                    .frame(maxWidth: searchQuery.isEmpty && scrollProgress > 0.5 ? 54 : .infinity)
                 }
-            }
-            .animation(unifiedAnimation, value: searchQuery)
-            .frame(maxWidth: .infinity) // Prend toute la largeur disponible entre les boutons gauche et droit
             } // end if !isMenuOpen
 
             // Droite : Selection / Delete (masqué quand le menu est ouvert)
             if !isMenuOpen {
             Button(action: {
                 hapticTrigger += 1
-                
+
                 if isSelectionMode {
                     if selectedItems.isEmpty {
                         onSelectAll()
@@ -401,7 +469,7 @@ struct FloatingSearchBar: View {
                     }
                 )
             }
-            .opacity(shouldShowControls ? 1.0 : 0.0)
+            .opacity(isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))
             } // end if !isMenuOpen
         }
         .padding(.horizontal, 28)

@@ -16,6 +16,9 @@ struct MainView: View {
     @StateObject private var userPreferences = UserPreferences.shared
     @StateObject private var viewModel = MainViewModel()
     @StateObject private var syncService: SwiftDataSyncService
+
+    @Query(sort: \Category.sortOrder, order: .forward)
+    private var allCategories: [Category]
     
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
@@ -275,6 +278,7 @@ struct MainView: View {
                 selectedContentType: viewModel.selectedContentType,
                 totalPinsCount: filteredItems.count,
                 bottomPadding: keyboardHeight > 0 ? -4 : 0,
+                availableCategories: allCategories.map { $0.name },
                 onSelectAll: {
                     viewModel.selectAll(from: filteredItems)
                 },
@@ -284,6 +288,9 @@ struct MainView: View {
                 },
                 onRestoreBar: {
                     viewModel.scrollProgress = 0.0
+                },
+                onMoveToCategory: { categoryName in
+                    moveSelectedItemsToCategory(categoryName, from: filteredItems)
                 }
             )
             .transition(.asymmetric(
@@ -382,24 +389,45 @@ private extension MainView {
     
     func refreshContentAsync() async {
         print("[MainView] 🔄 Pull-to-refresh démarré...")
-        
+
         await MainActor.run {
             // Vider le cache SwiftData pour forcer la lecture depuis le disque
             modelContext.rollback()
         }
-        
+
         // Petit délai pour laisser CloudKit synchroniser
         try? await Task.sleep(for: .milliseconds(500))
-        
+
         await MainActor.run {
             // Forcer le refresh du SwiftDataSyncService
             syncService.forceRefresh()
-            
+
             // Recharger les données
             _ = dataService.loadContentItems()
-            
+
             print("[MainView] ✅ Pull-to-refresh terminé!")
         }
+    }
+
+    func moveSelectedItemsToCategory(_ categoryName: String, from items: [ContentItem]) {
+        hapticTrigger += 1
+
+        let itemsToMove = items.filter { viewModel.selectedItems.contains($0.safeId) }
+        let targetCategory = allCategories.first { $0.name == categoryName }
+
+        for item in itemsToMove {
+            item.category = targetCategory
+            item.updatedAt = Date()
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to move items to category: \(error)")
+        }
+
+        viewModel.selectedItems.removeAll()
+        viewModel.isSelectionMode = false
     }
 }
 

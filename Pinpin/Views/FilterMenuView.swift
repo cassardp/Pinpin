@@ -58,17 +58,35 @@ struct FilterMenuView: View {
     private func moveCategories(from source: IndexSet, to destination: Int) {
         hapticTrigger += 1
 
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            var categories = allCategories
-            categories.move(fromOffsets: source, toOffset: destination)
-
-            // Mettre à jour les sortOrder
-            for (index, category) in categories.enumerated() {
-                category.sortOrder = Int32(index)
+        // Récupérer les catégories visibles dans l'ordre d'affichage
+        let visibleCategories = allCategories.filter { category in
+            if category.name != "Misc" {
+                return true
             }
-
-            try? modelContext.save()
+            return countForType(category.name) > 0
         }
+
+        // Créer une copie mutable des noms pour la réorganisation
+        var visibleNames = visibleCategories.map { $0.name }
+        visibleNames.move(fromOffsets: source, toOffset: destination)
+
+        // Mettre à jour le sortOrder de toutes les catégories visibles
+        for (newIndex, name) in visibleNames.enumerated() {
+            if let category = allCategories.first(where: { $0.name == name }) {
+                category.sortOrder = Int32(newIndex)
+            }
+        }
+
+        // Les catégories non visibles gardent leur ordre après les visibles
+        let hiddenCategories = allCategories.filter { category in
+            !visibleNames.contains(category.name)
+        }
+        for (offset, category) in hiddenCategories.enumerated() {
+            category.sortOrder = Int32(visibleNames.count + offset)
+        }
+
+        // Sauvegarder APRÈS l'animation
+        try? modelContext.save()
     }
     
     var body: some View {
