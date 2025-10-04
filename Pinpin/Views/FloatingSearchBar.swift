@@ -71,11 +71,11 @@ struct FloatingSearchBar: View {
                 LinearGradient(
                     stops: [
                         .init(color: .clear, location: 0.0),
-                        .init(color: Color.primary.opacity(0.02), location: 0.4),
-                        .init(color: Color.primary.opacity(0.06), location: 0.6),
-                        .init(color: Color.primary.opacity(0.12), location: 0.75),
-                        .init(color: Color.primary.opacity(0.22), location: 0.9),
-                        .init(color: Color.primary.opacity(0.35), location: 1.0)
+                        .init(color: .black.opacity(0.02), location: 0.4),
+                        .init(color: .black.opacity(0.06), location: 0.6),
+                        .init(color: .black.opacity(0.12), location: 0.75),
+                        .init(color: .black.opacity(0.22), location: 0.9),
+                        .init(color: .black.opacity(0.35), location: 1.0)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -302,9 +302,8 @@ struct FloatingSearchBar: View {
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.primary)
                                 Image(systemName: "folder")
-                                    .font(.system(size: 17))
+                                    .font(.system(size: 19))
                                     .foregroundColor(.primary)
-                                    .padding(.bottom, 1)
                             }
                             .frame(height: 48)
                             .frame(minWidth: 48)
