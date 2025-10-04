@@ -27,9 +27,7 @@ struct StorageStatsView: View {
                     .foregroundColor(Color(UIColor.systemGray3))
             } else {
                 // Affichage des stats de stockage pour tous les cas
-                let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-                let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-                Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(formatFileSize(totalSize).uppercased()) • V\(version) (\(build))")
+                Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(formatFileSize(totalSize).uppercased())")
                     .font(.footnote)
                     .foregroundColor(Color(UIColor.systemGray3))
             }

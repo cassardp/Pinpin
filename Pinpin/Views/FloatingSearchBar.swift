@@ -2,35 +2,43 @@ import SwiftUI
 
 // MARK: - FloatingSearchBar
 struct FloatingSearchBar: View {
+    // MARK: - Bindings
     @Binding var searchQuery: String
     @Binding var showSearchBar: Bool
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
     @Binding var showSettings: Bool
     @Binding var isMenuOpen: Bool
+    
+    // MARK: - Properties
     var menuSwipeProgress: CGFloat
     var scrollProgress: CGFloat
+    var selectedContentType: String?
+    var totalPinsCount: Int = 0
+    var bottomPadding: CGFloat = 12
+    
+    // MARK: - Actions
+    let onSelectAll: () -> Void
+    let onDeleteSelected: () -> Void
+    let onRestoreBar: () -> Void
+    
+    // MARK: - State
     @FocusState private var isSearchFocused: Bool
     @Namespace private var searchTransitionNS
     @State private var isAnimatingSearchOpen: Bool = false
     @State private var showDeleteConfirmation: Bool = false
     @State private var hapticTrigger: Int = 0
     @State private var isCategoriesEditing: Bool = false
-
-    // Data
-    var selectedContentType: String?
-    var totalPinsCount: Int = 0
-
-    // Actions
-    let onSelectAll: () -> Void
-    let onDeleteSelected: () -> Void
-    let onRestoreBar: () -> Void
-
-    // Insets
-    var bottomPadding: CGFloat = 12
     
-    // Animation unifiée pour synchroniser tous les éléments
+    // MARK: - Constants
     private let unifiedAnimation = Animation.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)
+    private let scrollAnimation = Animation.easeInOut(duration: 0.2)
+    
+    private enum NotificationName {
+        static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
+        static let createCategory = Notification.Name("FilterMenuViewRequestCreateCategory")
+        static let closeEditing = Notification.Name("FilterMenuViewRequestCloseEditing")
+    }
 
     var body: some View {
         // Seulement la barre de recherche/contrôles pour safeAreaInset
@@ -49,29 +57,25 @@ struct FloatingSearchBar: View {
             }
         }
         .padding(.bottom, bottomPadding)
-        // Toujours visible même lors de l'ouverture du menu
-        .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2)) // Réduction de la réduction de taille
-        .offset(y: isSelectionMode ? 0 : scrollProgress * 16) // Réduction du décalage vertical
+        .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2))
+        .offset(y: isSelectionMode ? 0 : scrollProgress * 16)
         .animation(unifiedAnimation, value: showSearchBar)
         .animation(unifiedAnimation, value: isAnimatingSearchOpen)
-        .animation(.easeInOut(duration: 0.2), value: scrollProgress) // Animation fluide du scroll
+        .animation(scrollAnimation, value: scrollProgress)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                onDeleteSelected()
-            }
+            Button("Delete", role: .destructive, action: onDeleteSelected)
         } message: {
-            Text("Are you sure you want to delete \(selectedItems.count) item\(selectedItems.count > 1 ? "s" : "")? This action cannot be undone.")
+            Text(deleteConfirmationMessage)
         }
-        // Synchroniser l'état d'édition des catégories (provenant du FilterMenuView)
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestEditCategories"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: NotificationName.editCategories)) { _ in
             isCategoriesEditing = true
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCreateCategory"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: NotificationName.createCategory)) { _ in
             isCategoriesEditing = true
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCloseEditing"))) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: NotificationName.closeEditing)) { _ in
             isCategoriesEditing = false
         }
         .onChange(of: isMenuOpen) { _, open in
@@ -91,24 +95,26 @@ struct FloatingSearchBar: View {
         }
     }
 
-    // MARK: - Placeholder
+    // MARK: - Computed Properties
     private var placeholderText: String {
         if let selectedType = selectedContentType {
-            // Catégorie spécifique sélectionnée
-            let categoryName = selectedType.capitalized
-            return "Search in \(categoryName)..."
-        } else {
-            // Catégorie "All"
-            return "Search..."
+            return "Search in \(selectedType.capitalized)..."
         }
+        return "Search..."
+    }
+    
+    private var deleteConfirmationMessage: String {
+        "Are you sure you want to delete \(selectedItems.count) item\(selectedItems.count > 1 ? "s" : "")? This action cannot be undone."
+    }
+    
+    private var shouldShowControls: Bool {
+        isSelectionMode || scrollProgress < 0.5
     }
 
 
     // MARK: - SearchBar
     private var searchBar: some View {
-        ZStack(alignment: .bottom) {
-            // Contenu de la barre de recherche au premier plan
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Capsules de recherche prédéfinies (sans padding horizontal)
                 if showSearchBar {
                     PredefinedSearchView(
@@ -153,7 +159,7 @@ struct FloatingSearchBar: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 18)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 28)
@@ -187,9 +193,19 @@ struct FloatingSearchBar: View {
                     }
                 }
                 .padding(.bottom, 12)
-                .padding(.horizontal, 16) // Padding pour la barre de recherche seulement
-            }
+                .padding(.horizontal, 12) // Padding pour la barre de recherche seulement
         }
+        .background(
+            // Dégradé vertical avec blur uniquement derrière la zone de recherche
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.clear,
+                    Color(UIColor.systemBackground)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     // MARK: - Row compacte
@@ -198,46 +214,24 @@ struct FloatingSearchBar: View {
             // Gauche : Ellipsis menu / Cancel
             Group {
                 if isSelectionMode {
-                    Button(action: {
-                        hapticTrigger += 1
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            isSelectionMode = false
-                            selectedItems.removeAll()
+                    CircularButton(
+                        icon: "xmark",
+                        action: {
+                            hapticTrigger += 1
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isSelectionMode = false
+                                selectedItems.removeAll()
+                            }
                         }
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 48, height: 48)
-                            .background(
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .background(
-                                        Circle()
-                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
-                                    )
-                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            )
-                    }
+                    )
                 } else if isCategoriesEditing {
-                    Button(action: {
-                        hapticTrigger += 1
-                        NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestCloseEditing"), object: nil)
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 48, height: 48)
-                            .background(
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .background(
-                                        Circle()
-                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
-                                    )
-                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            )
-                    }
+                    CircularButton(
+                        icon: "xmark",
+                        action: {
+                            hapticTrigger += 1
+                            NotificationCenter.default.post(name: NotificationName.closeEditing, object: nil)
+                        }
+                    )
                 } else {
                     Menu {
                         Button {
@@ -252,7 +246,7 @@ struct FloatingSearchBar: View {
                         Button {
                             hapticTrigger += 1
                             isMenuOpen = true
-                            NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestEditCategories"), object: nil)
+                            NotificationCenter.default.post(name: NotificationName.editCategories, object: nil)
                         } label: {
                             Label("Edit categories", systemImage: "pencil")
                         }
@@ -260,29 +254,17 @@ struct FloatingSearchBar: View {
                         Button {
                             hapticTrigger += 1
                             isMenuOpen = true
-                            NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestCreateCategory"), object: nil)
+                            NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
                         } label: {
                             Label("Add category", systemImage: "plus")
                         }
                     } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 48, height: 48)
-                            .background(
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .background(
-                                        Circle()
-                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
-                                    )
-                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            )
+                        CircularButtonContent(icon: "ellipsis")
                     }
                     .menuStyle(.button)
                 }
             }
-            .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
+            .opacity(shouldShowControls ? 1.0 : 0.0)
             // Si le menu est ouvert, pousser le bouton gauche à gauche et masquer le reste
             if isMenuOpen {
                 Spacer()
@@ -290,18 +272,7 @@ struct FloatingSearchBar: View {
 
             // Centre : Search (masqué quand le menu est ouvert)
             if !isMenuOpen {
-            Button(action: {
-                hapticTrigger += 1
-                
-                // D'abord restaurer la barre à sa taille normale
-                onRestoreBar()
-                
-                isAnimatingSearchOpen = true
-                withAnimation(unifiedAnimation) {
-                    showSearchBar = true
-                }
-                // Focus will be set in searchBar.onAppear with a slight delay
-            }) {
+            Button(action: openSearch) {
                 if searchQuery.isEmpty {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
@@ -438,19 +409,60 @@ struct FloatingSearchBar: View {
                     }
                 )
             }
-            .opacity(isSelectionMode ? 1.0 : (scrollProgress < 0.5 ? 1.0 : 0.0)) // Reste visible en mode sélection
+            .opacity(shouldShowControls ? 1.0 : 0.0)
             } // end if !isMenuOpen
         }
-        .padding(.horizontal, 28) // Padding pour les contrôles seulement
+        .padding(.horizontal, 28)
     }
 
-    // MARK: - Helper
+    // MARK: - Actions
     private func dismissSearch() {
         withAnimation(unifiedAnimation) {
             showSearchBar = false
             isSearchFocused = false
             isAnimatingSearchOpen = false
         }
+    }
+    
+    private func openSearch() {
+        hapticTrigger += 1
+        onRestoreBar()
+        isAnimatingSearchOpen = true
+        withAnimation(unifiedAnimation) {
+            showSearchBar = true
+        }
+    }
+}
+
+// MARK: - Supporting Views
+private struct CircularButton: View {
+    let icon: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            CircularButtonContent(icon: icon)
+        }
+    }
+}
+
+private struct CircularButtonContent: View {
+    let icon: String
+    
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 18, weight: .medium))
+            .foregroundColor(.primary)
+            .frame(width: 48, height: 48)
+            .background(
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .background(
+                        Circle()
+                            .fill(Color(UIColor.systemBackground).opacity(0.3))
+                    )
+                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+            )
     }
 }
 
