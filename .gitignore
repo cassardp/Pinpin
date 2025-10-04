@@ -94,3 +94,4 @@ iOSInjectionProject/
 
 # Migration script (temporary)
 migrate_to_coredata.sh
+.claude/settings.local.json
