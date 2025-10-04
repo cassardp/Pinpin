@@ -59,6 +59,24 @@ struct FloatingSearchBar: View {
         .padding(.bottom, bottomPadding)
         .scaleEffect(isSelectionMode ? 1.0 : (1 - scrollProgress * 0.2))
         .offset(y: isSelectionMode ? 0 : scrollProgress * 16)
+        .background(
+            VStack(spacing: 0) {
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0.0),
+                        .init(color: Color.primary.opacity(0.02), location: 0.4),
+                        .init(color: Color.primary.opacity(0.06), location: 0.6),
+                        .init(color: Color.primary.opacity(0.12), location: 0.75),
+                        .init(color: Color.primary.opacity(0.22), location: 0.9),
+                        .init(color: Color.primary.opacity(0.35), location: 1.0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(maxHeight: .infinity)
+            }
+            .ignoresSafeArea()
+        )
         .animation(unifiedAnimation, value: showSearchBar)
         .animation(unifiedAnimation, value: isAnimatingSearchOpen)
         .animation(scrollAnimation, value: scrollProgress)
@@ -126,16 +144,16 @@ struct FloatingSearchBar: View {
 
                 // Barre de recherche principale (avec padding horizontal)
                 HStack(spacing: 8) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 16) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.5))
+                            .foregroundColor(.primary.opacity(0.4))
 
                         ZStack(alignment: .leading) {
                             if searchQuery.isEmpty {
                                 Text(placeholderText)
                                     .font(.system(size: 17, weight: .medium))
-                                    .foregroundColor(.primary.opacity(0.5))
+                                    .foregroundColor(.primary.opacity(0.4))
                             }
                             TextField("", text: $searchQuery)
                                 .font(.system(size: 17, weight: .medium))
@@ -159,15 +177,11 @@ struct FloatingSearchBar: View {
                             }
                         }
                     }
+                    .frame(height: 48)
                     .padding(.horizontal, 18)
-                    .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.ultraThinMaterial)
-                            .background(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .fill(Color(UIColor.systemBackground).opacity(0.3))
-                            )
+                            .fill(.regularMaterial)
                             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
@@ -183,11 +197,7 @@ struct FloatingSearchBar: View {
                             .frame(width: 48, height: 48)
                             .background(
                                 Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .background(
-                                        Circle()
-                                            .fill(Color(UIColor.systemBackground).opacity(0.3))
-                                    )
+                                    .fill(.regularMaterial)
                                     .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             )
                     }
@@ -195,17 +205,6 @@ struct FloatingSearchBar: View {
                 .padding(.bottom, 12)
                 .padding(.horizontal, 12) // Padding pour la barre de recherche seulement
         }
-        .background(
-            // Dégradé vertical avec blur uniquement derrière la zone de recherche
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.clear,
-                    Color(UIColor.systemBackground)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
     }
 
     // MARK: - Row compacte
@@ -234,18 +233,20 @@ struct FloatingSearchBar: View {
                     )
                 } else {
                     Menu {
-                        Button {
-                            hapticTrigger += 1
-                            showSettings = true
-                        } label: {
-                            Label("Settings", systemImage: "gearshape")
+                        ControlGroup {
+                            Button {
+                                hapticTrigger += 1
+                                showSettings = true
+                            } label: {
+                                Label("Settings", systemImage: "gearshape.fill")
+                            }
+                            Spacer()
                         }
-
+                        
                         Divider()
 
                         Button {
                             hapticTrigger += 1
-                            isMenuOpen = true
                             NotificationCenter.default.post(name: NotificationName.editCategories, object: nil)
                         } label: {
                             Label("Edit categories", systemImage: "pencil")
@@ -253,7 +254,6 @@ struct FloatingSearchBar: View {
 
                         Button {
                             hapticTrigger += 1
-                            isMenuOpen = true
                             NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
                         } label: {
                             Label("Add category", systemImage: "plus")
@@ -277,10 +277,10 @@ struct FloatingSearchBar: View {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.5))
+                            .foregroundColor(.primary.opacity(0.4))
                         Text("Search")
                             .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.5))
+                            .foregroundColor(.primary.opacity(0.4))
                         Spacer()
                     }
                     .frame(height: 48)
@@ -293,11 +293,7 @@ struct FloatingSearchBar: View {
                     ))
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(.ultraThinMaterial)
-                            .background(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .fill(Color(UIColor.systemBackground).opacity(0.3))
-                            )
+                            .fill(.regularMaterial)
                             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
@@ -399,11 +395,7 @@ struct FloatingSearchBar: View {
                                 .stroke(.white.opacity(0.3), lineWidth: 0.5)
                         } else {
                             RoundedRectangle(cornerRadius: 22)
-                                .fill(.ultraThinMaterial)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 22)
-                                        .fill(Color(UIColor.systemBackground).opacity(0.3))
-                                )
+                                .fill(.regularMaterial)
                                 .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                     }
@@ -456,11 +448,7 @@ private struct CircularButtonContent: View {
             .frame(width: 48, height: 48)
             .background(
                 Circle()
-                    .fill(.ultraThinMaterial)
-                    .background(
-                        Circle()
-                            .fill(Color(UIColor.systemBackground).opacity(0.3))
-                    )
+                    .fill(.regularMaterial)
                     .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
             )
     }
