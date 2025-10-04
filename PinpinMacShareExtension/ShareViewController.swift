@@ -174,28 +174,21 @@ class ShareViewController: NSViewController {
                 
                 let container = try ModelContainer(for: schema, configurations: [configuration])
                 let context = container.mainContext
-                
-                // Trouver ou créer la catégorie "Misc"
-                let categoryDescriptor = FetchDescriptor<Category>(
-                    predicate: #Predicate { $0.name == "Misc" }
-                )
-                let categories = try context.fetch(categoryDescriptor)
-                let category: Category
-                
-                if let existingCategory = categories.first {
-                    category = existingCategory
-                } else {
-                    category = Category(name: "Misc")
-                    context.insert(category)
-                }
-                
+
+                // Utiliser les repositories
+                let categoryRepo = CategoryRepository(context: context)
+                let contentRepo = ContentItemRepository(context: context)
+
+                // Trouver ou créer la catégorie "Misc" via repository
+                let category = try categoryRepo.findOrCreateMiscCategory()
+
                 // Préparer les métadonnées OCR
                 var metadata: Data? = nil
                 if let ocrText = ocrText {
                     let metadataDict = ["ocr_text": ocrText]
                     metadata = try? JSONEncoder().encode(metadataDict)
                 }
-                
+
                 // Créer le ContentItem
                 let item = ContentItem(
                     title: title,
@@ -204,8 +197,8 @@ class ShareViewController: NSViewController {
                     metadata: metadata,
                     category: category
                 )
-                
-                context.insert(item)
+
+                contentRepo.insert(item)
                 try context.save()
                 
                 print("✅ Contenu sauvegardé: \(title)")

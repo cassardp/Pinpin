@@ -35,7 +35,65 @@ final class ContentItemRepository {
     func update(_ item: ContentItem) {
         item.updatedAt = Date()
     }
-    
+
+    func updateCategory(_ item: ContentItem, category: Category?) {
+        item.category = category
+        update(item)
+    }
+
+    func updateCategories(_ items: [ContentItem], category: Category?) {
+        for item in items {
+            updateCategory(item, category: category)
+        }
+    }
+
+    func updateTitle(_ item: ContentItem, title: String) {
+        item.title = title
+        update(item)
+    }
+
+    func fetchById(_ id: UUID) throws -> ContentItem? {
+        let descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { $0.id == id }
+        )
+        return try context.fetch(descriptor).first
+    }
+
+    func upsert(id: UUID, userId: UUID?, categoryName: String?, title: String, itemDescription: String?, url: String?, metadata: Data?, thumbnailUrl: String?, imageData: Data?, isHidden: Bool, createdAt: Date?, updatedAt: Date?) throws -> ContentItem {
+        // Chercher par ID
+        if let existing = try fetchById(id) {
+            // Mettre à jour
+            existing.userId = userId ?? existing.userId
+            existing.title = title
+            existing.itemDescription = itemDescription
+            existing.url = url
+            existing.metadata = metadata
+            existing.thumbnailUrl = thumbnailUrl
+            existing.imageData = imageData
+            existing.isHidden = isHidden
+            existing.createdAt = createdAt ?? existing.createdAt
+            existing.updatedAt = Date()
+            return existing
+        }
+
+        // Créer nouveau
+        let item = ContentItem()
+        item.id = id
+        item.userId = userId
+        item.title = title
+        item.itemDescription = itemDescription
+        item.url = url
+        item.metadata = metadata
+        item.thumbnailUrl = thumbnailUrl
+        item.imageData = imageData
+        item.isHidden = isHidden
+        item.createdAt = createdAt ?? Date()
+        item.updatedAt = Date()
+
+        insert(item)
+        return item
+    }
+
     // MARK: - Fetch Operations
     
     func fetchAll(limit: Int? = nil) throws -> [ContentItem] {
@@ -78,9 +136,22 @@ final class ContentItemRepository {
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
         descriptor.fetchLimit = 1
-        
+
         let items = try context.fetch(descriptor)
         return items.first?.thumbnailUrl
+    }
+
+    func fetchFirstImageData(for categoryName: String) throws -> Data? {
+        var descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { item in
+                item.category?.name == categoryName && item.imageData != nil
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+
+        let items = try context.fetch(descriptor)
+        return uniqueItems(items).first?.imageData
     }
     
     func fetchRandom(for categoryName: String) throws -> ContentItem? {

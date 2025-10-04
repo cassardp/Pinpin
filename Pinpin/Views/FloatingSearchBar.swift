@@ -8,6 +8,7 @@ struct FloatingSearchBar: View {
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
     @Binding var showSettings: Bool
+    @Binding var showInfo: Bool
     @Binding var isMenuOpen: Bool
     
     // MARK: - Properties
@@ -23,6 +24,7 @@ struct FloatingSearchBar: View {
     let onDeleteSelected: () -> Void
     let onRestoreBar: () -> Void
     let onMoveToCategory: (String) -> Void
+    let onCreateNote: () -> Void
     
     // MARK: - State
     @FocusState private var isSearchFocused: Bool
@@ -34,7 +36,7 @@ struct FloatingSearchBar: View {
     
     // MARK: - Constants
     private let unifiedAnimation = Animation.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)
-    private let scrollAnimation = Animation.easeInOut(duration: 0.2)
+    private let scrollAnimation = Animation.spring(response: 0.3, dampingFraction: 0.72)
     
     private enum NotificationName {
         static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
@@ -245,6 +247,32 @@ struct FloatingSearchBar: View {
                     )
                 } else {
                     Menu {
+                        // Options visibles uniquement quand le menu est ouvert
+                        if isMenuOpen {
+                            Button {
+                                hapticTrigger += 1
+                                NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
+                            } label: {
+                                Label("Add Category", systemImage: "plus")
+                            }
+                            Button {
+                                hapticTrigger += 1
+                                NotificationCenter.default.post(name: NotificationName.editCategories, object: nil)
+                            } label: {
+                                Label("Edit Categories", systemImage: "arrow.up.arrow.down")
+                            }
+                        } else {
+                            // Option "Add Note" visible uniquement quand le menu est fermé
+                            Button {
+                                hapticTrigger += 1
+                                onCreateNote()
+                            } label: {
+                                Label("Add Note", systemImage: "plus")
+                            }
+                        }
+
+                        Divider()
+
                         ControlGroup {
                             Button {
                                 hapticTrigger += 1
@@ -252,28 +280,20 @@ struct FloatingSearchBar: View {
                             } label: {
                                 Label("Settings", systemImage: "gearshape.fill")
                             }
+
+                            Button {
+                                hapticTrigger += 1
+                                showInfo = true
+                            } label: {
+                                Label("About", systemImage: "info.circle.fill")
+                            }
                             Spacer()
-                        }
-
-                        Divider()
-
-                        Button {
-                            hapticTrigger += 1
-                            NotificationCenter.default.post(name: NotificationName.editCategories, object: nil)
-                        } label: {
-                            Label("Edit categories", systemImage: "pencil")
-                        }
-
-                        Button {
-                            hapticTrigger += 1
-                            NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
-                        } label: {
-                            Label("Add category", systemImage: "plus")
                         }
                     } label: {
                         CircularButtonContent(icon: "ellipsis")
                     }
                     .menuStyle(.button)
+                    .menuOrder(.fixed)
                 }
             }
             .opacity(isMenuOpen || isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))
@@ -309,7 +329,7 @@ struct FloatingSearchBar: View {
                             .frame(minWidth: 48)
                             .padding(.horizontal, 8)
                             .background(
-                                RoundedRectangle(cornerRadius: 22)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(.regularMaterial)
                                     .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             )
@@ -457,11 +477,11 @@ struct FloatingSearchBar: View {
                 .background(
                     Group {
                         if isSelectionMode && !selectedItems.isEmpty {
-                            RoundedRectangle(cornerRadius: 22)
+                            RoundedRectangle(cornerRadius: 24)
                                 .fill(Color.red)
                                 .stroke(.white.opacity(0.3), lineWidth: 0.5)
                         } else {
-                            RoundedRectangle(cornerRadius: 22)
+                            RoundedRectangle(cornerRadius: 24)
                                 .fill(.regularMaterial)
                                 .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }

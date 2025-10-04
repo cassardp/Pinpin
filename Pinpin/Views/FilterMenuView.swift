@@ -70,10 +70,13 @@ struct FilterMenuView: View {
         var visibleNames = visibleCategories.map { $0.name }
         visibleNames.move(fromOffsets: source, toOffset: destination)
 
+        // Préparer les updates de sortOrder pour le repository
+        var updates: [(category: Category, order: Int32)] = []
+
         // Mettre à jour le sortOrder de toutes les catégories visibles
         for (newIndex, name) in visibleNames.enumerated() {
             if let category = allCategories.first(where: { $0.name == name }) {
-                category.sortOrder = Int32(newIndex)
+                updates.append((category, Int32(newIndex)))
             }
         }
 
@@ -82,11 +85,17 @@ struct FilterMenuView: View {
             !visibleNames.contains(category.name)
         }
         for (offset, category) in hiddenCategories.enumerated() {
-            category.sortOrder = Int32(visibleNames.count + offset)
+            updates.append((category, Int32(visibleNames.count + offset)))
         }
 
-        // Sauvegarder APRÈS l'animation
-        try? modelContext.save()
+        // Utiliser le DataService pour persister via repository
+        do {
+            let categoryRepo = CategoryRepository(context: modelContext)
+            categoryRepo.updateSortOrder(categories: updates)
+            try modelContext.save()
+        } catch {
+            print("[FilterMenuView] Failed to update sort order: \(error)")
+        }
     }
     
     var body: some View {
@@ -198,7 +207,7 @@ struct FilterMenuView: View {
                 onSave: handleSaveAction
             )
         }
-        .alert("Delete category?", isPresented: $isShowingDeleteAlert, presenting: categoryToDelete) { category in
+        .alert("Delete Category?", isPresented: $isShowingDeleteAlert, presenting: categoryToDelete) { category in
             Button("Cancel", role: .cancel, action: resetDeleteState)
             Button("Delete", role: .destructive) { deleteCategory(category) }
         } message: { category in
@@ -246,17 +255,17 @@ private extension FilterMenuView {
 func saveRenamedCategory(_ category: Category) {
         let newName = processedCategoryName
         let oldName = category.name
-        
+
         guard validateCategoryName(newName, excludingId: category.id) else {
             resetRenameState()
             return
         }
-        
-        category.name = newName
-        category.updatedAt = Date()
-        
+
         do {
+            let categoryRepo = CategoryRepository(context: modelContext)
+            try categoryRepo.rename(category, newName: newName)
             try modelContext.save()
+
             if selectedContentType == oldName {
                 selectedContentType = newName
             }
@@ -268,24 +277,14 @@ func saveRenamedCategory(_ category: Category) {
 
 func saveNewCategory() {
         let newName = processedCategoryName
-        
+
         guard validateCategoryName(newName) else {
             resetRenameState()
             return
         }
 
-        let newCategory = Category(name: newName)
-        newCategory.sortOrder = Int32(allCategories.count)
-        newCategory.createdAt = Date()
-        newCategory.updatedAt = Date()
-
-        modelContext.insert(newCategory)
-        do {
-            try modelContext.save()
-            selectedContentType = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide
-        } catch {
-            print("Failed to create category: \(error)")
-        }
+        dataService.addCategory(name: newName)
+        selectedContentType = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide
         resetRenameState()
     }
     

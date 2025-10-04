@@ -26,6 +26,7 @@ struct MainView: View {
     @State private var isMenuDragging = false
     @State private var isSettingsOpen = false
     @State private var settingsDetent: PresentationDetent = .medium
+    @State private var isInfoOpen = false
     @State private var showFloatingBar: Bool = true
     @State private var scrollOffset: CGFloat = 0
     @State private var lastScrollOffset: CGFloat = 0
@@ -45,6 +46,10 @@ struct MainView: View {
     
     // Timer pour masquer la barre automatiquement
     @State private var hideBarTimer: Timer?
+
+    // TextEditSheet state
+    @State private var showTextEditSheet: Bool = false
+    @State private var textEditItem: ContentItem?
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -128,6 +133,24 @@ struct MainView: View {
             .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
             .sheet(isPresented: $isSettingsOpen) {
                 settingsSheet
+            }
+            .sheet(isPresented: $isInfoOpen) {
+                InfoSheet()
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.hidden)
+            }
+            .sheet(isPresented: $showTextEditSheet) {
+                if let item = textEditItem {
+                    TextEditSheet(item: item)
+                        .onDisappear {
+                            // Si le titre est vide après la fermeture, supprimer l'item
+                            if item.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                modelContext.delete(item)
+                                try? modelContext.save()
+                            }
+                            textEditItem = nil
+                        }
+                }
             }
             .safeAreaInset(edge: .bottom) {
                 floatingSearchBarView
@@ -272,6 +295,7 @@ struct MainView: View {
                 isSelectionMode: $viewModel.isSelectionMode,
                 selectedItems: $viewModel.selectedItems,
                 showSettings: $isSettingsOpen,
+                showInfo: $isInfoOpen,
                 isMenuOpen: $isMenuOpen,
                 menuSwipeProgress: menuSwipeProgress,
                 scrollProgress: viewModel.scrollProgress,
@@ -291,6 +315,9 @@ struct MainView: View {
                 },
                 onMoveToCategory: { categoryName in
                     moveSelectedItemsToCategory(categoryName, from: filteredItems)
+                },
+                onCreateNote: {
+                    createNewTextNote()
                 }
             )
             .transition(.asymmetric(
@@ -415,10 +442,9 @@ private extension MainView {
         let itemsToMove = items.filter { viewModel.selectedItems.contains($0.safeId) }
         let targetCategory = allCategories.first { $0.name == categoryName }
 
-        for item in itemsToMove {
-            item.category = targetCategory
-            item.updatedAt = Date()
-        }
+        // Utiliser le repository pour mettre à jour les catégories
+        let contentRepo = ContentItemRepository(context: modelContext)
+        contentRepo.updateCategories(itemsToMove, category: targetCategory)
 
         do {
             try modelContext.save()
@@ -428,6 +454,24 @@ private extension MainView {
 
         viewModel.selectedItems.removeAll()
         viewModel.isSelectionMode = false
+    }
+
+    func createNewTextNote() {
+        // Créer un nouvel item textonly vide
+        let newItem = ContentItem(
+            title: "",
+            itemDescription: nil,
+            url: nil,
+            thumbnailUrl: nil,
+            imageData: nil
+        )
+
+        // L'ajouter au contexte
+        modelContext.insert(newItem)
+
+        // Définir l'item à éditer et afficher le sheet
+        textEditItem = newItem
+        showTextEditSheet = true
     }
 }
 

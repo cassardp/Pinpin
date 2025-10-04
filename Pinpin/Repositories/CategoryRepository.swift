@@ -29,7 +29,26 @@ final class CategoryRepository {
     func update(_ category: Category) {
         category.updatedAt = Date()
     }
-    
+
+    func rename(_ category: Category, newName: String) throws {
+        let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        // Vérifier que le nouveau nom n'existe pas déjà (sauf si c'est la même catégorie)
+        if let existing = try fetchByName(trimmedName), existing.id != category.id {
+            return
+        }
+
+        category.name = trimmedName
+        update(category)
+    }
+
+    func updateSortOrder(categories: [(category: Category, order: Int32)]) {
+        for (category, order) in categories {
+            category.sortOrder = order
+        }
+    }
+
     // MARK: - Fetch Operations
     
     func fetchAll() throws -> [Category] {
@@ -42,6 +61,13 @@ final class CategoryRepository {
     func fetchByName(_ name: String) throws -> Category? {
         let descriptor = FetchDescriptor<Category>(
             predicate: #Predicate { $0.name == name }
+        )
+        return try context.fetch(descriptor).first
+    }
+
+    func fetchById(_ id: UUID) throws -> Category? {
+        let descriptor = FetchDescriptor<Category>(
+            predicate: #Predicate { $0.id == id }
         )
         return try context.fetch(descriptor).first
     }
@@ -91,7 +117,7 @@ final class CategoryRepository {
         if let existingCategory = try fetchByName(name) {
             return existingCategory
         }
-        
+
         // Créer une nouvelle catégorie
         let existingCategories = try fetchAll()
         let newCategory = Category(
@@ -99,9 +125,38 @@ final class CategoryRepository {
             sortOrder: Int32(existingCategories.count),
             isDefault: existingCategories.isEmpty
         )
-        
+
         insert(newCategory)
         return newCategory
+    }
+
+    func upsert(id: UUID, name: String, colorHex: String, iconName: String, sortOrder: Int32, isDefault: Bool, createdAt: Date, updatedAt: Date) throws -> Category {
+        // Chercher d'abord par nom
+        if let existing = try fetchByName(name) {
+            // Mettre à jour les propriétés
+            existing.id = id
+            existing.colorHex = colorHex
+            existing.iconName = iconName
+            existing.sortOrder = sortOrder
+            existing.isDefault = isDefault
+            existing.createdAt = createdAt
+            existing.updatedAt = updatedAt
+            return existing
+        }
+
+        // Créer une nouvelle catégorie
+        let category = Category()
+        category.id = id
+        category.name = name
+        category.colorHex = colorHex
+        category.iconName = iconName
+        category.sortOrder = sortOrder
+        category.isDefault = isDefault
+        category.createdAt = createdAt
+        category.updatedAt = updatedAt
+
+        insert(category)
+        return category
     }
     
     // MARK: - Misc Category Management

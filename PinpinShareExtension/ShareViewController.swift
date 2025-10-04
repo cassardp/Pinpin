@@ -212,52 +212,40 @@ class ShareViewController: UIViewController, ObservableObject {
             }
             return
         }
-        
+
         // Utiliser le contenu final si disponible, sinon le contenu temporaire
         let finalContent = self.sharedContent ?? contentData
-        
-        // Sauvegarder directement dans SwiftData
+
+        // Sauvegarder via repositories
         Task { @MainActor in
             let context = modelContainer.mainContext
-            
-            // Trouver ou créer la catégorie
-            let categoryFetch = FetchDescriptor<Category>(
-                predicate: #Predicate<Category> { cat in
-                    cat.name == category
-                }
-            )
-            
-            let existingCategories = try? context.fetch(categoryFetch)
-            let categoryObject: Category
-            
-            if let existing = existingCategories?.first {
-                categoryObject = existing
-            } else {
-                categoryObject = Category(name: category)
-                context.insert(categoryObject)
-            }
-            
-            // Créer le ContentItem
-            let newItem = ContentItem(
-                title: finalContent.title,
-                itemDescription: finalContent.description,
-                url: finalContent.url,
-                thumbnailUrl: finalContent.thumbnailPath,
-                imageData: finalContent.imageData,
-                metadata: self.encodeMetadata(self.ocrMetadata),
-                category: categoryObject
-            )
-            
-            context.insert(newItem)
-            
-            // Sauvegarder immédiatement
+            let categoryRepo = CategoryRepository(context: context)
+            let contentRepo = ContentItemRepository(context: context)
+
             do {
+                // Trouver ou créer la catégorie via repository
+                let categoryObject = try categoryRepo.findOrCreate(name: category)
+
+                // Créer le ContentItem
+                let newItem = ContentItem(
+                    title: finalContent.title,
+                    itemDescription: finalContent.description,
+                    url: finalContent.url,
+                    thumbnailUrl: finalContent.thumbnailPath,
+                    imageData: finalContent.imageData,
+                    metadata: self.encodeMetadata(self.ocrMetadata),
+                    category: categoryObject
+                )
+
+                contentRepo.insert(newItem)
+
+                // Sauvegarder
                 try context.save()
                 print("[ShareExtension] ✅ Item sauvegardé dans SwiftData")
             } catch {
                 print("[ShareExtension] ❌ Erreur sauvegarde: \(error)")
             }
-            
+
             self.completeRequest()
         }
     }

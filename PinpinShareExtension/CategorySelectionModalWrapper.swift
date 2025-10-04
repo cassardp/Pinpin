@@ -19,7 +19,7 @@ struct CategorySelectionModalWrapper: View {
     @State private var newCategoryName = ""
     @State private var selectedCategory: String? = nil
     
-    private let dataService = DataService.shared
+    private let dataService = ShareExtensionDataService.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -165,7 +165,7 @@ struct CategoryCard: View {
     
     @State private var firstImageData: Data? = nil
     @State private var itemCount: Int = 0
-    private let dataService = DataService.shared
+    private let dataService = ShareExtensionDataService.shared
     
     // Style uniforme pour les catégories sans items (comme l'icône d'ajout)
     private var fallbackIconView: some View {

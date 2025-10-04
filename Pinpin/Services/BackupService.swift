@@ -190,112 +190,76 @@ final class BackupService: ObservableObject {
             print("[BackupService] Import des images depuis le dossier images/")
         }
         
-        // Import des catégories d'abord
+        // Import des catégories d'abord via repository
+        let categoryRepo = CategoryRepository(context: dataService.context)
         for bc in backup.categories {
-            // Chercher si la catégorie existe déjà
-            let descriptor = FetchDescriptor<Category>(
-                predicate: #Predicate { $0.name == bc.name }
-            )
-            
             do {
-                let existingCategories = try dataService.context.fetch(descriptor)
-                let category: Category
-                
-                if let existing = existingCategories.first {
-                    category = existing
-                } else {
-                    category = Category()
-                    dataService.context.insert(category)
-                }
-                
-                category.id = bc.id
-                category.name = bc.name
-                category.colorHex = bc.colorHex
-                category.iconName = bc.iconName
-                category.sortOrder = bc.sortOrder
-                category.isDefault = bc.isDefault
-                category.createdAt = bc.createdAt
-                category.updatedAt = bc.updatedAt
+                _ = try categoryRepo.upsert(
+                    id: bc.id,
+                    name: bc.name,
+                    colorHex: bc.colorHex,
+                    iconName: bc.iconName,
+                    sortOrder: bc.sortOrder,
+                    isDefault: bc.isDefault,
+                    createdAt: bc.createdAt,
+                    updatedAt: bc.updatedAt
+                )
             } catch {
                 print("Erreur lors de l'import de la catégorie \(bc.name): \(error)")
             }
         }
         
-        // Merge SwiftData des items par id
+        // Merge SwiftData des items par id via repository
+        let contentRepo = ContentItemRepository(context: dataService.context)
         for bi in backup.items {
-            // Chercher si l'item existe déjà
-            let descriptor = FetchDescriptor<ContentItem>(
-                predicate: #Predicate { $0.id == bi.id }
-            )
-            
             do {
-                let existingItems = try dataService.context.fetch(descriptor)
-                let item: ContentItem
-                
-                if let existing = existingItems.first {
-                    item = existing
-                } else {
-                    item = ContentItem()
-                    dataService.context.insert(item)
-                }
-                
-                item.id = bi.id
-                item.userId = bi.userId ?? item.userId
-                
-                // Associer la catégorie par nom
-                if let categoryName = bi.categoryName {
-                    let categoryDescriptor = FetchDescriptor<Category>(
-                        predicate: #Predicate { $0.name == categoryName }
-                    )
-                    
-                    if let category = try dataService.context.fetch(categoryDescriptor).first {
-                        item.category = category
-                    }
-                }
-                
-                item.title = bi.title
-                item.itemDescription = bi.itemDescription
-                item.url = bi.url
-                
                 // Convertir les métadonnées en Data
+                var metadataData: Data?
                 if !bi.metadata.isEmpty {
-                    do {
-                        item.metadata = try JSONSerialization.data(withJSONObject: bi.metadata)
-                    } catch {
-                        print("Erreur lors de la conversion des métadonnées: \(error)")
-                        item.metadata = nil
-                    }
-                } else {
-                    item.metadata = nil
+                    metadataData = try? JSONSerialization.data(withJSONObject: bi.metadata)
                 }
-                
-                item.thumbnailUrl = bi.thumbnailUrl
-                
+
                 // Restaurer l'image depuis le fichier si elle existe
+                var imageData: Data?
                 if bi.hasImage {
                     let imageFileName = "\(bi.id.uuidString).jpg"
                     let imageURL = imagesDir.appendingPathComponent(imageFileName)
-                    
+
                     if fm.fileExists(atPath: imageURL.path) {
                         do {
-                            item.imageData = try Data(contentsOf: imageURL)
+                            imageData = try Data(contentsOf: imageURL)
                             importedImageCount += 1
                             print("[BackupService] Image importée: \(imageFileName)")
                         } catch {
                             print("[BackupService] Erreur import image \(imageFileName): \(error)")
-                            item.imageData = nil
                         }
                     } else {
                         print("[BackupService] Image manquante: \(imageFileName)")
-                        item.imageData = nil
                     }
-                } else {
-                    item.imageData = nil
                 }
-                
-                item.isHidden = bi.isHidden
-                item.createdAt = bi.createdAt ?? item.createdAt
-                item.updatedAt = Date()
+
+                // Upsert via repository
+                let item = try contentRepo.upsert(
+                    id: bi.id,
+                    userId: bi.userId,
+                    categoryName: bi.categoryName,
+                    title: bi.title,
+                    itemDescription: bi.itemDescription,
+                    url: bi.url,
+                    metadata: metadataData,
+                    thumbnailUrl: bi.thumbnailUrl,
+                    imageData: imageData,
+                    isHidden: bi.isHidden,
+                    createdAt: bi.createdAt,
+                    updatedAt: bi.updatedAt
+                )
+
+                // Associer la catégorie par nom
+                if let categoryName = bi.categoryName {
+                    if let category = try categoryRepo.fetchByName(categoryName) {
+                        contentRepo.updateCategory(item, category: category)
+                    }
+                }
             } catch {
                 print("Erreur lors de l'import de l'item \(bi.id): \(error)")
             }

@@ -66,15 +66,15 @@ struct TextEditSheet: View {
     }
     
     // MARK: - Actions
-    
+
     private func saveChanges() {
         // Nettoyer le texte
         let cleanTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Sauvegarder les modifications
-        item.title = cleanTitle
-        item.updatedAt = Date()
-        
+
+        // Utiliser le repository pour mettre à jour le titre
+        let contentRepo = ContentItemRepository(context: modelContext)
+        contentRepo.updateTitle(item, title: cleanTitle)
+
         // Sauvegarder dans le contexte
         do {
             try modelContext.save()

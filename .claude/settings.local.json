@@ -1,9 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(find:*)",
+      "Bash(xcodebuild:*)",
+      "WebSearch",
+      "WebFetch(domain:nilcoalescing.com)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "Explanatory",
+  "spinnerTipsEnabled": true
 }
