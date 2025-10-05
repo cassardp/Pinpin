@@ -28,7 +28,13 @@ class UserPreferences: ObservableObject {
             UserDefaults.standard.set(disableCornerRadius, forKey: "disableCornerRadius")
         }
     }
-    
+
+    @Published var showCategoryTitles: Bool {
+        didSet {
+            UserDefaults.standard.set(showCategoryTitles, forKey: "showCategoryTitles")
+        }
+    }
+
     @Published var themeMode: ThemeMode {
         didSet {
             UserDefaults.standard.set(themeMode.rawValue, forKey: "themeMode")
@@ -53,7 +59,8 @@ class UserPreferences: ObservableObject {
     private init() {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
-        
+        self.showCategoryTitles = UserDefaults.standard.object(forKey: "showCategoryTitles") as? Bool ?? true
+
         // Migration de l'ancien système
         if let savedTheme = UserDefaults.standard.string(forKey: "themeMode"),
            let themeMode = ThemeMode(rawValue: savedTheme) {

@@ -44,6 +44,18 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsToggleRow(
+                        title: "Show Category Titles",
+                        subtitle: "",
+                        isOn: $userPreferences.showCategoryTitles
+                    )
+
+                    // Ligne de séparation
+                    Divider()
+                        .background(Color.gray.opacity(0.1))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                    SettingsToggleRow(
                         title: colorScheme == .dark ? "Force Light Mode" : "Force Dark Mode",
                         subtitle: "",
                         isOn: $userPreferences.forceDarkMode
