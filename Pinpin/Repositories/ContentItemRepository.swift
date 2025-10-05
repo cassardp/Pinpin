@@ -59,6 +59,36 @@ final class ContentItemRepository {
         return try context.fetch(descriptor).first
     }
 
+    /// Vérifie si un item identique (même title + url) a été créé dans les dernières secondes
+    /// Utilisé pour éviter les doublons lors de clics/taps rapides
+    func fetchRecentDuplicate(title: String, url: String?, withinSeconds: TimeInterval = 2.0) throws -> ContentItem? {
+        let cutoffDate = Date().addingTimeInterval(-withinSeconds)
+
+        // Cas 1: Item avec URL
+        if let url = url, !url.isEmpty {
+            let descriptor = FetchDescriptor<ContentItem>(
+                predicate: #Predicate { item in
+                    item.title == title &&
+                    item.url == url &&
+                    item.createdAt >= cutoffDate
+                },
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+            return try context.fetch(descriptor).first
+        }
+
+        // Cas 2: Item sans URL (notes textuelles)
+        let descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { item in
+                item.title == title &&
+                (item.url == nil || item.url == "") &&
+                item.createdAt >= cutoffDate
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return try context.fetch(descriptor).first
+    }
+
     func upsert(id: UUID, userId: UUID?, categoryName: String?, title: String, itemDescription: String?, url: String?, metadata: Data?, thumbnailUrl: String?, imageData: Data?, isHidden: Bool, createdAt: Date?, updatedAt: Date?) throws -> ContentItem {
         // Chercher par ID
         if let existing = try fetchById(id) {

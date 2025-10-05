@@ -12,6 +12,6 @@
     "deny": [],
     "ask": []
   },
-  "outputStyle": "Explanatory",
+  "outputStyle": "default",
   "spinnerTipsEnabled": true
 }

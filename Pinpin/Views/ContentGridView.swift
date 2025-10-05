@@ -18,6 +18,16 @@ struct ContentGridView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Header avec le nom de la catégorie
+            Text(selectedContentType ?? "All")
+                .font(.system(size: 24, design: .serif))
+                .italic()
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 32)
+                .padding(.top, 20)
+
             PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
                 ForEach(items, id: \.safeId) { item in
                     itemCard(for: item)

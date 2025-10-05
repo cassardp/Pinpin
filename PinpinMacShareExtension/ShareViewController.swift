@@ -179,6 +179,19 @@ class ShareViewController: NSViewController {
                 let categoryRepo = CategoryRepository(context: context)
                 let contentRepo = ContentItemRepository(context: context)
 
+                // Vérifier si un item identique a été créé récemment (évite les doublons lors de clics rapides)
+                if let existingItem = try? contentRepo.fetchRecentDuplicate(
+                    title: title,
+                    url: url.absoluteString,
+                    withinSeconds: 2.0
+                ) {
+                    print("⚠️ Item identique trouvé (créé il y a \(Date().timeIntervalSince(existingItem.createdAt))s), skip")
+                    DispatchQueue.main.async {
+                        self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+                    }
+                    return
+                }
+
                 // Trouver ou créer la catégorie "Misc" via repository
                 let category = try categoryRepo.findOrCreateMiscCategory()
 

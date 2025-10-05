@@ -223,6 +223,17 @@ class ShareViewController: UIViewController, ObservableObject {
             let contentRepo = ContentItemRepository(context: context)
 
             do {
+                // Vérifier si un item identique a été créé récemment (évite les doublons lors de taps rapides)
+                if let existingItem = try contentRepo.fetchRecentDuplicate(
+                    title: finalContent.title,
+                    url: finalContent.url,
+                    withinSeconds: 2.0
+                ) {
+                    print("[ShareExtension] ⚠️ Item identique trouvé (créé il y a \(Date().timeIntervalSince(existingItem.createdAt))s), skip")
+                    self.completeRequest()
+                    return
+                }
+
                 // Trouver ou créer la catégorie via repository
                 let categoryObject = try categoryRepo.findOrCreate(name: category)
 

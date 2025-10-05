@@ -22,9 +22,9 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
     @State private var hapticTrigger: Int = 0
     
     // Stricter horizontal swipe detection to avoid diagonal swipes
-    private let horizontalBiasRatio: CGFloat = 3.0         // |dx| must be >= ratio * |dy|
-    private let maxVerticalDeviation: CGFloat = 20.0       // vertical movement must stay under this (pts)
-    private let minHorizontalTrigger: CGFloat = 12.0       // need some horizontal intent before locking
+    private let horizontalBiasRatio: CGFloat = 2.5         // |dx| must be >= ratio * |dy|
+    private let maxVerticalDeviation: CGFloat = 30.0       // vertical movement must stay under this (pts)
+    private let minHorizontalTrigger: CGFloat = 8.0        // need some horizontal intent before locking
 
     var body: some View {
         GeometryReader { geo in
@@ -57,7 +57,7 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 hapticTrigger += 1
-                                withAnimation(.snappy(duration: 0.22)) {
+                                withAnimation(.snappy(duration: 0.35)) {
                                     isOpen = false
                                 }
                             }
@@ -121,18 +121,18 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                             return
                         }
                         
-                        withAnimation(.snappy(duration: 0.22)) {
+                        withAnimation(.snappy(duration: 0.35)) {
                             if isOpen {
-                                // Fermer si swipe gauche > 25% de la largeur OU vitesse rapide
+                                // Fermer si swipe gauche > 20% de la largeur OU vitesse rapide
                                 let velocity = value.predictedEndTranslation.width - dx
-                                if dx < -width * 0.25 || velocity < -200 {
+                                if dx < -width * 0.2 || velocity < -150 {
                                     hapticTrigger += 1
                                     isOpen = false
                                 }
                             } else {
-                                // Ouvrir si swipe droite > 25% de la largeur OU vitesse rapide
+                                // Ouvrir si swipe droite > 20% de la largeur OU vitesse rapide
                                 let velocity = value.predictedEndTranslation.width - dx
-                                if dx > width * 0.25 || velocity > 200 {
+                                if dx > width * 0.2 || velocity > 150 {
                                     hapticTrigger += 1
                                     isOpen = true
                                 }
@@ -141,7 +141,7 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         }
                     }
             )
-            .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.86, blendDuration: 0), value: isOpen)
+            .animation(.interactiveSpring(response: 0.35, dampingFraction: 0.68, blendDuration: 0), value: isOpen)
         }
     }
 }

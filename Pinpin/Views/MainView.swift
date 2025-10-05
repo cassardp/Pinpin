@@ -458,6 +458,17 @@ private extension MainView {
 
     func createNewTextNote() {
         let categoryRepo = CategoryRepository(context: modelContext)
+        let contentRepo = ContentItemRepository(context: modelContext)
+
+        // Vérifier si un item vide identique a été créé récemment (évite les doublons lors de clics rapides)
+        if let _ = try? contentRepo.fetchRecentDuplicate(
+            title: "",
+            url: nil,
+            withinSeconds: 2.0
+        ) {
+            print("[MainView] ⚠️ Note vide identique trouvée récemment, skip")
+            return
+        }
 
         // Déterminer la catégorie : si selectedContentType est nil (All), utiliser Misc
         // Sinon, utiliser la catégorie en cours
