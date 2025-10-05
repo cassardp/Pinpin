@@ -40,7 +40,7 @@ struct FloatingSearchBar: View {
     // MARK: - Constants
     private let unifiedAnimation = Animation.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)
     private let scrollAnimation = Animation.spring(response: 0.3, dampingFraction: 0.72)
-    private let searchTransitionAnimation = Animation.spring(response: 0.4, dampingFraction: 0.82)
+    private let searchTransitionAnimation = Animation.spring(response: 0.35, dampingFraction: 0.75, blendDuration: 0.05)
     
     private enum NotificationName {
         static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
@@ -59,9 +59,11 @@ struct FloatingSearchBar: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             isSearchFocused = true
                         }
-                        // Apparition progressive des capsules et du bouton close après le morphing de la barre
-                        withAnimation(searchTransitionAnimation.delay(0.15)) {
+                        // Apparition progressive des capsules et du bouton close avec timing optimisé
+                        withAnimation(searchTransitionAnimation.delay(0.08)) {
                             showCapsules = true
+                        }
+                        withAnimation(searchTransitionAnimation.delay(0.12)) {
                             showCloseButton = true
                         }
                         isAnimatingSearchOpen = false
@@ -153,7 +155,12 @@ struct FloatingSearchBar: View {
                         selectedContentType: selectedContentType,
                         onSearchSelected: dismissSearch
                     )
-                    .transition(.scale(scale: 0.9, anchor: .top).combined(with: .opacity))
+                    .transition(
+                        .asymmetric(
+                            insertion: .scale(scale: 0.92, anchor: .top).combined(with: .opacity).combined(with: .move(edge: .top)),
+                            removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
+                        )
+                    )
                 }
 
                 // Barre de recherche principale (avec padding horizontal)
@@ -222,7 +229,12 @@ struct FloatingSearchBar: View {
                                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                                 )
                         }
-                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.7).combined(with: .opacity),
+                                removal: .scale(scale: 0.9).combined(with: .opacity)
+                            )
+                        )
                     }
                 }
                 .padding(.bottom, 12)
@@ -376,6 +388,7 @@ struct FloatingSearchBar: View {
                             .frame(height: scrollProgress > 0.5 ? 54 : 48)
                             .padding(.horizontal, scrollProgress > 0.5 ? 0 : CGFloat(24 - (24 * scrollProgress * 2)))
                             .frame(maxWidth: scrollProgress > 0.5 ? 54 : .infinity)
+                            .scaleEffect(isAnimatingSearchOpen ? 0.95 : 1.0)
                             .contentTransition(.opacity)
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.98)),
