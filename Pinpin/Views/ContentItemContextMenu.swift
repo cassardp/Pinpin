@@ -149,10 +149,13 @@ struct ContentItemContextMenu: View {
     }
     
     private static func openGoogleLens(with imageURL: String, query: String?) {
+        let startTime = Date()
+        
         // URL Google Lens avec l'image uploadée + query text optionnelle
         let encodedImageURL = imageURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         
-        var googleLensURL = "https://lens.google.com/uploadbyurl?url=\(encodedImageURL)"
+        // Utiliser /upload au lieu de /uploadbyurl pour de meilleures performances
+        var googleLensURL = "https://lens.google.com/upload?url=\(encodedImageURL)"
         
         // Ajouter la query si spécifiée
         if let query = query, !query.isEmpty {
@@ -164,6 +167,9 @@ struct ContentItemContextMenu: View {
             print("🔍 Ouverture Google Lens avec URL: \(imageURL)")
             print("📝 Sans query spécifique (All)")
         }
+        
+        let urlBuildTime = Date().timeIntervalSince(startTime)
+        print("⏱️ Construction URL: \(String(format: "%.3f", urlBuildTime))s")
         
         if let url = URL(string: googleLensURL) {
             print("🚀 Tentative d'ouverture de Google Lens avec SFSafariViewController...")
@@ -203,8 +209,13 @@ struct ContentItemContextMenu: View {
                         topController = presented
                     }
                     
+                    let presentTime = Date()
                     topController.present(safariVC, animated: true) {
+                        let totalTime = Date().timeIntervalSince(startTime)
+                        let presentDuration = Date().timeIntervalSince(presentTime)
                         print("✅ Safari View Controller présenté avec succès")
+                        print("⏱️ Temps présentation Safari: \(String(format: "%.3f", presentDuration))s")
+                        print("⏱️ Temps total (construction + présentation): \(String(format: "%.3f", totalTime))s")
                         // Fermer la capsule une fois le Safari VC affiché
                         Self.hideLoadingCapsule()
                     }

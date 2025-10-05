@@ -17,6 +17,7 @@ class ShareViewController: UIViewController, ObservableObject {
     private var sharedContent: SharedContentData?
     @Published var isProcessingContent = false
     private var ocrMetadata: [String: String] = [:]
+    private var isSaving = false // Protection contre les doubles clics
     
     // SwiftData container partagé (recommandation Apple)
     private lazy var modelContainer: ModelContainer = {
@@ -205,6 +206,12 @@ class ShareViewController: UIViewController, ObservableObject {
     }
     
     private func saveContent(_ contentData: SharedContentData, to category: String) {
+        // Protection contre les doubles clics
+        guard !isSaving else {
+            print("[ShareExtension] ⚠️ Sauvegarde déjà en cours, skip")
+            return
+        }
+        
         // Si le traitement est encore en cours, attendre qu'il se termine
         if isProcessingContent {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -213,6 +220,8 @@ class ShareViewController: UIViewController, ObservableObject {
             return
         }
 
+        isSaving = true
+        
         // Utiliser le contenu final si disponible, sinon le contenu temporaire
         let finalContent = self.sharedContent ?? contentData
 
@@ -223,13 +232,12 @@ class ShareViewController: UIViewController, ObservableObject {
             let contentRepo = ContentItemRepository(context: context)
 
             do {
-                // Vérifier si un item identique a été créé récemment (évite les doublons lors de taps rapides)
-                if let existingItem = try contentRepo.fetchRecentDuplicate(
+                // Vérifier si un item identique existe déjà dans la base (évite les vrais doublons)
+                if let existingItem = try contentRepo.fetchExistingDuplicate(
                     title: finalContent.title,
-                    url: finalContent.url,
-                    withinSeconds: 2.0
+                    url: finalContent.url
                 ) {
-                    print("[ShareExtension] ⚠️ Item identique trouvé (créé il y a \(Date().timeIntervalSince(existingItem.createdAt))s), skip")
+                    print("[ShareExtension] ⚠️ Item identique déjà existant (créé le \(existingItem.createdAt)), skip")
                     self.completeRequest()
                     return
                 }
@@ -257,6 +265,7 @@ class ShareViewController: UIViewController, ObservableObject {
                 print("[ShareExtension] ❌ Erreur sauvegarde: \(error)")
             }
 
+            self.isSaving = false
             self.completeRequest()
         }
     }

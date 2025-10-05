@@ -89,6 +89,31 @@ final class ContentItemRepository {
         return try context.fetch(descriptor).first
     }
 
+    /// Vérifie si un item identique existe déjà (même title + url), peu importe la date
+    /// Utilisé pour éviter les vrais doublons dans la base
+    func fetchExistingDuplicate(title: String, url: String?) throws -> ContentItem? {
+        // Cas 1: Item avec URL
+        if let url = url, !url.isEmpty {
+            let descriptor = FetchDescriptor<ContentItem>(
+                predicate: #Predicate { item in
+                    item.title == title && item.url == url
+                },
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+            return try context.fetch(descriptor).first
+        }
+
+        // Cas 2: Item sans URL (notes textuelles)
+        let descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { item in
+                item.title == title &&
+                (item.url == nil || item.url == "")
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return try context.fetch(descriptor).first
+    }
+
     func upsert(id: UUID, userId: UUID?, categoryName: String?, title: String, itemDescription: String?, url: String?, metadata: Data?, thumbnailUrl: String?, imageData: Data?, isHidden: Bool, createdAt: Date?, updatedAt: Date?) throws -> ContentItem {
         // Chercher par ID
         if let existing = try fetchById(id) {
