@@ -230,6 +230,16 @@ struct MainView: View {
                         dismissKeyboard()
                         viewModel.closeSearch()
                     }
+                    .gesture(
+                        DragGesture(minimumDistance: 30)
+                            .onEnded { value in
+                                // Swipe vers le bas (translation.height > 0)
+                                if value.translation.height > 50 {
+                                    dismissKeyboard()
+                                    viewModel.closeSearch()
+                                }
+                            }
+                    )
             }
         }
     }

@@ -52,7 +52,6 @@ struct PredefinedSearchView: View {
             .padding(.leading, 16)  // Alignement avec la barre de recherche
         }
         .padding(.bottom, 8)
-        .transition(.move(edge: .top).combined(with: .opacity))
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .onAppear {
             generateDynamicSearches()

@@ -34,10 +34,13 @@ struct FloatingSearchBar: View {
     @State private var showDeleteConfirmation: Bool = false
     @State private var hapticTrigger: Int = 0
     @State private var isCategoriesEditing: Bool = false
+    @State private var showCapsules: Bool = false
+    @State private var showCloseButton: Bool = false
     
     // MARK: - Constants
     private let unifiedAnimation = Animation.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)
     private let scrollAnimation = Animation.spring(response: 0.3, dampingFraction: 0.72)
+    private let searchTransitionAnimation = Animation.spring(response: 0.4, dampingFraction: 0.82)
     
     private enum NotificationName {
         static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
@@ -50,21 +53,26 @@ struct FloatingSearchBar: View {
         ZStack {
             if showSearchBar {
                 searchBar
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)).combined(with: .move(edge: .bottom)),
-                        removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom))
-                    ))
+                    .transition(.identity)
                     .onAppear {
-                        // Synchronisation parfaite - pas de délai
-                        isSearchFocused = true
+                        // Petit délai pour garantir que le clavier s'affiche
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            isSearchFocused = true
+                        }
+                        // Apparition progressive des capsules et du bouton close après le morphing de la barre
+                        withAnimation(searchTransitionAnimation.delay(0.15)) {
+                            showCapsules = true
+                            showCloseButton = true
+                        }
                         isAnimatingSearchOpen = false
+                    }
+                    .onDisappear {
+                        showCapsules = false
+                        showCloseButton = false
                     }
             } else {
                 controlsRow
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                        removal: .opacity.combined(with: .scale(scale: 0.96))
-                    ))
+                    .transition(.scale(scale: 0.96).combined(with: .opacity))
             }
         }
         .frame(maxWidth: .infinity)
@@ -88,8 +96,8 @@ struct FloatingSearchBar: View {
             .frame(maxWidth: .infinity)
             .ignoresSafeArea()
         )
-        .animation(unifiedAnimation, value: showSearchBar)
-        .animation(unifiedAnimation, value: isAnimatingSearchOpen)
+        .animation(searchTransitionAnimation, value: showSearchBar)
+        .animation(searchTransitionAnimation, value: isAnimatingSearchOpen)
         .animation(scrollAnimation, value: scrollProgress)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
@@ -139,16 +147,13 @@ struct FloatingSearchBar: View {
     private var searchBar: some View {
         VStack(spacing: 0) {
                 // Capsules de recherche prédéfinies (sans padding horizontal)
-                if showSearchBar {
+                if showCapsules {
                     PredefinedSearchView(
                         searchQuery: $searchQuery,
                         selectedContentType: selectedContentType,
                         onSearchSelected: dismissSearch
                     )
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)),
-                        removal: .opacity.combined(with: .move(edge: .top))
-                    ))
+                    .transition(.scale(scale: 0.9, anchor: .top).combined(with: .opacity))
                 }
 
                 // Barre de recherche principale (avec padding horizontal)
@@ -157,16 +162,21 @@ struct FloatingSearchBar: View {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.primary.opacity(0.4))
+                            .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
 
                         ZStack(alignment: .leading) {
                             if searchQuery.isEmpty {
                                 Text(placeholderText)
                                     .font(.system(size: 17, weight: .medium))
                                     .foregroundColor(.primary.opacity(0.4))
+                                    .opacity(showSearchBar ? 1 : 0)
+                                    .animation(searchTransitionAnimation.delay(0.1), value: showSearchBar)
                             }
                             TextField("", text: $searchQuery)
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(.primary)
+                                .opacity(showSearchBar ? 1 : 0)
+                                .animation(searchTransitionAnimation.delay(0.1), value: showSearchBar)
                         }
                             .focused($isSearchFocused)
                             .textFieldStyle(.plain)
@@ -178,12 +188,13 @@ struct FloatingSearchBar: View {
                         if !searchQuery.isEmpty {
                             Button {
                                 hapticTrigger += 1
-                                searchQuery = "" 
+                                searchQuery = ""
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
                             }
+                            .transition(.scale.combined(with: .opacity))
                         }
                     }
                     .frame(height: 48)
@@ -194,21 +205,24 @@ struct FloatingSearchBar: View {
                             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                             .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
                     )
-                    
+
                     // Bouton xmark pour fermer le clavier
-                    Button {
-                        hapticTrigger += 1
-                        dismissSearch()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 48, height: 48)
-                            .background(
-                                Circle()
-                                    .fill(.regularMaterial)
-                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            )
+                    if showCloseButton {
+                        Button {
+                            hapticTrigger += 1
+                            dismissSearch()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.primary)
+                                .frame(width: 48, height: 48)
+                                .background(
+                                    Circle()
+                                        .fill(.regularMaterial)
+                                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                )
+                        }
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
                     }
                 }
                 .padding(.bottom, 12)
@@ -349,6 +363,7 @@ struct FloatingSearchBar: View {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: scrollProgress > 0.5 ? 20 : 18, weight: .medium))
                                     .foregroundColor(scrollProgress > 0.5 ? .primary : .primary.opacity(0.4))
+                                    .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
 
                                 if scrollProgress < 0.5 {
                                     Text("Search")
@@ -494,18 +509,18 @@ struct FloatingSearchBar: View {
 
     // MARK: - Actions
     private func dismissSearch() {
-        withAnimation(unifiedAnimation) {
+        withAnimation(searchTransitionAnimation) {
             showSearchBar = false
             isSearchFocused = false
             isAnimatingSearchOpen = false
         }
     }
-    
+
     private func openSearch() {
         hapticTrigger += 1
         onRestoreBar()
         isAnimatingSearchOpen = true
-        withAnimation(unifiedAnimation) {
+        withAnimation(searchTransitionAnimation) {
             showSearchBar = true
         }
     }
