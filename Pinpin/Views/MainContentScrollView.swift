@@ -191,6 +191,7 @@ struct MainContentScrollView: View {
     }
     
     @ViewBuilder
+    
     private var storageStats: some View {
         if !filteredItems.isEmpty {
             StorageStatsView(
@@ -198,7 +199,7 @@ struct MainContentScrollView: View {
                 filteredItems: filteredItems
             )
             .padding(.top, 50)
-            .padding(.bottom, 30)
+            .padding(.bottom, 90)
             .id(storageStatsRefreshTrigger)
         }
     }

@@ -10,17 +10,19 @@ import SwiftUI
 struct TextEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
-    let item: ContentItem
-    
+
+    let item: ContentItem?
+    let targetCategory: Category?
+
     @State private var editedTitle: String
     @State private var editedDescription: String
     @FocusState private var isTextFieldFocused: Bool
-    
-    init(item: ContentItem) {
+
+    init(item: ContentItem? = nil, targetCategory: Category? = nil) {
         self.item = item
-        self._editedTitle = State(initialValue: item.title)
-        self._editedDescription = State(initialValue: item.itemDescription ?? "")
+        self.targetCategory = targetCategory
+        self._editedTitle = State(initialValue: item?.title ?? "")
+        self._editedDescription = State(initialValue: item?.itemDescription ?? "")
     }
     
     var body: some View {
@@ -68,14 +70,28 @@ struct TextEditSheet: View {
     // MARK: - Actions
 
     private func saveChanges() {
-        // Nettoyer le texte
         let cleanTitle = editedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // Utiliser le repository pour mettre à jour le titre
-        let contentRepo = ContentItemRepository(context: modelContext)
-        contentRepo.updateTitle(item, title: cleanTitle)
+        guard !cleanTitle.isEmpty else { return }
 
-        // Sauvegarder dans le contexte
+        let contentRepo = ContentItemRepository(context: modelContext)
+
+        if let existingItem = item {
+            // Mode édition : mettre à jour l'item existant
+            contentRepo.updateTitle(existingItem, title: cleanTitle)
+        } else {
+            // Mode création : créer un nouvel item seulement si le texte n'est pas vide
+            let newItem = ContentItem(
+                title: cleanTitle,
+                itemDescription: nil,
+                url: nil,
+                thumbnailUrl: nil,
+                imageData: nil,
+                category: targetCategory
+            )
+            modelContext.insert(newItem)
+        }
+
         do {
             try modelContext.save()
         } catch {

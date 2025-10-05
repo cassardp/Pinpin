@@ -18,6 +18,7 @@ struct FloatingSearchBar: View {
     var totalPinsCount: Int = 0
     var bottomPadding: CGFloat = 12
     var availableCategories: [String] = []
+    var currentCategory: String?
 
     // MARK: - Actions
     let onSelectAll: () -> Void
@@ -111,18 +112,6 @@ struct FloatingSearchBar: View {
         }
     }
     
-    // MARK: - Overlay séparé pour MainView
-    func overlayView() -> some View {
-        Group {
-            if showSearchBar {
-                Color.black.opacity(0.001)
-                    .ignoresSafeArea()
-                    .onTapGesture { dismissSearch() }
-                    .transition(.opacity)
-            }
-        }
-    }
-
     // MARK: - Computed Properties
     private var placeholderText: String {
         if let selectedType = selectedContentType {
@@ -130,13 +119,19 @@ struct FloatingSearchBar: View {
         }
         return "Search..."
     }
-    
+
     private var deleteConfirmationMessage: String {
         "Are you sure you want to delete \(selectedItems.count) item\(selectedItems.count > 1 ? "s" : "")? This action cannot be undone."
     }
-    
+
     private var shouldShowControls: Bool {
         isSelectionMode || scrollProgress < 0.5
+    }
+
+    private var sortedCategories: [String] {
+        let misc = availableCategories.filter { $0.lowercased() == "misc" }
+        let others = availableCategories.filter { $0.lowercased() != "misc" }.reversed()
+        return misc + Array(others)
     }
 
 
@@ -305,15 +300,21 @@ struct FloatingSearchBar: View {
             // Centre : Search ou Move (masqué quand le menu est ouvert)
             if !isMenuOpen {
                 if isSelectionMode {
+                    Spacer()
+
                     if !selectedItems.isEmpty {
                         // Bouton Move en mode sélection avec items
                         Menu {
-                            ForEach(availableCategories, id: \.self) { category in
+                            ForEach(sortedCategories, id: \.self) { category in
                                 Button {
                                     hapticTrigger += 1
                                     onMoveToCategory(category)
                                 } label: {
-                                    Label(category.capitalized, systemImage: "folder")
+                                    if category == currentCategory {
+                                        Label(category.capitalized, systemImage: "folder")
+                                            } else {
+                                        Label(category.capitalized, systemImage: "folder")
+                                    }
                                 }
                             }
                         } label: {
@@ -340,8 +341,6 @@ struct FloatingSearchBar: View {
                             removal: .opacity.combined(with: .scale(scale: 0.98))
                         ))
                     }
-
-                    Spacer()
                 } else {
                     // Bouton Search normal
                     Button(action: openSearch) {
@@ -353,7 +352,7 @@ struct FloatingSearchBar: View {
 
                                 if scrollProgress < 0.5 {
                                     Text("Search")
-                                        .font(.system(size: 17, weight: .medium))
+                                        .font(.system(size: 17, weight: .regular))
                                         .foregroundColor(.primary.opacity(0.4))
                                         .opacity(CGFloat(1 - (scrollProgress * 2)))
                                     Spacer()
@@ -389,7 +388,7 @@ struct FloatingSearchBar: View {
                                     .foregroundColor(.white)
 
                                 Text(searchQuery)
-                                    .font(.system(size: 17, weight: .medium))
+                                    .font(.system(size: 17, weight: .regular))
                                     .foregroundColor(.white)
                                     .lineLimit(1)
                                     .truncationMode(.tail)
@@ -460,9 +459,8 @@ struct FloatingSearchBar: View {
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white)
                                 Image(systemName: "trash")
-                                    .font(.system(size: 17))
+                                    .font(.system(size: 19))
                                     .foregroundColor(.white)
-                                    .padding(.bottom, 1)
                             }
                         }
                     } else {
@@ -479,7 +477,7 @@ struct FloatingSearchBar: View {
                         if isSelectionMode && !selectedItems.isEmpty {
                             RoundedRectangle(cornerRadius: 24)
                                 .fill(Color.red)
-                                .stroke(.white.opacity(0.3), lineWidth: 0.5)
+                                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         } else {
                             RoundedRectangle(cornerRadius: 24)
                                 .fill(.regularMaterial)

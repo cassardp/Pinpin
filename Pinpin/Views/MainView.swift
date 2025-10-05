@@ -50,6 +50,7 @@ struct MainView: View {
     // TextEditSheet state
     @State private var showTextEditSheet: Bool = false
     @State private var textEditItem: ContentItem?
+    @State private var textEditTargetCategory: Category?
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -122,6 +123,9 @@ struct MainView: View {
 
     var body: some View {
         mainDrawerView
+            .overlay(alignment: .bottom) {
+                floatingSearchBarView
+            }
             .onAppear(perform: handleViewAppear)
             .onDisappear(perform: handleViewDisappear)
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -140,20 +144,11 @@ struct MainView: View {
                     .presentationDragIndicator(.hidden)
             }
             .sheet(isPresented: $showTextEditSheet) {
-                if let item = textEditItem {
-                    TextEditSheet(item: item)
-                        .onDisappear {
-                            // Si le titre est vide après la fermeture, supprimer l'item
-                            if item.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                modelContext.delete(item)
-                                try? modelContext.save()
-                            }
-                            textEditItem = nil
-                        }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                floatingSearchBarView
+                TextEditSheet(item: textEditItem, targetCategory: textEditTargetCategory)
+                    .onDisappear {
+                        textEditItem = nil
+                        textEditTargetCategory = nil
+                    }
             }
             .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
                 deleteConfirmationButtons
@@ -181,9 +176,9 @@ struct MainView: View {
     private var mainContentView: some View {
         ZStack {
             Color(UIColor.systemBackground)
-            
+
             topRestoreBar
-            
+
             MainContentScrollView(
                 selectedContentType: $viewModel.selectedContentType,
                 searchQuery: $viewModel.searchQuery,
@@ -227,8 +222,15 @@ struct MainView: View {
                     storageStatsRefreshTrigger += 1
                 }
             )
-            
-            searchBarOverlay
+
+            if viewModel.showSearchBar {
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        dismissKeyboard()
+                        viewModel.closeSearch()
+                    }
+            }
         }
     }
     
@@ -249,19 +251,6 @@ struct MainView: View {
                 Spacer()
             }
             .ignoresSafeArea(edges: .top)
-        }
-    }
-    
-    // MARK: - Search Bar Overlay
-    @ViewBuilder
-    private var searchBarOverlay: some View {
-        if viewModel.showSearchBar {
-            Color.black.opacity(0.001)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    dismissKeyboard()
-                    viewModel.closeSearch()
-                }
         }
     }
     
@@ -303,6 +292,7 @@ struct MainView: View {
                 totalPinsCount: filteredItems.count,
                 bottomPadding: keyboardHeight > 0 ? -4 : 0,
                 availableCategories: allCategories.map { $0.name },
+                currentCategory: viewModel.selectedContentType,
                 onSelectAll: {
                     viewModel.selectAll(from: filteredItems)
                 },
@@ -458,44 +448,19 @@ private extension MainView {
 
     func createNewTextNote() {
         let categoryRepo = CategoryRepository(context: modelContext)
-        let contentRepo = ContentItemRepository(context: modelContext)
-
-        // Vérifier si un item vide identique a été créé récemment (évite les doublons lors de clics rapides)
-        if let _ = try? contentRepo.fetchRecentDuplicate(
-            title: "",
-            url: nil,
-            withinSeconds: 2.0
-        ) {
-            print("[MainView] ⚠️ Note vide identique trouvée récemment, skip")
-            return
-        }
 
         // Déterminer la catégorie : si selectedContentType est nil (All), utiliser Misc
         // Sinon, utiliser la catégorie en cours
         let targetCategory: Category?
         if let selectedType = viewModel.selectedContentType {
-            // Chercher la catégorie correspondante dans allCategories
             targetCategory = allCategories.first { $0.name == selectedType }
         } else {
-            // On est dans "All", utiliser Misc
             targetCategory = try? categoryRepo.findOrCreateMiscCategory()
         }
 
-        // Créer un nouvel item textonly vide avec la catégorie appropriée
-        let newItem = ContentItem(
-            title: "",
-            itemDescription: nil,
-            url: nil,
-            thumbnailUrl: nil,
-            imageData: nil,
-            category: targetCategory
-        )
-
-        // L'ajouter au contexte
-        modelContext.insert(newItem)
-
-        // Définir l'item à éditer et afficher le sheet
-        textEditItem = newItem
+        // Ne pas créer l'item maintenant, juste passer la catégorie au sheet
+        textEditItem = nil // Mode création
+        textEditTargetCategory = targetCategory
         showTextEditSheet = true
     }
 }

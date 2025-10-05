@@ -22,9 +22,10 @@ struct ContentGridView: View {
         VStack(spacing: 0) {
             // Header avec le nom de la catégorie
             if userPreferences.showCategoryTitles {
-                Text(selectedContentType ?? "All")
+                Text(selectedContentType ?? "Welcome")
                     .font(.system(size: 24, design: .serif))
                     .italic()
+                    .fontWeight(.thin)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
