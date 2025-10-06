@@ -224,8 +224,9 @@ struct MainView: View {
             )
 
             if viewModel.showSearchBar {
-                Color.black.opacity(0.001)
+                Color.black.opacity(0.4)
                     .ignoresSafeArea()
+                    .transition(.opacity)
                     .onTapGesture {
                         dismissKeyboard()
                         viewModel.closeSearch()

@@ -24,12 +24,16 @@ struct SearchSite: Identifiable, Codable {
     
     static let defaultSites: [SearchSite] = [
         SearchSite(name: "All", query: nil, iconName: "globe"),
-        SearchSite(name: "Leboncoin", query: "leboncoin", iconName: "tag"),
-        SearchSite(name: "Vinted", query: "vinted", iconName: "tshirt"),
+        SearchSite(name: "Amazon", query: "amazon", iconName: "shippingbox.fill"),
+        SearchSite(name: "Leboncoin", query: "leboncoin.fr", iconName: "tag"),
+        SearchSite(name: "Vinted", query: "vinted.com", iconName: "tshirt"),
         SearchSite(name: "eBay", query: "ebay.com", iconName: "chair"),
-        SearchSite(name: "Selency", query: "selency", iconName: "lamp.desk"),
+        SearchSite(name: "Etsy", query: "etsy", iconName: "paintpalette"),
+        SearchSite(name: "Selency", query: "selency.fr", iconName: "lamp.desk"),
         SearchSite(name: "AutoScout24", query: "autoscout24.com", iconName: "car"),
-        SearchSite(name: "La Centrale", query: "lacentrale.fr", iconName: "car.fill"),
-        SearchSite(name: "Vestiaire Collective", query: "vestiairecollective.com", iconName: "bag")
+        SearchSite(name: "Vestiaire Collective", query: "vestiairecollective.com", iconName: "bag"),
+        SearchSite(name: "Temu", query: "temu.com", iconName: "cart"),
+        SearchSite(name: "AliExpress", query: "aliexpress.com", iconName: "shippingbox"),
+        SearchSite(name: "Shein", query: "shein.com", iconName: "sparkles")
     ]
 }
