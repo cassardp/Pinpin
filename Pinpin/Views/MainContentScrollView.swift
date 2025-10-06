@@ -52,6 +52,7 @@ struct MainContentScrollView: View {
                         onMenuStateChange(newValue)
                     }
                     .animation(nil, value: selectedContentType)
+                    .animation(nil, value: syncServiceLastSaveDate)
                     .id(syncServiceLastSaveDate)
             }
             .scrollIndicators(.hidden)
@@ -208,6 +209,11 @@ struct MainContentScrollView: View {
                 Spacer()
             }
             .padding(.vertical, 20)
+            .onAppear {
+                // Force un "load more" lorsque l’on atteint visuellement le bas
+                // Utiliser l’index du dernier item actuellement affiché
+                onLoadMore(max(0, displayLimit - 1))
+            }
         }
     }
     

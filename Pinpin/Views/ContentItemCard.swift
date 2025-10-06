@@ -20,15 +20,12 @@ struct ContentItemCard: View {
         ZStack(alignment: .bottomLeading) {
             // Vue unifiée pour toutes les catégories
             unifiedContentView
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .compositingGroup()
-            .clipped()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             // URL en overlay dans le coin bas gauche
             if userPreferences.showURLs, let url = item.url, !url.isEmpty {
                 Text(shortenURL(url))
                     .font(.caption2)
-                    .fontWeight(.medium)
                     .foregroundColor(.primary.opacity(0.7))
                     .lineLimit(1)
                     .truncationMode(.tail)

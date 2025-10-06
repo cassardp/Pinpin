@@ -21,7 +21,7 @@ final class ShareExtensionDataService {
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(AppConstants.groupID),
-            cloudKitDatabase: .automatic
+            cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
 
         do {

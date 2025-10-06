@@ -25,7 +25,7 @@ class ShareViewController: UIViewController, ObservableObject {
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(AppConstants.groupID),
-            cloudKitDatabase: .automatic // Utilise le container iCloud principal des entitlements
+            cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
         do {
             return try ModelContainer(for: schema, configurations: [configuration])

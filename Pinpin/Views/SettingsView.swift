@@ -44,9 +44,9 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsToggleRow(
-                        title: "Show Category Titles",
+                        title: "Hide Category Titles",
                         subtitle: "",
-                        isOn: $userPreferences.showCategoryTitles
+                        isOn: $userPreferences.hideCategoryTitles
                     )
 
                     // Ligne de séparation
@@ -56,9 +56,9 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsToggleRow(
-                        title: "Enable Timeline View",
-                        subtitle: "Group items by date in All category",
-                        isOn: $userPreferences.enableTimelineView
+                        title: "Disable Timeline",
+                        subtitle: "",
+                        isOn: $userPreferences.disableTimeline
                     )
 
                     // Ligne de séparation

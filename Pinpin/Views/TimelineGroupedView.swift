@@ -20,13 +20,10 @@ struct TimelineGroupedView: View {
     // Cache du calendrier
     private let calendar = Calendar.current
     
-    // Grouper les items par jour (mémoïsé)
-    private var groupedByDay: [(date: Date, items: [ContentItem])] {
-        let grouped = Dictionary(grouping: items) { item in
-            calendar.startOfDay(for: item.createdAt)
-        }
-        return grouped.sorted { $0.key > $1.key }.map { (date: $0.key, items: $0.value) }
-    }
+    // Grouper les items par jour (mémorisé dans l'état)
+    @State private var groupedByDay: [(date: Date, items: [ContentItem])] = []
+    // Index global par ID pour la pagination (évite O(n^2))
+    @State private var indexById: [UUID: Int] = [:]
     
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 32) {
@@ -78,6 +75,7 @@ struct TimelineGroupedView: View {
                         selectedItems: selectedItems,
                         dataService: dataService,
                         onLoadMore: onLoadMore,
+                        globalIndexProvider: { id in indexById[id] },
                         onToggleSelection: onToggleSelection,
                         onDeleteItem: onDeleteItem,
                         onStorageStatsRefresh: onStorageStatsRefresh
@@ -86,6 +84,9 @@ struct TimelineGroupedView: View {
                 .padding(.top, calendar.isDateInToday(group.date) ? -24 : 0)
             }
         }
+        .transaction { $0.animation = nil }
+        .onAppear { recomputeGroupsAndIndex() }
+        .onChange(of: items) { _, _ in recomputeGroupsAndIndex() }
     }
     
     // DateFormatters statiques pour éviter la recréation
@@ -114,6 +115,23 @@ struct TimelineGroupedView: View {
             return Self.otherYearFormatter.string(from: date)
         }
     }
+
+    private func recomputeGroupsAndIndex() {
+        // Recalcul du groupement par jour
+        let grouped = Dictionary(grouping: items) { item in
+            calendar.startOfDay(for: item.createdAt)
+        }
+        let sortedDates = grouped.keys.sorted(by: >)
+        groupedByDay = sortedDates.map { date in
+            (date: date, items: grouped[date] ?? [])
+        }
+        // Recalcul de l'index global (id -> index)
+        var map: [UUID: Int] = [:]
+        for (idx, it) in items.enumerated() {
+            map[it.safeId] = idx
+        }
+        indexById = map
+    }
 }
 
 // Grille pour les items d'un jour
@@ -128,32 +146,31 @@ struct TimelineDayGrid: View {
     let selectedItems: Set<UUID>
     let dataService: DataService
     let onLoadMore: (Int) -> Void
+    let globalIndexProvider: (UUID) -> Int?
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
     
     var body: some View {
         PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
-            ForEach(items, id: \.safeId) { item in
-                itemCard(for: item)
+            ForEach(items.indices, id: \.self) { index in
+                let item = items[index]
+                buildCard(for: item)
                     .id(item.safeId)
+                    .onAppear {
+                        if let globalIndex = globalIndexProvider(item.safeId) {
+                            onLoadMore(globalIndex)
+                        } else {
+                            onLoadMore(index)
+                        }
+                    }
             }
         }
         .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
         .animation(.linear(duration: 0.08), value: pinchScale)
         .allowsHitTesting(!isPinching)
-    }
-    
-    @ViewBuilder
-    private func itemCard(for item: ContentItem) -> some View {
-        if let index = items.firstIndex(of: item) {
-            buildCard(for: item)
-                .onAppear {
-                    onLoadMore(index)
-                }
-        } else {
-            buildCard(for: item)
-        }
+        .animation(nil, value: items.count)
+        .transaction { $0.animation = nil }
     }
     
     @ViewBuilder

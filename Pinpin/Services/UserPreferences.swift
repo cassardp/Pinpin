@@ -41,6 +41,17 @@ class UserPreferences: ObservableObject {
         }
     }
 
+    // Propriétés inversées pour l'interface
+    var hideCategoryTitles: Bool {
+        get { !showCategoryTitles }
+        set { showCategoryTitles = !newValue }
+    }
+
+    var disableTimeline: Bool {
+        get { !enableTimelineView }
+        set { enableTimelineView = !newValue }
+    }
+
     @Published var themeMode: ThemeMode {
         didSet {
             UserDefaults.standard.set(themeMode.rawValue, forKey: "themeMode")
@@ -65,6 +76,7 @@ class UserPreferences: ObservableObject {
     private init() {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
+        // Valeurs par défaut: true pour que les toggles inversés soient false par défaut
         self.showCategoryTitles = UserDefaults.standard.object(forKey: "showCategoryTitles") as? Bool ?? true
         self.enableTimelineView = UserDefaults.standard.object(forKey: "enableTimelineView") as? Bool ?? true
 

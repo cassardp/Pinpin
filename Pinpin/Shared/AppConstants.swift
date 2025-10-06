@@ -23,7 +23,7 @@ enum AppConstants {
     static let minimumCompressionQuality: CGFloat = 0.1
     
     // MARK: - Pagination
-    static let itemsPerPage = 50
+    static let itemsPerPage = 30
     
     // MARK: - Category Names
     static let miscCategoryNames = ["Misc"]
