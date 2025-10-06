@@ -26,7 +26,7 @@ struct TimelineGroupedView: View {
     @State private var indexById: [UUID: Int] = [:]
     
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: 32) {
+        LazyVStack(alignment: .leading, spacing: 0) {
             // Header avec le titre Timeline ou All
             if userPreferences.showCategoryTitles {
                 Text(userPreferences.enableTimelineView ? "Today" : "All")
@@ -61,6 +61,7 @@ struct TimelineGroupedView: View {
                         }
                         .padding(.horizontal, 4)
                         .padding(.vertical, 16)
+                        .padding(.top, 32)
                     }
                     
                     // Items du jour en grille
@@ -81,7 +82,6 @@ struct TimelineGroupedView: View {
                         onStorageStatsRefresh: onStorageStatsRefresh
                     )
                 }
-                .padding(.top, calendar.isDateInToday(group.date) ? -24 : 0)
             }
         }
         .transaction { $0.animation = nil }
