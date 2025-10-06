@@ -30,9 +30,9 @@ struct TimelineGroupedView: View {
     
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 32) {
-            // Header avec le titre All
+            // Header avec le titre Timeline ou All
             if userPreferences.showCategoryTitles {
-                Text("All")
+                Text(userPreferences.enableTimelineView ? "Today" : "All")
                     .font(.system(size: 24, design: .serif))
                     .italic()
                     .fontWeight(.thin)
