@@ -17,9 +17,11 @@ struct TimelineGroupedView: View {
     
     @StateObject private var userPreferences = UserPreferences.shared
     
-    // Grouper les items par jour
+    // Cache du calendrier
+    private let calendar = Calendar.current
+    
+    // Grouper les items par jour (mémoïsé)
     private var groupedByDay: [(date: Date, items: [ContentItem])] {
-        let calendar = Calendar.current
         let grouped = Dictionary(grouping: items) { item in
             calendar.startOfDay(for: item.createdAt)
         }
@@ -27,7 +29,7 @@ struct TimelineGroupedView: View {
     }
     
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: 24) {
+        LazyVStack(alignment: .leading, spacing: 32) {
             // Header avec le titre All
             if userPreferences.showCategoryTitles {
                 Text("All")
@@ -44,20 +46,20 @@ struct TimelineGroupedView: View {
             ForEach(groupedByDay, id: \.date) { group in
                 VStack(alignment: .leading, spacing: 12) {
                     // En-tête de la section avec la date (sauf pour aujourd'hui)
-                    if !Calendar.current.isDateInToday(group.date) {
-                        HStack(spacing: 12) {
+                    if !calendar.isDateInToday(group.date) {
+                        HStack(spacing: 24) {
                             Rectangle()
-                                .fill(Color(uiColor: .systemGray6))
+                                .fill(Color(uiColor: .systemGray5).opacity(0.7))
                                 .frame(height: 1)
                             
                             Text(formatDate(group.date))
                                 .font(.system(size: 18, design: .serif))
                                 .italic()
-                                .foregroundColor(.primary)
+                                .foregroundColor(.gray)
                                 .fixedSize()
                             
                             Rectangle()
-                                .fill(Color(uiColor: .systemGray6))
+                                .fill(Color(uiColor: .systemGray5).opacity(0.7))
                                 .frame(height: 1)
                         }
                         .padding(.horizontal, 4)
@@ -81,27 +83,35 @@ struct TimelineGroupedView: View {
                         onStorageStatsRefresh: onStorageStatsRefresh
                     )
                 }
-                .padding(.top, Calendar.current.isDateInToday(group.date) ? -24 : 0)
+                .padding(.top, calendar.isDateInToday(group.date) ? -24 : 0)
             }
         }
     }
     
+    // DateFormatters statiques pour éviter la recréation
+    private static let currentYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "EEEE, MMMM d"
+        return formatter
+    }()
+    
+    private static let otherYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "EEEE, MMMM d, yyyy"
+        return formatter
+    }()
+    
     private func formatDate(_ date: Date) -> String {
-        let calendar = Calendar.current
         let now = Date()
         
         if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else if calendar.isDate(date, equalTo: now, toGranularity: .year) {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US")
-            formatter.dateFormat = "EEEE, MMMM d" // Ex: "Monday, January 15"
-            return formatter.string(from: date)
+            return Self.currentYearFormatter.string(from: date)
         } else {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US")
-            formatter.dateFormat = "EEEE, MMMM d, yyyy" // Ex: "Monday, January 15, 2024"
-            return formatter.string(from: date)
+            return Self.otherYearFormatter.string(from: date)
         }
     }
 }
@@ -126,6 +136,7 @@ struct TimelineDayGrid: View {
         PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
             ForEach(items, id: \.safeId) { item in
                 itemCard(for: item)
+                    .id(item.safeId)
             }
         }
         .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)

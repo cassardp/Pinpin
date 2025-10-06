@@ -13,6 +13,7 @@ struct SmartAsyncImage: View {
     let height: CGFloat?
     
     @State private var imageFromData: UIImage?
+    @State private var hasLoadedImage = false
     
     init(
         item: ContentItem,
@@ -44,7 +45,11 @@ struct SmartAsyncImage: View {
             }
         }
         .onAppear {
-            loadImageFromData()
+            // Charger une seule fois
+            if !hasLoadedImage {
+                loadImageFromData()
+                hasLoadedImage = true
+            }
         }
     }
     

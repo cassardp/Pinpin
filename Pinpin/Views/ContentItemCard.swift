@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentItemCard: View {
     let item: ContentItem
-    @StateObject private var userPreferences = UserPreferences.shared
+    @ObservedObject private var userPreferences = UserPreferences.shared
     let cornerRadius: CGFloat
     let numberOfColumns: Int
     let isSelectionMode: Bool

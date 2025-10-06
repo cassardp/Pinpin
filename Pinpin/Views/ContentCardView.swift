@@ -65,26 +65,27 @@ struct ContentCardView: View {
     
     /// Détermine si le contenu n'a pas d'éléments visuels (image/vidéo)
     private var hasNoVisualContent: Bool {
-        // Pas d'image stockée localement
-        let hasNoImageData = item.imageData == nil
-        
-        // Pas d'URL d'image/thumbnail valide
-        let hasNoThumbnail = item.thumbnailUrl?.isEmpty != false || 
-                            item.thumbnailUrl?.hasPrefix("images/") == true ||
-                            item.thumbnailUrl?.hasPrefix("file:///var/mobile/Media/PhotoData/") == true
-        
-        // Pas d'URL web valide pour une image
-        let hasNoWebImage: Bool = {
-            guard let urlString = item.url,
-                  !urlString.hasPrefix("file:///"),
-                  let url = URL(string: urlString),
-                  url.scheme == "http" || url.scheme == "https" else {
-                return true
-            }
+        // Optimisation: vérifier d'abord imageData (le plus rapide)
+        if item.imageData != nil {
             return false
-        }()
+        }
         
-        // Retourne true dès qu'il n'y a aucune image disponible
-        return hasNoImageData && hasNoThumbnail && hasNoWebImage
+        // Vérifier thumbnail
+        if let thumbnail = item.thumbnailUrl,
+           !thumbnail.isEmpty,
+           !thumbnail.hasPrefix("images/"),
+           !thumbnail.hasPrefix("file:///var/mobile/Media/PhotoData/") {
+            return false
+        }
+        
+        // Vérifier URL web
+        if let urlString = item.url,
+           !urlString.hasPrefix("file:///"),
+           let url = URL(string: urlString),
+           url.scheme == "http" || url.scheme == "https" {
+            return false
+        }
+        
+        return true
     }
 }

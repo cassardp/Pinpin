@@ -10,9 +10,18 @@ import SwiftUI
 struct StandardContentView: View {
     let item: ContentItem
     
+    // Cache du résultat hasImage pour éviter les recalculs
+    private let cachedHasImage: Bool
+    
+    init(item: ContentItem) {
+        self.item = item
+        // Calculer une seule fois à l'initialisation
+        self.cachedHasImage = Self.checkHasImage(item: item)
+    }
+    
     var body: some View {
         VStack(alignment: .leading) {
-            if hasImage {
+            if cachedHasImage {
                 SmartAsyncImage(item: item)
                     .frame(maxWidth: .infinity)
                     .aspectRatio(contentMode: .fit)
@@ -33,7 +42,7 @@ struct StandardContentView: View {
         }
     }
     
-    private var hasImage: Bool {
+    private static func checkHasImage(item: ContentItem) -> Bool {
         // Check si on a une image dans SwiftData
         if item.imageData != nil {
             return true
