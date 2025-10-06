@@ -35,6 +35,12 @@ class UserPreferences: ObservableObject {
         }
     }
 
+    @Published var enableTimelineView: Bool {
+        didSet {
+            UserDefaults.standard.set(enableTimelineView, forKey: "enableTimelineView")
+        }
+    }
+
     @Published var themeMode: ThemeMode {
         didSet {
             UserDefaults.standard.set(themeMode.rawValue, forKey: "themeMode")
@@ -60,6 +66,7 @@ class UserPreferences: ObservableObject {
         self.showURLs = UserDefaults.standard.bool(forKey: "showURLs")
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
         self.showCategoryTitles = UserDefaults.standard.object(forKey: "showCategoryTitles") as? Bool ?? true
+        self.enableTimelineView = UserDefaults.standard.object(forKey: "enableTimelineView") as? Bool ?? true
 
         // Migration de l'ancien système
         if let savedTheme = UserDefaults.standard.string(forKey: "themeMode"),

@@ -9,6 +9,8 @@ struct MainContentScrollView: View {
     @Binding var scrollProgress: CGFloat
     @Binding var hapticTrigger: Int
     
+    @StateObject private var userPreferences = UserPreferences.shared
+    
     let filteredItems: [ContentItem]
     let totalItemsCount: Int
     let displayLimit: Int
@@ -69,22 +71,41 @@ struct MainContentScrollView: View {
             if filteredItems.isEmpty {
                 emptyStateView
             } else {
-                ContentGridView(
-                    items: filteredItems,
-                    numberOfColumns: numberOfColumns,
-                    dynamicSpacing: dynamicSpacing,
-                    dynamicCornerRadius: dynamicCornerRadius,
-                    isPinching: isPinching,
-                    pinchScale: pinchScale,
-                    selectedContentType: selectedContentType,
-                    isSelectionMode: isSelectionMode,
-                    selectedItems: selectedItems,
-                    dataService: dataService,
-                    onLoadMore: onLoadMore,
-                    onToggleSelection: onToggleSelection,
-                    onDeleteItem: onDeleteItem,
-                    onStorageStatsRefresh: onStorageStatsRefresh
-                )
+                // Timeline pour "All" si activée, sinon grille classique
+                if selectedContentType == nil && userPreferences.enableTimelineView {
+                    TimelineGroupedView(
+                        items: filteredItems,
+                        numberOfColumns: numberOfColumns,
+                        dynamicSpacing: dynamicSpacing,
+                        dynamicCornerRadius: dynamicCornerRadius,
+                        isPinching: isPinching,
+                        pinchScale: pinchScale,
+                        isSelectionMode: isSelectionMode,
+                        selectedItems: selectedItems,
+                        dataService: dataService,
+                        onLoadMore: onLoadMore,
+                        onToggleSelection: onToggleSelection,
+                        onDeleteItem: onDeleteItem,
+                        onStorageStatsRefresh: onStorageStatsRefresh
+                    )
+                } else {
+                    ContentGridView(
+                        items: filteredItems,
+                        numberOfColumns: numberOfColumns,
+                        dynamicSpacing: dynamicSpacing,
+                        dynamicCornerRadius: dynamicCornerRadius,
+                        isPinching: isPinching,
+                        pinchScale: pinchScale,
+                        selectedContentType: selectedContentType,
+                        isSelectionMode: isSelectionMode,
+                        selectedItems: selectedItems,
+                        dataService: dataService,
+                        onLoadMore: onLoadMore,
+                        onToggleSelection: onToggleSelection,
+                        onDeleteItem: onDeleteItem,
+                        onStorageStatsRefresh: onStorageStatsRefresh
+                    )
+                }
                 
                 loadingIndicator
                 storageStats

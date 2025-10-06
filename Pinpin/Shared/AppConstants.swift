@@ -36,7 +36,7 @@ enum AppConstants {
     // MARK: - Layout
     static let minColumns = 2
     static let maxColumns = 4
-    static let defaultColumns = 2
+    static let defaultColumns = 3
     
     // MARK: - Default Categories
     static let defaultCategories: [String] = [
