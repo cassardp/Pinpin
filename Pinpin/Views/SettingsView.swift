@@ -60,8 +60,18 @@ struct SettingsView: View {
                         subtitle: "",
                         isOn: $userPreferences.forceDarkMode
                     )
-                    
-                    
+
+                    // Ligne de séparation
+                    Divider()
+                        .background(Color.gray.opacity(0.1))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+
+                    SettingsToggleRow(
+                        title: "Timeline View",
+                        subtitle: "",
+                        isOn: $userPreferences.showTimelineView
+                    )
 
                 }
                 .padding(.horizontal, 20)

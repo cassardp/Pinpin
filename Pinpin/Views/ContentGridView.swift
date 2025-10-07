@@ -11,6 +11,7 @@ struct ContentGridView: View {
     let isSelectionMode: Bool
     let selectedItems: Set<UUID>
     let dataService: DataService
+    let showTitle: Bool
     let onLoadMore: (Int) -> Void
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
@@ -21,7 +22,7 @@ struct ContentGridView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header avec le nom de la catégorie
-            if userPreferences.showCategoryTitles {
+            if showTitle && userPreferences.showCategoryTitles {
                 Text(selectedContentType ?? "All")
                     .font(.system(size: 24, design: .serif))
                     .italic()

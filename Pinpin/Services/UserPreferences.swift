@@ -43,6 +43,12 @@ class UserPreferences {
         set { showCategoryTitles = !newValue }
     }
 
+    var showTimelineView: Bool {
+        didSet {
+            UserDefaults.standard.set(showTimelineView, forKey: "showTimelineView")
+        }
+    }
+
     var themeMode: ThemeMode {
         didSet {
             UserDefaults.standard.set(themeMode.rawValue, forKey: "themeMode")
@@ -69,6 +75,7 @@ class UserPreferences {
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
         // Valeurs par défaut: true pour que les toggles inversés soient false par défaut
         self.showCategoryTitles = UserDefaults.standard.object(forKey: "showCategoryTitles") as? Bool ?? true
+        self.showTimelineView = UserDefaults.standard.bool(forKey: "showTimelineView")
 
         // Migration de l'ancien système
         if let savedTheme = UserDefaults.standard.string(forKey: "themeMode"),
