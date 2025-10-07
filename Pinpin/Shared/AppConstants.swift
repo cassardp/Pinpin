@@ -38,6 +38,28 @@ enum AppConstants {
     static let maxColumns = 4
     static let defaultColumns = 3
     
+    // MARK: - Dynamic Spacing
+    static func spacing(for columns: Int) -> CGFloat {
+        switch columns {
+        case 1: return 16
+        case 2: return 10
+        case 3: return 8
+        case 4: return 6
+        default: return 10
+        }
+    }
+    
+    static func cornerRadius(for columns: Int, disabled: Bool = false) -> CGFloat {
+        if disabled { return 0 }
+        switch columns {
+        case 1: return 20
+        case 2: return 14
+        case 3: return 10
+        case 4: return 8
+        default: return 14
+        }
+    }
+    
     // MARK: - Default Categories
     static let defaultCategories: [String] = [
         "Home",

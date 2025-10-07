@@ -16,7 +16,7 @@ struct ContentGridView: View {
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
 
-    @StateObject private var userPreferences = UserPreferences.shared
+    private let userPreferences = UserPreferences.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,7 +46,6 @@ struct ContentGridView: View {
         .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
         .animation(.linear(duration: 0.08), value: pinchScale)
         .allowsHitTesting(!isPinching)
-        .animation(nil, value: selectedContentType)
     }
     
     @ViewBuilder

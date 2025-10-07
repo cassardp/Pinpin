@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentItemCard: View {
     let item: ContentItem
-    @ObservedObject private var userPreferences = UserPreferences.shared
+    private let userPreferences = UserPreferences.shared
     let cornerRadius: CGFloat
     let numberOfColumns: Int
     let isSelectionMode: Bool
@@ -44,8 +44,8 @@ struct ContentItemCard: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: cornerRadius)
-        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: userPreferences.showURLs)
+        .animation(.smooth(duration: 0.4), value: cornerRadius)
+        .animation(.smooth(duration: 0.5), value: userPreferences.showURLs)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)

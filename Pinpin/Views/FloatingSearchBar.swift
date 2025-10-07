@@ -38,9 +38,9 @@ struct FloatingSearchBar: View {
     @State private var showCloseButton: Bool = false
     
     // MARK: - Constants
-    private let unifiedAnimation = Animation.spring(response: 0.36, dampingFraction: 0.86, blendDuration: 0.08)
-    private let scrollAnimation = Animation.spring(response: 0.3, dampingFraction: 0.72)
-    private let searchTransitionAnimation = Animation.spring(response: 0.35, dampingFraction: 0.75, blendDuration: 0.05)
+    private let unifiedAnimation = Animation.smooth(duration: 0.36)
+    private let scrollAnimation = Animation.smooth(duration: 0.3)
+    private let searchTransitionAnimation = Animation.smooth(duration: 0.35)
     
     private enum NotificationName {
         static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
@@ -252,7 +252,7 @@ struct FloatingSearchBar: View {
                         icon: "xmark",
                         action: {
                             hapticTrigger += 1
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            withAnimation(.smooth(duration: 0.3)) {
                                 isSelectionMode = false
                                 selectedItems.removeAll()
                             }
@@ -470,7 +470,7 @@ struct FloatingSearchBar: View {
                         showDeleteConfirmation = true
                     }
                 } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    withAnimation(.smooth(duration: 0.3)) {
                         isSelectionMode = true
                     }
                 }

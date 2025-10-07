@@ -7,6 +7,7 @@
 
 import Foundation
 import UIKit
+import Observation
 
 enum ThemeMode: String, CaseIterable {
     case system = "system"
@@ -14,30 +15,25 @@ enum ThemeMode: String, CaseIterable {
     case light = "light"
 }
 
-class UserPreferences: ObservableObject {
+@Observable
+class UserPreferences {
     static let shared = UserPreferences()
     
-    @Published var showURLs: Bool {
+    var showURLs: Bool {
         didSet {
             UserDefaults.standard.set(showURLs, forKey: "showURLs")
         }
     }
     
-    @Published var disableCornerRadius: Bool {
+    var disableCornerRadius: Bool {
         didSet {
             UserDefaults.standard.set(disableCornerRadius, forKey: "disableCornerRadius")
         }
     }
 
-    @Published var showCategoryTitles: Bool {
+    var showCategoryTitles: Bool {
         didSet {
             UserDefaults.standard.set(showCategoryTitles, forKey: "showCategoryTitles")
-        }
-    }
-
-    @Published var enableTimelineView: Bool {
-        didSet {
-            UserDefaults.standard.set(enableTimelineView, forKey: "enableTimelineView")
         }
     }
 
@@ -47,12 +43,7 @@ class UserPreferences: ObservableObject {
         set { showCategoryTitles = !newValue }
     }
 
-    var disableTimeline: Bool {
-        get { !enableTimelineView }
-        set { enableTimelineView = !newValue }
-    }
-
-    @Published var themeMode: ThemeMode {
+    var themeMode: ThemeMode {
         didSet {
             UserDefaults.standard.set(themeMode.rawValue, forKey: "themeMode")
             ThemeManager.shared.handleTheme(themeMode: themeMode)
@@ -78,7 +69,6 @@ class UserPreferences: ObservableObject {
         self.disableCornerRadius = UserDefaults.standard.bool(forKey: "disableCornerRadius")
         // Valeurs par défaut: true pour que les toggles inversés soient false par défaut
         self.showCategoryTitles = UserDefaults.standard.object(forKey: "showCategoryTitles") as? Bool ?? true
-        self.enableTimelineView = UserDefaults.standard.object(forKey: "enableTimelineView") as? Bool ?? true
 
         // Migration de l'ancien système
         if let savedTheme = UserDefaults.standard.string(forKey: "themeMode"),

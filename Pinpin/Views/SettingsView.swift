@@ -9,7 +9,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
-    @StateObject private var userPreferences = UserPreferences.shared
+    @Bindable private var userPreferences = UserPreferences.shared
     @StateObject private var dataService = DataService.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -47,18 +47,6 @@ struct SettingsView: View {
                         title: "Hide Category Titles",
                         subtitle: "",
                         isOn: $userPreferences.hideCategoryTitles
-                    )
-
-                    // Ligne de séparation
-                    Divider()
-                        .background(Color.gray.opacity(0.1))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-
-                    SettingsToggleRow(
-                        title: "Disable Timeline",
-                        subtitle: "",
-                        isOn: $userPreferences.disableTimeline
                     )
 
                     // Ligne de séparation

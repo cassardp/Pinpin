@@ -3,11 +3,11 @@
 //  Pinpin
 //
 //  Layout Pinterest personnalisé utilisant le protocole Layout de SwiftUI
+//  Target: iOS 18+
 //
 
 import SwiftUI
 
-@available(iOS 16.0, *)
 struct PinterestLayout: Layout {
     let numberOfColumns: Int
     let itemSpacing: CGFloat
@@ -75,7 +75,7 @@ struct PinterestLayout: Layout {
     }
 }
 
-// Extension pour compatibilité avec les versions antérieures à iOS 16
+// Wrapper simplifié pour iOS 18+
 struct PinterestLayoutWrapper<Content: View>: View {
     let content: Content
     let numberOfColumns: Int
@@ -88,12 +88,7 @@ struct PinterestLayoutWrapper<Content: View>: View {
     }
     
     var body: some View {
-        if #available(iOS 16.0, *) {
-            PinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: itemSpacing) {
-                content
-            }
-        } else {
-            // Fallback pour iOS < 16 - utilise l'ancien MasonryGrid
+        PinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: itemSpacing) {
             content
         }
     }

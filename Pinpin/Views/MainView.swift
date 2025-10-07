@@ -3,17 +3,13 @@
 //  Pinpin
 //
 //  Vue principale de l'application
-//
-
 import SwiftUI
 import SwiftData
-import UserNotifications
-import UIKit
 
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var dataService = DataService.shared
-    @StateObject private var userPreferences = UserPreferences.shared
+    private let userPreferences = UserPreferences.shared
     @StateObject private var viewModel = MainViewModel()
     @StateObject private var syncService: SwiftDataSyncService
 
@@ -28,24 +24,12 @@ struct MainView: View {
     @State private var settingsDetent: PresentationDetent = .medium
     @State private var isInfoOpen = false
     @State private var showFloatingBar: Bool = true
-    @State private var scrollOffset: CGFloat = 0
-    @State private var lastScrollOffset: CGFloat = 0
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = AppConstants.defaultColumns
     @State private var hapticTrigger: Int = 0
-
-    // Bornes de colonnes
-    private let minColumns: Int = AppConstants.minColumns
-    private let maxColumns: Int = AppConstants.maxColumns
 
     // Confirmation de suppression individuelle
     @State private var showDeleteConfirmation: Bool = false
     @State private var itemToDelete: ContentItem?
-
-    // Hauteur du clavier pour ajuster la barre flottante
-    @State private var keyboardHeight: CGFloat = 0
-    
-    // Timer pour masquer la barre automatiquement
-    @State private var hideBarTimer: Timer?
 
     // TextEditSheet state
     @State private var showTextEditSheet: Bool = false
@@ -54,49 +38,13 @@ struct MainView: View {
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
-        switch numberOfColumns {
-        case 1: return 16
-        case 2: return 10
-        case 3: return 8
-        case 4: return 6
-        default: return 10
-        }
+        AppConstants.spacing(for: numberOfColumns)
     }
 
     private var dynamicCornerRadius: CGFloat {
-        if userPreferences.disableCornerRadius { return 0 }
-        switch numberOfColumns {
-        case 1: return 20
-        case 2: return 14
-        case 3: return 10
-        case 4: return 8
-        default: return 14
-        }
+        AppConstants.cornerRadius(for: numberOfColumns, disabled: userPreferences.disableCornerRadius)
     }
     
-    // Écran courant via la fenêtre active (évite UIScreen.main déprécié)
-    private var keyWindowScene: UIWindowScene? {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }
-    }
-
-    private var screenBounds: CGRect {
-        if let scene = keyWindowScene {
-            return scene.screen.bounds
-        }
-        // Fallback si aucune scène active (ex: previews) — éviter UIScreen.main déprécié
-        if let anyScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
-            return anyScene.screen.bounds
-        }
-        // Dernier recours : utiliser les sessions ouvertes pour trouver un écran
-        if let session = UIApplication.shared.openSessions.first,
-           let windowScene = session.scene as? UIWindowScene {
-            return windowScene.screen.bounds
-        }
-        // Fallback final avec des dimensions par défaut
-        return CGRect(x: 0, y: 0, width: 390, height: 844)
-    }
 
     // SwiftData Query
     @Query(sort: \ContentItem.createdAt, order: .reverse)
@@ -126,15 +74,16 @@ struct MainView: View {
             .overlay(alignment: .bottom) {
                 floatingSearchBarView
             }
-            .onAppear(perform: handleViewAppear)
-            .onDisappear(perform: handleViewDisappear)
+            .task {
+                syncService.startListening()
+            }
+            .onDisappear {
+                syncService.stopListening()
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 syncService.forceRefresh()
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-                handleKeyboardNotification(notification)
-            }
-            .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
+            .sensoryFeedback(.selection, trigger: hapticTrigger)
             .sheet(isPresented: $isSettingsOpen) {
                 settingsSheet
             }
@@ -159,25 +108,31 @@ struct MainView: View {
     
     // MARK: - Main Drawer View
     private var mainDrawerView: some View {
-        PushingSideDrawer(
-            isOpen: $isMenuOpen,
-            swipeProgress: $menuSwipeProgress,
-            isDragging: $isMenuDragging,
-            width: screenBounds.width * 0.8,
-            isSwipeDisabled: viewModel.showSearchBar
-        ) {
-            mainContentView
-        } drawer: {
-            drawerMenuView
+        GeometryReader { geometry in
+            PushingSideDrawer(
+                isOpen: $isMenuOpen,
+                swipeProgress: $menuSwipeProgress,
+                isDragging: $isMenuDragging,
+                width: geometry.size.width * 0.8,
+                isSwipeDisabled: viewModel.showSearchBar
+            ) {
+                mainContentView
+            } drawer: {
+                FilterMenuView(
+                    selectedContentType: $viewModel.selectedContentType,
+                    isMenuOpen: $isMenuOpen,
+                    isMenuDragging: isMenuDragging,
+                    onOpenAbout: { },
+                    onOpenSettings: { isSettingsOpen = true }
+                )
+            }
         }
     }
     
     // MARK: - Main Content View
     private var mainContentView: some View {
         ZStack {
-            Color(UIColor.systemBackground)
-
-            topRestoreBar
+            Color(.systemBackground)
 
             MainContentScrollView(
                 selectedContentType: $viewModel.selectedContentType,
@@ -194,16 +149,14 @@ struct MainView: View {
                 dynamicCornerRadius: dynamicCornerRadius,
                 isSelectionMode: viewModel.isSelectionMode,
                 selectedItems: viewModel.selectedItems,
-                screenBounds: screenBounds,
                 syncServiceLastSaveDate: syncService.lastSaveDate,
                 storageStatsRefreshTrigger: storageStatsRefreshTrigger,
                 dataService: dataService,
-                minColumns: minColumns,
-                maxColumns: maxColumns,
+                minColumns: AppConstants.minColumns,
+                maxColumns: AppConstants.maxColumns,
                 onCategoryChange: handleCategoryChange,
                 onSearchQueryChange: handleSearchQueryChange,
                 onMenuStateChange: handleMenuStateChange,
-                onRefresh: refreshContentAsync,
                 onLoadMore: { index in
                     viewModel.loadMoreIfNeeded(
                         currentIndex: index,
@@ -228,54 +181,18 @@ struct MainView: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .onTapGesture {
-                        dismissKeyboard()
                         viewModel.closeSearch()
                     }
                     .gesture(
                         DragGesture(minimumDistance: 30)
                             .onEnded { value in
-                                // Swipe vers le bas (translation.height > 0)
                                 if value.translation.height > 50 {
-                                    dismissKeyboard()
                                     viewModel.closeSearch()
                                 }
                             }
                     )
             }
         }
-    }
-    
-    // MARK: - Top Restore Bar
-    @ViewBuilder
-    private var topRestoreBar: some View {
-        if viewModel.scrollProgress > 0.5 {
-            VStack {
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(height: 60)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            viewModel.scrollProgress = 0.0
-                        }
-                    }
-                Spacer()
-            }
-            .ignoresSafeArea(edges: .top)
-        }
-    }
-    
-    // MARK: - Drawer Menu
-    private var drawerMenuView: some View {
-        FilterMenuView(
-            selectedContentType: $viewModel.selectedContentType,
-            isMenuOpen: $isMenuOpen,
-            isMenuDragging: isMenuDragging,
-            onOpenAbout: { },
-            onOpenSettings: {
-                isSettingsOpen = true
-            }
-        )
     }
     
     // MARK: - Settings Sheet
@@ -301,7 +218,7 @@ struct MainView: View {
                 scrollProgress: viewModel.scrollProgress,
                 selectedContentType: viewModel.selectedContentType,
                 totalPinsCount: filteredItems.count,
-                bottomPadding: keyboardHeight > 0 ? -4 : 0,
+                bottomPadding: 0,
                 availableCategories: allCategories.map { $0.name },
                 currentCategory: viewModel.selectedContentType,
                 onSelectAll: {
@@ -321,10 +238,7 @@ struct MainView: View {
                     createNewTextNote()
                 }
             )
-            .transition(.asymmetric(
-                insertion: .opacity.combined(with: .move(edge: .bottom)),
-                removal: .opacity.combined(with: .move(edge: .bottom))
-            ))
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
     
@@ -336,7 +250,7 @@ struct MainView: View {
         }
         Button("Delete", role: .destructive) {
             if let item = itemToDelete {
-                withAnimation(.spring(duration: 0.5, bounce: 0.3)) {
+                withAnimation(.bouncy(duration: 0.5)) {
                     dataService.deleteContentItem(item)
                     storageStatsRefreshTrigger += 1
                 }
@@ -345,133 +259,51 @@ struct MainView: View {
         }
     }
     
-    // MARK: - Lifecycle Handlers
-    private func handleViewAppear() {
-        viewModel.clearSearch()
-        viewModel.closeSearch()
-        refreshContent()
-        syncService.startListening()
-    }
-    
-    private func handleViewDisappear() {
-        syncService.stopListening()
-    }
-
 }
 
 
 
 // MARK: - Helpers
 private extension MainView {
-    func handleCategoryChange(using proxy: ScrollViewProxy) {
-        withTransaction(Transaction(animation: nil)) {
-            proxy.scrollTo("top", anchor: .top)
-        }
+    func handleCategoryChange() {
         viewModel.scrollProgress = 0.0
     }
     
-    func handleSearchQueryChange(_ newValue: String, using proxy: ScrollViewProxy) {
-        if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            withTransaction(Transaction(animation: nil)) {
-                proxy.scrollTo("top", anchor: .top)
-            }
-        }
+    func handleSearchQueryChange(_ newValue: String) {
+        // Scroll géré par MainContentScrollView via scrollPosition
     }
     
     func handleMenuStateChange(isOpen: Bool) {
         if isOpen {
             viewModel.closeSearch()
-            dismissKeyboard()
         } else {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            withAnimation(.spring) {
                 viewModel.scrollProgress = 0.0
             }
         }
     }
     
-    func dismissKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-    
-    func handleKeyboardNotification(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let endFrame = (userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue,
-              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
-            return
-        }
-        let screenHeight = screenBounds.height
-        let newHeight = max(0, screenHeight - endFrame.origin.y)
-        withAnimation(.easeOut(duration: duration)) {
-            keyboardHeight = newHeight
-        }
-    }
-    
-    func refreshContent() {
-        // Vider le cache pour forcer la lecture depuis le disque
-        modelContext.rollback()
-        
-        // SwiftData + CloudKit synchronisent automatiquement
-        _ = dataService.loadContentItems()
-        print("[MainView] 🔄 Content refreshed")
-    }
-    
-    func refreshContentAsync() async {
-        print("[MainView] 🔄 Pull-to-refresh démarré...")
-
-        await MainActor.run {
-            // Vider le cache SwiftData pour forcer la lecture depuis le disque
-            modelContext.rollback()
-        }
-
-        // Petit délai pour laisser CloudKit synchroniser
-        try? await Task.sleep(for: .milliseconds(500))
-
-        await MainActor.run {
-            // Forcer le refresh du SwiftDataSyncService
-            syncService.forceRefresh()
-
-            // Recharger les données
-            _ = dataService.loadContentItems()
-
-            print("[MainView] ✅ Pull-to-refresh terminé!")
-        }
-    }
 
     func moveSelectedItemsToCategory(_ categoryName: String, from items: [ContentItem]) {
         hapticTrigger += 1
-
+        
         let itemsToMove = items.filter { viewModel.selectedItems.contains($0.safeId) }
-        let targetCategory = allCategories.first { $0.name == categoryName }
+        guard let targetCategory = allCategories.first(where: { $0.name == categoryName }) else { return }
 
-        // Utiliser le repository pour mettre à jour les catégories
-        let contentRepo = ContentItemRepository(context: modelContext)
-        contentRepo.updateCategories(itemsToMove, category: targetCategory)
-
-        do {
-            try modelContext.save()
-        } catch {
-            print("Failed to move items to category: \(error)")
-        }
+        ContentItemRepository(context: modelContext).updateCategories(itemsToMove, category: targetCategory)
+        try? modelContext.save()
 
         viewModel.selectedItems.removeAll()
         viewModel.isSelectionMode = false
     }
 
     func createNewTextNote() {
-        let categoryRepo = CategoryRepository(context: modelContext)
-
-        // Déterminer la catégorie : si selectedContentType est nil (All), utiliser Misc
-        // Sinon, utiliser la catégorie en cours
-        let targetCategory: Category?
-        if let selectedType = viewModel.selectedContentType {
-            targetCategory = allCategories.first { $0.name == selectedType }
+        textEditItem = nil
+        textEditTargetCategory = if let selectedType = viewModel.selectedContentType {
+            allCategories.first { $0.name == selectedType }
         } else {
-            targetCategory = try? categoryRepo.findOrCreateMiscCategory()
+            try? CategoryRepository(context: modelContext).findOrCreateMiscCategory()
         }
-
-        // Ne pas créer l'item maintenant, juste passer la catégorie au sheet
-        textEditItem = nil // Mode création
-        textEditTargetCategory = targetCategory
         showTextEditSheet = true
     }
 }
