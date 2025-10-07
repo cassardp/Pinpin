@@ -78,11 +78,8 @@ struct MainView: View {
             .overlay(alignment: .bottom) {
                 floatingSearchBarView
             }
-            .sheet(item: $selectedItem) { item in
+            .fullScreenCover(item: $selectedItem) { item in
                 ItemDetailView(item: item, namespace: heroNamespace)
-                    .presentationDetents([.large])
-                    .presentationCornerRadius(20)
-                    .presentationBackground(Color(.systemBackground))
                     .navigationTransition(.zoom(sourceID: item.id, in: heroNamespace))
             }
             .task {

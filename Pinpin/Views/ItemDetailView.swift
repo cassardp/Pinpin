@@ -37,12 +37,12 @@ struct ItemDetailView: View {
                             Image(systemName: "binoculars")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .padding(10)
-                                .background(.black.opacity(0.6), in: Circle())
+                                .padding(12)
+                                .background(.black.opacity(0.8), in: Circle())
                         }
                         .accessibilityLabel("Search Similar")
-                        .padding(.bottom, 24)
-                        .padding(.leading, 24)
+                        .padding(.bottom, 16)
+                        .padding(.leading, 16)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -93,7 +93,7 @@ struct ItemDetailView: View {
                                 } label: {
                                     Text(domain)
                                         .font(.subheadline)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(.primary)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -125,7 +125,7 @@ struct ItemDetailView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color.accentColor)
+                            .background(Color.primary)
                             .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
@@ -162,7 +162,7 @@ struct ItemDetailView: View {
         }
         // Auto-dismiss when pulled beyond a threshold
         .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y < -50
+            geometry.contentOffset.y < -80
         } action: { _, isTornOff in
             if isTornOff {
                 dismiss()
