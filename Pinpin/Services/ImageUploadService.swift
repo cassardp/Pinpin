@@ -4,8 +4,9 @@ import UIKit
 class ImageUploadService {
     static let shared = ImageUploadService()
     
-    private let apiKey = "b433c3f69127777287573e89109836bc"
-    private let uploadURL = "https://api.imgbb.com/1/upload"
+    // Uploadcare public key (provided by user)
+    private let uploadcarePublicKey = "f43283317c792cb79050"
+    private let uploadURL = "https://upload.uploadcare.com/base/"
     
     private init() {}
     
@@ -46,12 +47,8 @@ class ImageUploadService {
                 print("📊 Image à uploader: \(String(format: "%.1f", imageSizeKB)) KB (\(dimensions))")
             }
             
-            // ImgBB utilise base64 dans le form data (opération coûteuse)
-            let base64String = imageData.base64EncodedString()
-            
-            // URL avec paramètres
-            let urlString = "\(self.uploadURL)?expiration=600&key=\(self.apiKey)"
-            guard let url = URL(string: urlString) else {
+            // Uploadcare: multipart direct binaire
+            guard let url = URL(string: self.uploadURL) else {
                 DispatchQueue.main.async {
                     completion(.failure(ImageUploadError.invalidURL))
                 }
@@ -66,10 +63,23 @@ class ImageUploadService {
             
             var body = Data()
             
-            // Add image data (base64 pour ImgBB)
+            // UPLOADCARE_PUB_KEY
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"image\"\r\n\r\n".data(using: .utf8)!)
-            body.append(base64String.data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"UPLOADCARE_PUB_KEY\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(self.uploadcarePublicKey)".data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+
+            // UPLOADCARE_STORE=1 (conserver le fichier)
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"UPLOADCARE_STORE\"\r\n\r\n".data(using: .utf8)!)
+            body.append("1".data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+
+            // file (binary JPEG)
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            body.append(imageData)
             body.append("\r\n".data(using: .utf8)!)
             body.append("--\(boundary)--\r\n".data(using: .utf8)!)
             
@@ -77,7 +87,7 @@ class ImageUploadService {
             
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
-                    print("❌ Erreur réseau ImgBB: \(error.localizedDescription)")
+                    print("❌ Erreur réseau Uploadcare: \(error.localizedDescription)")
                     DispatchQueue.main.async {
                         completion(.failure(error))
                     }
@@ -85,11 +95,11 @@ class ImageUploadService {
                 }
                 
                 if let httpResponse = response as? HTTPURLResponse {
-                    print("📡 Réponse HTTP ImgBB: \(httpResponse.statusCode)")
+                    print("📡 Réponse HTTP Uploadcare: \(httpResponse.statusCode)")
                 }
                 
                 guard let data = data else {
-                    print("❌ Aucune donnée reçue d'ImgBB")
+                    print("❌ Aucune donnée reçue d'Uploadcare")
                     DispatchQueue.main.async {
                         completion(.failure(ImageUploadError.noData))
                     }
@@ -98,32 +108,31 @@ class ImageUploadService {
                 
                 // Debug: afficher la réponse brute
                 if let responseString = String(data: data, encoding: .utf8) {
-                    print("📄 Réponse ImgBB: \(responseString)")
+                    print("📄 Réponse Uploadcare: \(responseString)")
                 }
                 
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        if let success = json["success"] as? Bool, success,
-                           let dataDict = json["data"] as? [String: Any],
-                           let url = dataDict["url"] as? String {
-                            print("✅ Upload ImgBB réussi: \(url)")
+                        if let uuid = json["file"] as? String, !uuid.isEmpty {
+                            let cdnURL = "https://ucarecdn.com/\(uuid)/"
+                            print("✅ Upload Uploadcare réussi: \(cdnURL)")
                             DispatchQueue.main.async {
-                                completion(.success(url))
+                                completion(.success(cdnURL))
                             }
                         } else {
-                            print("❌ Réponse ImgBB invalide ou échec")
+                            print("❌ Réponse Uploadcare invalide ou échec")
                             DispatchQueue.main.async {
                                 completion(.failure(ImageUploadError.invalidResponse))
                             }
                         }
                     } else {
-                        print("❌ JSON ImgBB invalide")
+                        print("❌ JSON Uploadcare invalide")
                         DispatchQueue.main.async {
                             completion(.failure(ImageUploadError.invalidResponse))
                         }
                     }
                 } catch {
-                    print("❌ Erreur parsing JSON ImgBB: \(error.localizedDescription)")
+                    print("❌ Erreur parsing JSON Uploadcare: \(error.localizedDescription)")
                     DispatchQueue.main.async {
                         completion(.failure(error))
                     }
