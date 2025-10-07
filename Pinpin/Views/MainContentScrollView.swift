@@ -128,8 +128,14 @@ struct MainContentScrollView: View {
     // MARK: - Timeline Content
     private var timelineContent: some View {
         let groups = groupedByDate(filteredItems)
+        // Pré-calculer les offsets pour éviter les recalculs
+        let groupOffsets = groups.indices.map { index in
+            groups.prefix(index).reduce(0) { $0 + $1.items.count }
+        }
         
         return ForEach(Array(groups.enumerated()), id: \.element.date) { groupIndex, group in
+            let offset = groupOffsets[groupIndex]
+            
             Section {
                 ContentGridView(
                     items: group.items,
@@ -144,9 +150,8 @@ struct MainContentScrollView: View {
                     dataService: dataService,
                     showTitle: false,
                     onLoadMore: { itemIndex in
-                        // Calculer l'index global
-                        let itemsBeforeThisGroup = groups.prefix(groupIndex).reduce(0) { $0 + $1.items.count }
-                        let globalIndex = itemsBeforeThisGroup + itemIndex
+                        // Utiliser l'offset pré-calculé
+                        let globalIndex = offset + itemIndex
                         onLoadMore(globalIndex)
                     },
                     onToggleSelection: onToggleSelection,

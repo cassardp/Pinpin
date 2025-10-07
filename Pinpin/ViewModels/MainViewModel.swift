@@ -20,13 +20,7 @@ final class MainViewModel: ObservableObject {
     @Published var displayLimit: Int = AppConstants.itemsPerPage
     
     // MARK: - Dependencies
-    private var dataService: DataService {
-        DataService.shared
-    }
-    
-    init() {
-        // DataService.shared est accédé via computed property
-    }
+    private let dataService = DataService.shared
     
     // MARK: - Filtering Logic
     
@@ -82,15 +76,18 @@ final class MainViewModel: ObservableObject {
     
     /// Charge plus d'items (augmente la limite)
     func loadMoreIfNeeded(currentIndex: Int, totalItems: Int, totalBeforePagination: Int) {
-        // Charger plus si on arrive vers la fin (10 items avant)
-        if currentIndex >= totalItems - 10 && displayLimit < totalBeforePagination {
+        // Charger plus si on arrive vers la fin (5 items avant)
+        if currentIndex >= totalItems - 5 && displayLimit < totalBeforePagination {
+            let oldLimit = displayLimit
             displayLimit += AppConstants.itemsPerPage
+            print("📄 Pagination: Loading more items - from \(oldLimit) to \(displayLimit) (currentIndex: \(currentIndex)/\(totalItems), total: \(totalBeforePagination))")
         }
     }
     
     /// Reset la pagination (au changement de catégorie ou recherche)
     func resetPagination() {
         displayLimit = AppConstants.itemsPerPage
+        print("🔄 Pagination: Reset to \(displayLimit) items")
     }
     
     /// Vérifie si un item correspond à la requête de recherche
