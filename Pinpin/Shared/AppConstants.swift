@@ -41,18 +41,18 @@ enum AppConstants {
     // MARK: - Dynamic Spacing
     static func spacing(for columns: Int) -> CGFloat {
         switch columns {
-        case 1: return 16
-        case 2: return 10
+        case 1: return 12
+        case 2: return 12
         case 3: return 8
         case 4: return 6
-        default: return 10
+        default: return 12
         }
     }
     
     static func cornerRadius(for columns: Int, disabled: Bool = false) -> CGFloat {
         if disabled { return 0 }
         switch columns {
-        case 1: return 20
+        case 1: return 18
         case 2: return 14
         case 3: return 10
         case 4: return 8
