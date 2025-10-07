@@ -16,6 +16,8 @@ struct ContentGridView: View {
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
+    let onItemTap: (ContentItem) -> Void
+    let heroNamespace: Namespace.ID
 
     private let userPreferences = UserPreferences.shared
 
@@ -56,7 +58,9 @@ struct ContentGridView: View {
             cornerRadius: dynamicCornerRadius,
             numberOfColumns: numberOfColumns,
             isSelectionMode: isSelectionMode,
-            onSelectionTap: { onToggleSelection(item.safeId) }
+            onSelectionTap: { onToggleSelection(item.safeId) },
+            onItemTap: { onItemTap(item) },
+            heroNamespace: heroNamespace
         )
         .id(item.safeId)
         .allowsHitTesting(!isPinching)

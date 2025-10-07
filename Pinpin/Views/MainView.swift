@@ -12,6 +12,7 @@ struct MainView: View {
     private let userPreferences = UserPreferences.shared
     @StateObject private var viewModel = MainViewModel()
     @StateObject private var syncService: SwiftDataSyncService
+    @Namespace private var heroNamespace
 
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
@@ -35,6 +36,9 @@ struct MainView: View {
     @State private var showTextEditSheet: Bool = false
     @State private var textEditItem: ContentItem?
     @State private var textEditTargetCategory: Category?
+    
+    // Navigation pour ItemDetailView
+    @State private var selectedItem: ContentItem?
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -73,6 +77,13 @@ struct MainView: View {
         mainDrawerView
             .overlay(alignment: .bottom) {
                 floatingSearchBarView
+            }
+            .sheet(item: $selectedItem) { item in
+                ItemDetailView(item: item, namespace: heroNamespace)
+                    .presentationDetents([.large])
+                    .presentationCornerRadius(20)
+                    .presentationBackground(Color(.systemBackground))
+                    .navigationTransition(.zoom(sourceID: item.id, in: heroNamespace))
             }
             .task {
                 syncService.startListening()
@@ -173,7 +184,11 @@ struct MainView: View {
                 },
                 onStorageStatsRefresh: {
                     storageStatsRefreshTrigger += 1
-                }
+                },
+                onItemTap: { item in
+                    selectedItem = item
+                },
+                heroNamespace: heroNamespace
             )
 
             if viewModel.showSearchBar {

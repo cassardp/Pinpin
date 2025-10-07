@@ -14,6 +14,8 @@ struct ContentItemCard: View {
     let numberOfColumns: Int
     let isSelectionMode: Bool
     let onSelectionTap: (() -> Void)?
+    let onItemTap: (() -> Void)?
+    let heroNamespace: Namespace.ID
     @State private var hapticTrigger: Int = 0
     
     var body: some View {
@@ -21,6 +23,10 @@ struct ContentItemCard: View {
             // Vue unifiée pour toutes les catégories
             unifiedContentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .matchedTransitionSource(id: item.id, in: heroNamespace) { source in
+                    source
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                }
             
             // URL en overlay dans le coin bas gauche
             if userPreferences.showURLs, let url = item.url, !url.isEmpty {
@@ -58,9 +64,9 @@ struct ContentItemCard: View {
             if isSelectionMode {
                 // En mode sélection : appeler le callback de sélection
                 onSelectionTap?()
-            } else if let urlString = item.url {
-                // Mode normal : ouvrir le lien
-                handleContentTap(urlString: urlString)
+            } else {
+                // Mode normal : ouvrir la vue détail avec transition hero
+                onItemTap?()
             }
         }
         // S'assurer que la zone de toucher ne dépasse pas les limites visuelles avec les coins arrondis

@@ -31,6 +31,8 @@ struct MainContentScrollView: View {
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
+    let onItemTap: (ContentItem) -> Void
+    let heroNamespace: Namespace.ID
     
     // MARK: - Scroll & Pinch State
     @State private var scrollPosition = ScrollPosition(idType: String.self)
@@ -121,7 +123,9 @@ struct MainContentScrollView: View {
             onLoadMore: onLoadMore,
             onToggleSelection: onToggleSelection,
             onDeleteItem: onDeleteItem,
-            onStorageStatsRefresh: onStorageStatsRefresh
+            onStorageStatsRefresh: onStorageStatsRefresh,
+            onItemTap: onItemTap,
+            heroNamespace: heroNamespace
         )
     }
     
@@ -156,7 +160,9 @@ struct MainContentScrollView: View {
                     },
                     onToggleSelection: onToggleSelection,
                     onDeleteItem: onDeleteItem,
-                    onStorageStatsRefresh: onStorageStatsRefresh
+                    onStorageStatsRefresh: onStorageStatsRefresh,
+                    onItemTap: onItemTap,
+                    heroNamespace: heroNamespace
                 )
             } header: {
                 // Ne pas afficher le séparateur pour le premier groupe
