@@ -162,7 +162,7 @@ struct ItemDetailView: View {
         }
         // Auto-dismiss when pulled beyond a threshold
         .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y < -80
+            geometry.contentOffset.y < -30
         } action: { _, isTornOff in
             if isTornOff {
                 dismiss()

@@ -191,8 +191,8 @@ struct MainContentScrollView: View {
                 .frame(height: 1)
         }
         .padding(.horizontal, 4)
-        .padding(.top, 38)
-        .padding(.bottom, 24)
+        .padding(.top, 48)
+        .padding(.bottom, 32)
     }
     
     // MARK: - Pinch Shield
