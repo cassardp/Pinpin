@@ -20,132 +20,107 @@ struct ItemDetailView: View {
     
     var body: some View {
         ScrollView {
-            ZStack(alignment: .topLeading) {
-                // Content (image en haut)
-                VStack(spacing: 0) {
-                    SmartAsyncImage(item: item)
-                        .aspectRatio(contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: cornerRadius)
-                                .stroke(Color(.separator), lineWidth: 0.5)
-                        )
-                        .padding(10)
-
-                    // Details section
-                    VStack(alignment: .leading, spacing: 8) {
-                        // Title
-                        Text(item.bestTitle)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-
-                        // Meta row: category + domain
-                        HStack(spacing: 8) {
-                            if let categoryName = item.category?.name, !categoryName.isEmpty {
-                                Text(categoryName)
+            VStack(spacing: 0) {
+                // Image principale
+                SmartAsyncImage(item: item)
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 20)
+                
+                // Contenu principal
+                VStack(alignment: .leading, spacing: 16) {
+                    // Titre
+                    Text(item.bestTitle)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                    
+                    // Description
+                    if let desc = item.itemDescription, !desc.isEmpty {
+                        Text(desc)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    // Métadonnées
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Catégorie
+                        if let categoryName = item.category?.name, !categoryName.isEmpty {
+                            HStack(spacing: 8) {
+                                Image(systemName: "folder.fill")
                                     .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(categoryName)
+                                    .font(.subheadline)
                                     .foregroundStyle(.primary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color(.secondarySystemBackground), in: Capsule())
                             }
-                            if let urlString = item.url, let domain = domain(from: urlString) {
+                        }
+                        
+                        // Domaine
+                        if let urlString = item.url, let domain = domain(from: urlString) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "link")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                                 Button {
                                     if let url = URL(string: urlString) {
                                         openURL(url)
                                     }
                                 } label: {
                                     Text(domain)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .underline(false)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.blue)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
-
-                        // Description if present
-                        if let desc = item.itemDescription, !desc.isEmpty {
-                            Text(desc)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
+                        
+                        // Date
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(item.createdAt, format: .dateTime.year().month().day())
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-
-                        // Created date
-                        Text(item.createdAt, format: .dateTime.year().month().day())
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-
-                    // All item data
-                    VStack(alignment: .leading, spacing: 10) {
-                        Divider().padding(.vertical, 4)
-                        Text("All item data")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-
-                        // Basic fields
-                        KeyValueRow(label: "ID", value: item.id.uuidString)
-                        KeyValueRow(label: "Title", value: item.title)
-                        if let desc = item.itemDescription, !desc.isEmpty {
-                            KeyValueRow(label: "Description", value: desc)
-                        }
-                        if let url = item.url, !url.isEmpty {
-                            KeyValueRow(label: "URL", value: url)
-                        }
-                        if let thumb = item.thumbnailUrl, !thumb.isEmpty {
-                            KeyValueRow(label: "Thumbnail URL", value: thumb)
-                        }
-                        KeyValueRow(label: "Category", value: item.category?.name ?? "—")
-                        KeyValueRow(label: "Hidden", value: item.isHidden ? "true" : "false")
-                        if let userId = item.userId { KeyValueRow(label: "User ID", value: userId.uuidString) }
-                        KeyValueRow(label: "Created", value: item.createdAt.formatted(date: .abbreviated, time: .shortened))
-                        KeyValueRow(label: "Updated", value: item.updatedAt.formatted(date: .abbreviated, time: .shortened))
-                        if let data = item.imageData { KeyValueRow(label: "Image size", value: bytesString(data.count)) }
-
-                        // Metadata dictionary
-                        if !item.metadataDict.isEmpty {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Metadata (\(item.metadataDict.count) entries)")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(item.metadataDict.keys.sorted(), id: \.self) { key in
-                                        let value = item.metadataDict[key] ?? ""
-                                        HStack(alignment: .top, spacing: 6) {
-                                            Text(key + ":")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                                .frame(minWidth: 90, alignment: .leading)
-                                            Text(value)
-                                                .font(.caption)
-                                                .foregroundStyle(.primary)
-                                                .textSelection(.enabled)
-                                                .lineLimit(nil)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                    }
-                                }
-                                .padding(10)
-                                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.top, 4)
+                    
+                    // Bouton d'action principal
+                    if let urlString = item.url, !urlString.isEmpty {
+                        Button {
+                            if let url = URL(string: urlString) {
+                                openURL(url)
                             }
-                            .padding(.top, 4)
+                        } label: {
+                            HStack {
+                                Image(systemName: "safari")
+                                Text("Open")
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.accentColor)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
+                        .padding(.top, 8)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-
-                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
             }
+            .frame(maxWidth: .infinity, alignment: .top)
             .scaleEffect(scaleFactor)
         }
         .ignoresSafeArea()
@@ -184,35 +159,5 @@ struct ItemDetailView: View {
     private func domain(from urlString: String) -> String? {
         guard let url = URL(string: urlString), let host = url.host else { return nil }
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-    }
-
-    private func bytesString(_ count: Int) -> String {
-        let kb = Double(count) / 1024.0
-        if kb < 1024 {
-            return String(format: "%.1f KB", kb)
-        } else {
-            let mb = kb / 1024.0
-            return String(format: "%.2f MB", mb)
-        }
-    }
-}
-
-// MARK: - UI Helpers
-private struct KeyValueRow: View {
-    let label: String
-    let value: String
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text(label + ":")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(minWidth: 90, alignment: .leading)
-            Text(value)
-                .font(.caption)
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }
