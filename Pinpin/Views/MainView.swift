@@ -180,6 +180,7 @@ struct MainView: View {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .transition(.opacity)
+                    .animation(.smooth(duration: 0.35), value: viewModel.showSearchBar)
                     .onTapGesture {
                         viewModel.closeSearch()
                     }

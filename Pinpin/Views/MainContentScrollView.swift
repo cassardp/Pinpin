@@ -42,16 +42,15 @@ struct MainContentScrollView: View {
             contentStack
                 .scrollTargetLayout()
         }
+        .id(selectedContentType ?? "all")
         .scrollPosition($scrollPosition)
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
         .scrollDisabled(isMenuOpen || isSettingsOpen)
         .onChange(of: selectedContentType) {
-            scrollPosition.scrollTo(id: "top")
             onCategoryChange()
         }
         .onChange(of: searchQuery) {
-            scrollPosition.scrollTo(id: "top")
             onSearchQueryChange(searchQuery)
         }
         .onChange(of: isMenuOpen) {

@@ -41,8 +41,8 @@ struct ContentGridView: View {
                         }
                 }
             }
+            .id(selectedContentType ?? "all")
         }
-        .id(selectedContentType ?? "all")
         .scaleEffect(isPinching ? pinchScale : 1.0, anchor: .center)
         .animation(.linear(duration: 0.08), value: pinchScale)
         .allowsHitTesting(!isPinching)
