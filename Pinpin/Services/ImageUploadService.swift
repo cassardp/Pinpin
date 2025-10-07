@@ -69,10 +69,10 @@ class ImageUploadService {
             body.append("\(self.uploadcarePublicKey)".data(using: .utf8)!)
             body.append("\r\n".data(using: .utf8)!)
 
-            // UPLOADCARE_STORE=1 (conserver le fichier)
+            // UPLOADCARE_STORE=0 (ne pas stocker en permanence)
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"UPLOADCARE_STORE\"\r\n\r\n".data(using: .utf8)!)
-            body.append("1".data(using: .utf8)!)
+            body.append("0".data(using: .utf8)!)
             body.append("\r\n".data(using: .utf8)!)
 
             // file (binary JPEG)

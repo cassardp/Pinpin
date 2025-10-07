@@ -29,6 +29,21 @@ struct ItemDetailView: View {
                         RoundedRectangle(cornerRadius: cornerRadius)
                             .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
                     )
+                    // Binoculars action (Search Similar)
+                    .overlay(alignment: .bottomLeading) {
+                        Button {
+                            SimilarSearchService.searchSimilarProducts(for: item, query: nil)
+                        } label: {
+                            Image(systemName: "binoculars")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(10)
+                                .background(.black.opacity(0.6), in: Circle())
+                        }
+                        .accessibilityLabel("Search Similar")
+                        .padding(.bottom, 24)
+                        .padding(.leading, 24)
+                    }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
                     .padding(.bottom, 20)
