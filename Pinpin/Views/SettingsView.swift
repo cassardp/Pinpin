@@ -68,9 +68,12 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsToggleRow(
-                        title: "Timeline View",
+                        title: "Hide Timeline",
                         subtitle: "",
-                        isOn: $userPreferences.showTimelineView
+                        isOn: Binding(
+                            get: { !userPreferences.showTimelineView },
+                            set: { userPreferences.showTimelineView = !$0 }
+                        )
                     )
 
                 }

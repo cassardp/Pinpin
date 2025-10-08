@@ -168,8 +168,8 @@ class ShareViewController: NSViewController {
                 // IMPORTANT : Utiliser l'App Group pour partager avec l'app principale
                 let configuration = ModelConfiguration(
                     schema: schema,
-                    groupContainer: .identifier("group.com.misericode.pinpin"),
-                    cloudKitDatabase: .automatic
+                    groupContainer: .identifier(AppConstants.groupID),
+                    cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
                 )
                 
                 let container = try ModelContainer(for: schema, configurations: [configuration])
