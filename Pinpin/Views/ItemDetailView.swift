@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ItemDetailView: View {
     let item: ContentItem
@@ -18,127 +19,140 @@ struct ItemDetailView: View {
     @State private var cornerRadius: CGFloat = 16
     @State private var chromeOpacity: CGFloat = 1
     
+    // États pour les actions
+    @State private var showDeleteConfirmation = false
+    @State private var showShareSheet = false
+    @State private var categoryMenuTrigger = 0
+    
+    // DataService singleton
+    private var dataService: DataService {
+        DataService.shared
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Image principale
-                SmartAsyncImage(item: item)
-                    .aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
-                    )
-                    // Binoculars action (Search Similar)
-                    .overlay(alignment: .bottomLeading) {
-                        Button {
-                            SimilarSearchService.searchSimilarProducts(for: item, query: nil)
-                        } label: {
-                            Image(systemName: "binoculars")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(12)
-                                .background(.black.opacity(0.8), in: Circle())
-                        }
-                        .accessibilityLabel("Search Similar")
-                        .padding(.bottom, 16)
-                        .padding(.leading, 16)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 20)
+                // Image principale (tap pour ouvrir)
+                Button {
+                    openItem()
+                } label: {
+                    SmartAsyncImage(item: item)
+                        .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
+                        )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
                 
-                // Contenu principal
-                VStack(alignment: .leading, spacing: 16) {
-                    // Titre
-                    Text(item.bestTitle)
-                        .font(.title2)
-                        .fontWeight(.medium)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
-                    
-                    // Description
-                    if let desc = item.itemDescription, !desc.isEmpty {
-                        Text(desc)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    
-                    // Métadonnées
-                    VStack(alignment: .leading, spacing: 12) {
-                        // Catégorie
-                        if let categoryName = item.category?.name, !categoryName.isEmpty {
-                            HStack(spacing: 8) {
-                                Image(systemName: "folder.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(.secondary)
-                                Text(categoryName)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.primary)
-                            }
-                        }
-                        
-                        // Domaine
-                        if let urlString = item.url, let domain = domain(from: urlString) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "link")
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(.secondary)
-                                Button {
-                                    if let url = URL(string: urlString) {
-                                        openURL(url)
-                                    }
-                                } label: {
-                                    Text(domain)
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(.primary)
+                // Barre d'actions moderne
+                HStack(spacing: 0) {
+                    // Changer de catégorie (menu contextuel)
+                    Menu {
+                        ForEach(dataService.fetchCategoryNames(), id: \.self) { categoryName in
+                            if categoryName != item.safeCategoryName {
+                                Button(action: {
+                                    changeCategory(to: categoryName)
+                                }) {
+                                    Label(categoryName, systemImage: "folder")
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
-                        
-                        // Date
-                        HStack(spacing: 8) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 16))
-                                .foregroundStyle(.secondary)
-                            Text(item.createdAt, format: .dateTime.year().month().day())
-                                .font(.system(size: 16))
-                                .foregroundStyle(.secondary)
-                        }
+                    } label: {
+                        ActionButtonLabel(
+                            icon: "folder",
+                            label: item.safeCategoryName
+                        )
                     }
-                    .padding(.top, 4)
+                    .buttonStyle(.plain)
+                    .sensoryFeedback(.impact(weight: .light), trigger: categoryMenuTrigger)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        categoryMenuTrigger += 1
+                    })
                     
-                    // Bouton d'action principal
-                    if let urlString = item.url, !urlString.isEmpty {
-                        Button {
-                            if let url = URL(string: urlString) {
-                                openURL(url)
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "safari")
-                                Text("Open")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.primary)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .padding(.top, 8)
+                    Divider()
+                        .frame(height: 32)
+                        .padding(.horizontal, 8)
+                    
+                    // Recherche similaire
+                    ActionButton(
+                        icon: "binoculars",
+                        label: "Similar"
+                    ) {
+                        SimilarSearchService.searchSimilarProducts(for: item, query: nil)
+                    }
+                    
+                    Divider()
+                        .frame(height: 32)
+                        .padding(.horizontal, 8)
+                    
+                    // Partager
+                    ActionButton(
+                        icon: "square.and.arrow.up",
+                        label: "Share"
+                    ) {
+                        showShareSheet = true
+                    }
+                    
+                    Divider()
+                        .frame(height: 32)
+                        .padding(.horizontal, 8)
+                    
+                    // Ouvrir dans Safari
+                    ActionButton(
+                        icon: "arrow.up.right",
+                        label: "Open"
+                    ) {
+                        openItem()
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 40)
-
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.systemGray3), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 16)
+                
+                Spacer()
+                    .frame(height: 20)
+                
+                // Bouton Delete
+                Button {
+                    showDeleteConfirmation = true
+                } label: {
+                    Text("Delete")
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
+                }
+                .padding(.bottom, 20)
             }
             .padding(.top, 60)
             .frame(maxWidth: .infinity, alignment: .top)
             .scaleEffect(scaleFactor)
+        }
+        .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                deleteItem()
+            }
+        } message: {
+            Text("Are you sure you want to delete this item? This action cannot be undone.")
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let urlString = item.url,
+               !urlString.isEmpty,
+               let url = URL(string: urlString) {
+                ShareSheet(items: [url])
+            }
         }
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
@@ -172,9 +186,63 @@ struct ItemDetailView: View {
         }
     }
 
-    // MARK: - Helpers
-    private func domain(from urlString: String) -> String? {
-        guard let url = URL(string: urlString), let host = url.host else { return nil }
-        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    // MARK: - Actions
+    
+    private func openItem() {
+        guard let urlString = item.url,
+              !urlString.isEmpty,
+              let url = URL(string: urlString) else { return }
+        openURL(url)
+    }
+    
+    private func deleteItem() {
+        dataService.deleteContentItem(item)
+        dismiss()
+    }
+    
+    private func changeCategory(to category: String) {
+        dataService.updateContentItem(item, categoryName: category)
     }
 }
+
+// MARK: - Action Button Components
+
+private struct ActionButton: View {
+    let icon: String
+    let label: String
+    var color: Color = .primary
+    let action: () -> Void
+    
+    @State private var triggerFeedback = 0
+    
+    var body: some View {
+        Button(action: {
+            triggerFeedback += 1
+            action()
+        }) {
+            ActionButtonLabel(icon: icon, label: label, color: color)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .light), trigger: triggerFeedback)
+    }
+}
+
+private struct ActionButtonLabel: View {
+    let icon: String
+    let label: String
+    var color: Color = .primary
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .regular))
+                .foregroundStyle(color)
+            
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
