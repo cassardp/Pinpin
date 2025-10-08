@@ -232,12 +232,14 @@ class ShareViewController: UIViewController, ObservableObject {
             let contentRepo = ContentItemRepository(context: context)
 
             do {
-                // Vérifier si un item identique existe déjà dans la base (évite les vrais doublons)
-                if let existingItem = try contentRepo.fetchExistingDuplicate(
+                // Vérifier si un item identique a été créé récemment (évite les doublons accidentels)
+                // Fenêtre de 10 secondes pour bloquer les ajouts rapides involontaires
+                if let existingItem = try contentRepo.fetchRecentDuplicate(
                     title: finalContent.title,
-                    url: finalContent.url
+                    url: finalContent.url,
+                    withinSeconds: 10.0
                 ) {
-                    print("[ShareExtension] ⚠️ Item identique déjà existant (créé le \(existingItem.createdAt)), skip")
+                    print("[ShareExtension] ⚠️ Item identique créé il y a \(Int(Date().timeIntervalSince(existingItem.createdAt)))s, skip pour éviter doublon accidentel")
                     self.completeRequest()
                     return
                 }

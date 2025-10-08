@@ -29,7 +29,7 @@ final class MainViewModel: ObservableObject {
         // Filtrage par catégorie
         let typeFiltered: [ContentItem]
         if let selectedType = selectedContentType {
-            typeFiltered = allItems.filter { $0.category?.name == selectedType }
+            typeFiltered = allItems.filter { $0.safeCategoryName == selectedType }
         } else {
             typeFiltered = allItems
         }
@@ -57,7 +57,7 @@ final class MainViewModel: ObservableObject {
         // Filtrage par catégorie
         let typeFiltered: [ContentItem]
         if let selectedType = selectedContentType {
-            typeFiltered = allItems.filter { $0.category?.name == selectedType }
+            typeFiltered = allItems.filter { $0.safeCategoryName == selectedType }
         } else {
             typeFiltered = allItems
         }

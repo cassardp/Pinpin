@@ -179,13 +179,14 @@ class ShareViewController: NSViewController {
                 let categoryRepo = CategoryRepository(context: context)
                 let contentRepo = ContentItemRepository(context: context)
 
-                // Vérifier si un item identique a été créé récemment (évite les doublons lors de clics rapides)
+                // Vérifier si un item identique a été créé récemment (évite les doublons accidentels)
+                // Fenêtre de 10 secondes pour bloquer les ajouts rapides involontaires
                 if let existingItem = try? contentRepo.fetchRecentDuplicate(
                     title: title,
                     url: url.absoluteString,
-                    withinSeconds: 2.0
+                    withinSeconds: 10.0
                 ) {
-                    print("⚠️ Item identique trouvé (créé il y a \(Date().timeIntervalSince(existingItem.createdAt))s), skip")
+                    print("⚠️ Item identique créé il y a \(Int(Date().timeIntervalSince(existingItem.createdAt)))s, skip pour éviter doublon accidentel")
                     DispatchQueue.main.async {
                         self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
                     }

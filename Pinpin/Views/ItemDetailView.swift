@@ -53,7 +53,7 @@ struct ItemDetailView: View {
                     // Titre
                     Text(item.bestTitle)
                         .font(.title2)
-                        .fontWeight(.bold)
+                        .fontWeight(.medium)
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
                     
@@ -72,7 +72,7 @@ struct ItemDetailView: View {
                         if let categoryName = item.category?.name, !categoryName.isEmpty {
                             HStack(spacing: 8) {
                                 Image(systemName: "folder.fill")
-                                    .font(.caption)
+                                    .font(.system(size: 16))
                                     .foregroundStyle(.secondary)
                                 Text(categoryName)
                                     .font(.subheadline)
@@ -84,7 +84,7 @@ struct ItemDetailView: View {
                         if let urlString = item.url, let domain = domain(from: urlString) {
                             HStack(spacing: 8) {
                                 Image(systemName: "link")
-                                    .font(.caption)
+                                    .font(.system(size: 16))
                                     .foregroundStyle(.secondary)
                                 Button {
                                     if let url = URL(string: urlString) {
@@ -92,7 +92,7 @@ struct ItemDetailView: View {
                                     }
                                 } label: {
                                     Text(domain)
-                                        .font(.subheadline)
+                                        .font(.system(size: 16))
                                         .foregroundStyle(.primary)
                                 }
                                 .buttonStyle(.plain)
@@ -102,10 +102,10 @@ struct ItemDetailView: View {
                         // Date
                         HStack(spacing: 8) {
                             Image(systemName: "calendar")
-                                .font(.caption)
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                             Text(item.createdAt, format: .dateTime.year().month().day())
-                                .font(.subheadline)
+                                .font(.system(size: 16))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -134,7 +134,9 @@ struct ItemDetailView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
+
             }
+            .padding(.top, 60)
             .frame(maxWidth: .infinity, alignment: .top)
             .scaleEffect(scaleFactor)
         }

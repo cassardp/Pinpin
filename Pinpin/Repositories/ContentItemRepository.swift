@@ -60,8 +60,9 @@ final class ContentItemRepository {
     }
 
     /// Vérifie si un item identique (même title + url) a été créé dans les dernières secondes
-    /// Utilisé pour éviter les doublons lors de clics/taps rapides
-    func fetchRecentDuplicate(title: String, url: String?, withinSeconds: TimeInterval = 2.0) throws -> ContentItem? {
+    /// Utilisé pour éviter les doublons accidentels lors de clics/taps rapides
+    /// Par défaut 10 secondes - permet d'ajouter volontairement le même item après ce délai
+    func fetchRecentDuplicate(title: String, url: String?, withinSeconds: TimeInterval = 10.0) throws -> ContentItem? {
         let cutoffDate = Date().addingTimeInterval(-withinSeconds)
 
         // Cas 1: Item avec URL
@@ -83,31 +84,6 @@ final class ContentItemRepository {
                 item.title == title &&
                 (item.url == nil || item.url == "") &&
                 item.createdAt >= cutoffDate
-            },
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
-        return try context.fetch(descriptor).first
-    }
-
-    /// Vérifie si un item identique existe déjà (même title + url), peu importe la date
-    /// Utilisé pour éviter les vrais doublons dans la base
-    func fetchExistingDuplicate(title: String, url: String?) throws -> ContentItem? {
-        // Cas 1: Item avec URL
-        if let url = url, !url.isEmpty {
-            let descriptor = FetchDescriptor<ContentItem>(
-                predicate: #Predicate { item in
-                    item.title == title && item.url == url
-                },
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-            )
-            return try context.fetch(descriptor).first
-        }
-
-        // Cas 2: Item sans URL (notes textuelles)
-        let descriptor = FetchDescriptor<ContentItem>(
-            predicate: #Predicate { item in
-                item.title == title &&
-                (item.url == nil || item.url == "")
             },
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
