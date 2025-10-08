@@ -33,9 +33,15 @@ struct FilterMenuView: View {
     @State private var hapticTrigger: Int = 0
     
     // Récupère toutes les catégories directement depuis SwiftData (ordre natif via sortOrder)
-    private var availableTypes: [String] {
+    private var availableCategories: [Category] {
+        // Dédupliquer par nom (garder la première occurrence)
+        var seen = Set<String>()
+        let uniqueCategories = allCategories.filter { category in
+            seen.insert(category.name.lowercased()).inserted
+        }
+        
         // Filtrer les catégories "Misc" vides pour les cacher
-        let visibleCategories = allCategories.filter { category in
+        let visibleCategories = uniqueCategories.filter { category in
             // Toujours afficher les catégories non-Misc
             if category.name != "Misc" {
                 return true
@@ -45,12 +51,18 @@ struct FilterMenuView: View {
         }
         
         // Le tri est déjà fait par @Query(sort: \Category.sortOrder)
-        return visibleCategories.map { $0.name }
+        return visibleCategories
     }
     
     // Compte les items par type
     private func countForType(_ type: String?) -> Int {
         guard let type = type else { return contentItems.count }
+        
+        // Pour "Misc", compter aussi les items sans catégorie
+        if type == "Misc" {
+            return contentItems.filter { $0.category == nil || $0.category?.name == "Misc" }.count
+        }
+        
         return contentItems.filter { $0.safeCategoryName == type }.count
     }
     
@@ -58,34 +70,23 @@ struct FilterMenuView: View {
     private func moveCategories(from source: IndexSet, to destination: Int) {
         hapticTrigger += 1
 
-        // Récupérer les catégories visibles dans l'ordre d'affichage
-        let visibleCategories = allCategories.filter { category in
-            if category.name != "Misc" {
-                return true
-            }
-            return countForType(category.name) > 0
-        }
-
-        // Créer une copie mutable des noms pour la réorganisation
-        var visibleNames = visibleCategories.map { $0.name }
-        visibleNames.move(fromOffsets: source, toOffset: destination)
+        // Créer une copie mutable des catégories visibles
+        var reorderedCategories = availableCategories
+        reorderedCategories.move(fromOffsets: source, toOffset: destination)
 
         // Préparer les updates de sortOrder pour le repository
         var updates: [(category: Category, order: Int32)] = []
 
         // Mettre à jour le sortOrder de toutes les catégories visibles
-        for (newIndex, name) in visibleNames.enumerated() {
-            if let category = allCategories.first(where: { $0.name == name }) {
-                updates.append((category, Int32(newIndex)))
-            }
+        for (newIndex, category) in reorderedCategories.enumerated() {
+            updates.append((category, Int32(newIndex)))
         }
 
         // Les catégories non visibles gardent leur ordre après les visibles
-        let hiddenCategories = allCategories.filter { category in
-            !visibleNames.contains(category.name)
-        }
+        let visibleIds = Set(reorderedCategories.map { $0.id })
+        let hiddenCategories = allCategories.filter { !visibleIds.contains($0.id) }
         for (offset, category) in hiddenCategories.enumerated() {
-            updates.append((category, Int32(visibleNames.count + offset)))
+            updates.append((category, Int32(reorderedCategories.count + offset)))
         }
 
         // Utiliser le DataService pour persister via repository
@@ -124,25 +125,22 @@ struct FilterMenuView: View {
                     .listRowSeparator(.hidden)
                     
                     // Types dynamiques avec réorganisation native
-                    ForEach(availableTypes, id: \.self) { type in
-                        let category = allCategories.first(where: { $0.name == type })
+                    ForEach(availableCategories, id: \.id) { category in
                         CategoryListRow(
-                            isSelected: selectedContentType == type,
-                            title: type.capitalized,
-                            isEmpty: countForType(type) == 0,
+                            isSelected: selectedContentType == category.name,
+                            title: category.name.capitalized,
+                            isEmpty: countForType(category.name) == 0,
                             isEditing: isEditing,
                             action: {
-                                selectedContentType = (selectedContentType == type) ? nil : type
+                                selectedContentType = (selectedContentType == category.name) ? nil : category.name
                             },
                             onEdit: {
-                                guard let category else { return }
                                 prepareRename(for: category)
                             },
                             onDelete: {
-                                guard let category else { return }
                                 prepareDelete(for: category)
                             },
-                            canDelete: category?.name != "Misc"
+                            canDelete: category.name != "Misc"
                         )
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)

@@ -131,9 +131,22 @@ final class CategoryRepository {
     }
 
     func upsert(id: UUID, name: String, colorHex: String, iconName: String, sortOrder: Int32, isDefault: Bool, createdAt: Date, updatedAt: Date) throws -> Category {
-        // Chercher d'abord par nom
-        if let existing = try fetchByName(name) {
+        // Chercher d'abord par ID (priorité pour éviter les doublons iCloud)
+        if let existing = try fetchById(id) {
             // Mettre à jour les propriétés
+            existing.name = name
+            existing.colorHex = colorHex
+            existing.iconName = iconName
+            existing.sortOrder = sortOrder
+            existing.isDefault = isDefault
+            existing.createdAt = createdAt
+            existing.updatedAt = updatedAt
+            return existing
+        }
+        
+        // Ensuite chercher par nom (pour les catégories créées localement)
+        if let existing = try fetchByName(name) {
+            // Mettre à jour avec l'ID iCloud
             existing.id = id
             existing.colorHex = colorHex
             existing.iconName = iconName
