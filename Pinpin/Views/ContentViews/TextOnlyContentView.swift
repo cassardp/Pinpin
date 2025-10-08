@@ -31,7 +31,7 @@ struct TextOnlyContentView: View {
             // Titre principal
             Text(item.bestTitle)
                 .font(adaptiveFont)
-                .foregroundColor(.primary)
+                .foregroundColor(postItColors.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(adaptiveLineLimit)
             
@@ -41,7 +41,7 @@ struct TextOnlyContentView: View {
                description != item.title {
                 Text(description)
                     .font(adaptiveDescriptionFont)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(postItColors.textColor.opacity(0.8))
                     .multilineTextAlignment(.leading)
                     .lineLimit(adaptiveDescriptionLineLimit)
             }
@@ -50,7 +50,7 @@ struct TextOnlyContentView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
+                .fill(postItColors.backgroundColor)
         )
         .contentShape(Rectangle())
         .if(!isSelectionMode) { view in
@@ -62,6 +62,32 @@ struct TextOnlyContentView: View {
                     TextEditSheet(item: item)
                 }
         }
+    }
+    
+    // MARK: - Post-it Colors
+    
+    /// Couleurs Post-it jaune-orange chaud
+    private var postItColors: (backgroundColor: Color, textColor: Color) {
+        // Jaune-orange chaud style bento : #FFE5B4 (ton pêche/vanille)
+        let bgColor = Color(red: 1.0, green: 0.898, blue: 0.706)
+        
+        // Calculer une variante foncée pour le texte
+        let textColor = darkenColor(bgColor, factor: 0.4)
+        
+        return (bgColor, textColor)
+    }
+    
+    /// Assombrit une couleur en réduisant ses composantes RGB
+    private func darkenColor(_ color: Color, factor: Double) -> Color {
+        guard let components = UIColor(color).cgColor.components else {
+            return Color.primary
+        }
+        
+        let r = components[0] * factor
+        let g = components[1] * factor
+        let b = components[2] * factor
+        
+        return Color(red: r, green: g, blue: b)
     }
     
     // MARK: - Adaptive Properties

@@ -23,7 +23,7 @@ enum AppConstants {
     static let minimumCompressionQuality: CGFloat = 0.1
     
     // MARK: - Pagination
-    static let itemsPerPage = 15
+    static let itemsPerPage = 10
     
     // MARK: - Category Names
     static let miscCategoryNames = ["Misc"]
@@ -63,13 +63,13 @@ enum AppConstants {
     // MARK: - Default Categories
     static let defaultCategories: [String] = [
         "Home",
-        "Fashion",
+        "Clothes",
         "Food",
         "Tech",
         "Ideas",
         "Outdoor",
         "Music",
         "Books",
-        "Car"
+        "Cars"
     ]
 }
