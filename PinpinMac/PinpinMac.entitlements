@@ -6,7 +6,7 @@
 	<string>production</string>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.com.misericode.PinpinFinal</string>
+		<string>iCloud.com.misericode.Pinpin</string>
 	</array>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
@@ -15,7 +15,7 @@
 	</array>
 	<key>com.apple.developer.ubiquity-container-identifiers</key>
 	<array>
-		<string>iCloud.com.misericode.PinpinFinal</string>
+		<string>iCloud.com.misericode.Pinpin</string>
 	</array>
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
 	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>

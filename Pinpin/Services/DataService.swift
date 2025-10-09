@@ -20,8 +20,9 @@ final class DataService: ObservableObject {
         
         let configuration = ModelConfiguration(
             schema: schema,
-            groupContainer: .identifier(AppConstants.groupID),
-            cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
+            groupContainer: .identifier(AppConstants.groupID)
+            // CloudKit temporairement désactivé - conflit de schéma
+            // cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
         
         do {

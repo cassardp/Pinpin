@@ -13,7 +13,7 @@ enum AppConstants {
     static let groupID = "group.com.misericode.pinpin"
     
     // MARK: - CloudKit
-    static let cloudKitContainerID = "iCloud.com.misericode.PinpinFinal"
+    static let cloudKitContainerID = "iCloud.com.misericode.Pinpin"
     
     
     // MARK: - Image Optimization
