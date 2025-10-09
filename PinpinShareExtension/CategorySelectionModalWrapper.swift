@@ -49,24 +49,6 @@ struct CategorySelectionModalWrapper: View {
                         showingAddCategory = true
                     }
                 
-                if categories.isEmpty {
-                    // Message quand pas de catégories
-                    VStack(spacing: 12) {
-                        Image(systemName: "folder.badge.plus")
-                            .font(.system(size: 40))
-                            .foregroundColor(.secondary)
-                        
-                        Text("No categories yet")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text("Create your first category to organize your content")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.vertical, 40)
-                } else {
                     ForEach(categories, id: \.self) { categoryName in
                         CategoryCard(
                             title: categoryName,
@@ -75,7 +57,6 @@ struct CategorySelectionModalWrapper: View {
                             handleCategorySelection(categoryName)
                         }
                     }
-                }
             }
                 .padding(.horizontal, 20)
                 .padding(.top, 40)
@@ -265,7 +246,7 @@ struct AddCategoryCard: View {
             
             // Texte simplifié
             VStack(alignment: .leading, spacing: 2) {
-                Text("Add a category")
+                Text("Add")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)

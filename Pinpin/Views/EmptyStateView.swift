@@ -18,14 +18,6 @@ struct EmptyStateView: View {
                     .font(.system(size: 14))
                     .foregroundColor(Color(UIColor.systemGray2))
                 
-                
-                if let iconName = appIconName(),
-                   let uiImage = UIImage(named: iconName) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .frame(width: 45, height: 45)
-                        .cornerRadius(12)
-                }
             }
         }
     }
