@@ -56,7 +56,7 @@ struct SettingsView: View {
                         .padding(.vertical, 8)
 
                     SettingsToggleRow(
-                        title: colorScheme == .dark ? "Force Light Mode" : "Force Dark Mode",
+                        title: colorScheme == .dark ? "Light Mode" : "Dark Mode",
                         subtitle: "",
                         isOn: $userPreferences.forceDarkMode
                     )

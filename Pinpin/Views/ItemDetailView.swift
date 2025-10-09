@@ -20,8 +20,9 @@ struct ItemDetailView: View {
     @State private var chromeOpacity: CGFloat = 1
     
     // États pour les actions
-    @State private var showDeleteConfirmation = false
     @State private var showShareSheet = false
+    @State private var showAddCategory = false
+    @State private var newCategoryName = ""
     @State private var categoryMenuTrigger = 0
     
     // DataService singleton
@@ -51,28 +52,46 @@ struct ItemDetailView: View {
                 
                 // Barre d'actions moderne
                 HStack(spacing: 0) {
-                    // Changer de catégorie (menu contextuel)
-                    Menu {
-                        ForEach(dataService.fetchCategoryNames(), id: \.self) { categoryName in
-                            if categoryName != item.safeCategoryName {
-                                Button(action: {
-                                    changeCategory(to: categoryName)
-                                }) {
-                                    Label(categoryName, systemImage: "folder")
+                    // Changer de catégorie (menu contextuel ou sheet d'ajout)
+                    let categoryNames = dataService.fetchCategoryNames()
+                    
+                    if categoryNames.count <= 1 {
+                        // S'il n'y a qu'une seule catégorie, ouvrir la sheet d'ajout
+                        Button {
+                            categoryMenuTrigger += 1
+                            showAddCategory = true
+                        } label: {
+                            ActionButtonLabel(
+                                icon: "folder",
+                                label: item.safeCategoryName
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .sensoryFeedback(.impact(weight: .light), trigger: categoryMenuTrigger)
+                    } else {
+                        // Sinon, afficher le menu normal
+                        Menu {
+                            ForEach(categoryNames, id: \.self) { categoryName in
+                                if categoryName != item.safeCategoryName {
+                                    Button(action: {
+                                        changeCategory(to: categoryName)
+                                    }) {
+                                        Label(categoryName, systemImage: "folder")
+                                    }
                                 }
                             }
+                        } label: {
+                            ActionButtonLabel(
+                                icon: "folder",
+                                label: item.safeCategoryName
+                            )
                         }
-                    } label: {
-                        ActionButtonLabel(
-                            icon: "folder",
-                            label: item.safeCategoryName
-                        )
+                        .buttonStyle(.plain)
+                        .sensoryFeedback(.impact(weight: .light), trigger: categoryMenuTrigger)
+                        .simultaneousGesture(TapGesture().onEnded {
+                            categoryMenuTrigger += 1
+                        })
                     }
-                    .buttonStyle(.plain)
-                    .sensoryFeedback(.impact(weight: .light), trigger: categoryMenuTrigger)
-                    .simultaneousGesture(TapGesture().onEnded {
-                        categoryMenuTrigger += 1
-                    })
                     
                     Divider()
                         .frame(height: 32)
@@ -124,28 +143,10 @@ struct ItemDetailView: View {
                 
                 Spacer()
                     .frame(height: 20)
-                
-                // Bouton Delete
-                Button {
-                    showDeleteConfirmation = true
-                } label: {
-                    Text("Delete")
-                        .font(.subheadline)
-                        .foregroundStyle(.red)
-                }
-                .padding(.bottom, 20)
             }
             .padding(.top, 60)
             .frame(maxWidth: .infinity, alignment: .top)
             .scaleEffect(scaleFactor)
-        }
-        .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                deleteItem()
-            }
-        } message: {
-            Text("Are you sure you want to delete this item? This action cannot be undone.")
         }
         .sheet(isPresented: $showShareSheet) {
             if let urlString = item.url,
@@ -153,6 +154,24 @@ struct ItemDetailView: View {
                let url = URL(string: urlString) {
                 ShareSheet(items: [url])
             }
+        }
+        .sheet(isPresented: $showAddCategory) {
+            RenameCategorySheet(
+                name: $newCategoryName,
+                onCancel: {
+                    showAddCategory = false
+                    newCategoryName = ""
+                },
+                onSave: {
+                    let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedName.isEmpty {
+                        dataService.addCategory(name: trimmedName)
+                        changeCategory(to: trimmedName)
+                        newCategoryName = ""
+                        showAddCategory = false
+                    }
+                }
+            )
         }
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
@@ -195,11 +214,6 @@ struct ItemDetailView: View {
         openURL(url)
     }
     
-    private func deleteItem() {
-        dataService.deleteContentItem(item)
-        dismiss()
-    }
-    
     private func changeCategory(to category: String) {
         dataService.updateContentItem(item, categoryName: category)
     }
@@ -237,10 +251,12 @@ private struct ActionButtonLabel: View {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .regular))
                 .foregroundStyle(color)
+                .frame(height: 20)
             
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .frame(height: 16)
         }
         .frame(maxWidth: .infinity)
     }

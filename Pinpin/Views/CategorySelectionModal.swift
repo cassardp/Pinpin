@@ -100,12 +100,23 @@ struct CategorySelectionModal: View {
             loadCategoryNames()
         }
         .sheet(isPresented: $showingAddCategory) {
-            AddCategorySheet { categoryName in
-                dataService.addCategory(name: categoryName)
-                loadCategoryNames()
-                onCategorySelected(categoryName)
-                dismiss()
-            }
+            RenameCategorySheet(
+                name: $newCategoryName,
+                onCancel: {
+                    showingAddCategory = false
+                    newCategoryName = ""
+                },
+                onSave: {
+                    let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedName.isEmpty {
+                        dataService.addCategory(name: trimmedName)
+                        loadCategoryNames()
+                        onCategorySelected(trimmedName)
+                        newCategoryName = ""
+                        dismiss()
+                    }
+                }
+            )
         }
     }
     
@@ -259,53 +270,6 @@ struct AddCategoryCard: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
-
-// MARK: - Add Category Sheet
-struct AddCategorySheet: View {
-    @State private var categoryName = ""
-    @Environment(\.dismiss) private var dismiss
-    let onCategoryAdded: (String) -> Void
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Category name")
-                        .font(.headline)
-                    
-                    TextField("e.g. Recipes, Travel, Inspiration...", text: $categoryName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                }
-                
-                Spacer()
-            }
-            .padding(24)
-            .navigationTitle("New category")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden()
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add") {
-                        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmedName.isEmpty {
-                            onCategoryAdded(trimmedName)
-                            dismiss()
-                        }
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-        }
-    }
-}
-
 
 // MARK: - Preview
 #Preview {

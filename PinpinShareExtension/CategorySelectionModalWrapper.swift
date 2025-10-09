@@ -88,7 +88,7 @@ struct CategorySelectionModalWrapper: View {
             loadCategories()
         }
         .sheet(isPresented: $showingAddCategory) {
-            AddCategorySheet { categoryName in
+            RenameCategorySheet { categoryName in
                 addCategory(categoryName)
                 // Ne pas sélectionner automatiquement - laisser l'utilisateur choisir
             }
@@ -284,8 +284,8 @@ struct AddCategoryCard: View {
     }
 }
 
-// MARK: - Add Category Sheet
-struct AddCategorySheet: View {
+// MARK: - Rename Category Sheet
+struct RenameCategorySheet: View {
     @State private var categoryName = ""
     @Environment(\.dismiss) private var dismiss
     let onCategoryAdded: (String) -> Void
