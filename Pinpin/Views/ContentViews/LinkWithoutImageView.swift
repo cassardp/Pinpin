@@ -34,27 +34,8 @@ struct LinkWithoutImageView: View {
         .background(Color.primary)
     }
     
-    /// Nettoie le titre en enlevant les préfixes http://, https://, www. et les / à la fin
+    /// Retourne le meilleur titre disponible
     private var cleanedTitle: String {
-        var title = item.bestTitle
-        
-        // Enlever les préfixes de protocole
-        if title.hasPrefix("https://") {
-            title = String(title.dropFirst(8))
-        } else if title.hasPrefix("http://") {
-            title = String(title.dropFirst(7))
-        }
-        
-        // Enlever www.
-        if title.hasPrefix("www.") {
-            title = String(title.dropFirst(4))
-        }
-        
-        // Enlever les / à la fin
-        while title.hasSuffix("/") {
-            title = String(title.dropLast())
-        }
-        
-        return title
+        return item.bestTitle
     }
 }
