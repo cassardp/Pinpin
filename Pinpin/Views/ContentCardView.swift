@@ -17,6 +17,8 @@ struct ContentCardView: View {
             switch contentType {
             case .textOnly:
                 TextOnlyContentView(item: item, numberOfColumns: numberOfColumns, isSelectionMode: isSelectionMode)
+            case .linkWithoutImage:
+                LinkWithoutImageView(item: item, numberOfColumns: numberOfColumns)
             case .tiktok:
                 TikTokContentView(item: item)
             case .square:
@@ -31,15 +33,21 @@ struct ContentCardView: View {
     
     private enum ContentViewType {
         case textOnly
+        case linkWithoutImage
         case tiktok
         case square
         case standard
     }
     
     private var contentType: ContentViewType {
-        // Vérifier d'abord si c'est du contenu texte uniquement
+        // Vérifier d'abord si c'est du contenu texte uniquement (note sans URL)
         if hasNoVisualContent {
-            return .textOnly
+            // Si pas d'URL ou URL vide, c'est une note textuelle
+            if item.url == nil || item.url?.isEmpty == true {
+                return .textOnly
+            }
+            // Sinon c'est un lien sans image
+            return .linkWithoutImage
         }
         
         guard let url = item.url else { return .standard }
@@ -65,27 +73,21 @@ struct ContentCardView: View {
     
     /// Détermine si le contenu n'a pas d'éléments visuels (image/vidéo)
     private var hasNoVisualContent: Bool {
-        // Optimisation: vérifier d'abord imageData (le plus rapide)
+        // Vérifier d'abord imageData (le plus rapide)
         if item.imageData != nil {
             return false
         }
         
-        // Vérifier thumbnail
+        // Vérifier thumbnail (URL distante valide)
         if let thumbnail = item.thumbnailUrl,
            !thumbnail.isEmpty,
            !thumbnail.hasPrefix("images/"),
-           !thumbnail.hasPrefix("file:///var/mobile/Media/PhotoData/") {
+           !thumbnail.hasPrefix("file:///var/mobile/Media/PhotoData/"),
+           !thumbnail.hasPrefix("file:///") {
             return false
         }
         
-        // Vérifier URL web
-        if let urlString = item.url,
-           !urlString.hasPrefix("file:///"),
-           let url = URL(string: urlString),
-           url.scheme == "http" || url.scheme == "https" {
-            return false
-        }
-        
+        // Si on arrive ici, pas d'image disponible
         return true
     }
 }

@@ -64,6 +64,9 @@ struct ContentItemCard: View {
             if isSelectionMode {
                 // En mode sélection : appeler le callback de sélection
                 onSelectionTap?()
+            } else if isLinkWithoutImage, let urlString = item.url {
+                // Lien sans image : ouvrir directement l'URL
+                handleContentTap(urlString: urlString)
             } else {
                 // Mode normal : ouvrir la vue détail avec transition hero
                 onItemTap?()
@@ -178,5 +181,23 @@ struct ContentItemCard: View {
         }
         
         return nil
+    }
+    
+    /// Détermine si c'est un lien sans image
+    private var isLinkWithoutImage: Bool {
+        // Pas d'image data
+        guard item.imageData == nil else { return false }
+        
+        // Pas de thumbnail valide
+        if let thumbnail = item.thumbnailUrl,
+           !thumbnail.isEmpty,
+           !thumbnail.hasPrefix("images/"),
+           !thumbnail.hasPrefix("file:///var/mobile/Media/PhotoData/"),
+           !thumbnail.hasPrefix("file:///") {
+            return false
+        }
+        
+        // Mais a une URL
+        return item.url != nil && !(item.url?.isEmpty ?? true)
     }
 }

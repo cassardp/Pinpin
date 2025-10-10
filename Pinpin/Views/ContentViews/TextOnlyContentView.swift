@@ -26,27 +26,31 @@ struct TextOnlyContentView: View {
     let isSelectionMode: Bool
     @State private var showingEditSheet = false
     
+    private var adaptive: AdaptiveContentProperties {
+        AdaptiveContentProperties(numberOfColumns: numberOfColumns)
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: adaptiveSpacing) {
+        VStack(alignment: .leading, spacing: adaptive.spacing) {
             // Titre principal
             Text(item.bestTitle)
-                .font(adaptiveFont)
+                .font(adaptive.font)
                 .foregroundColor(postItColors.textColor)
                 .multilineTextAlignment(.leading)
-                .lineLimit(adaptiveLineLimit)
+                .lineLimit(adaptive.lineLimit)
             
             // Description si disponible et différente du titre
             if let description = item.itemDescription, 
                !description.isEmpty,
                description != item.title {
                 Text(description)
-                    .font(adaptiveDescriptionFont)
+                    .font(adaptive.descriptionFont)
                     .foregroundColor(postItColors.textColor.opacity(0.8))
                     .multilineTextAlignment(.leading)
-                    .lineLimit(adaptiveDescriptionLineLimit)
+                    .lineLimit(adaptive.descriptionLineLimit)
             }
         }
-        .padding(adaptivePadding)
+        .padding(adaptive.padding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -89,61 +93,4 @@ struct TextOnlyContentView: View {
         
         return Color(red: r, green: g, blue: b)
     }
-    
-    // MARK: - Adaptive Properties
-    
-    private var adaptiveFont: Font {
-        switch numberOfColumns {
-        case 2: return .body
-        case 3: return .callout
-        case 4: return .caption
-        default: return .body // fallback pour 2 colonnes
-        }
-    }
-    
-    private var adaptiveDescriptionFont: Font {
-        switch numberOfColumns {
-        case 2: return .caption
-        case 3: return .caption2
-        case 4: return .caption2
-        default: return .caption // fallback pour 2 colonnes
-        }
-    }
-    
-    private var adaptiveLineLimit: Int {
-        switch numberOfColumns {
-        case 2: return 8
-        case 3: return 6
-        case 4: return 6
-        default: return 8 // fallback pour 2 colonnes
-        }
-    }
-    
-    private var adaptiveDescriptionLineLimit: Int {
-        switch numberOfColumns {
-        case 2: return 8
-        case 3: return 6
-        case 4: return 6
-        default: return 8 // fallback pour 2 colonnes
-        }
-    }
-    
-    private var adaptiveSpacing: CGFloat {
-        switch numberOfColumns {
-        case 2: return 8
-        case 3: return 6
-        case 4: return 4
-        default: return 8 // fallback pour 2 colonnes
-        }
-    }
-    
-    private var adaptivePadding: CGFloat {
-        switch numberOfColumns {
-        case 2: return 16
-        case 3: return 12
-        case 4: return 8
-        default: return 16 // fallback pour 2 colonnes
-        }
-    }
-    
 }

@@ -74,9 +74,9 @@ final class CategoryRepository {
     
     func fetchNames() throws -> [String] {
         let categories = try fetchAll()
-        var seen = Set<UUID>()
+        var seen = Set<String>()
         return categories.compactMap { category in
-            guard seen.insert(category.id).inserted else { return nil }
+            guard seen.insert(category.name).inserted else { return nil }
             return category.name
         }
     }

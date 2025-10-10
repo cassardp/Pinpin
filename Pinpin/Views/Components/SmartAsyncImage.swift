@@ -63,20 +63,13 @@ struct SmartAsyncImage: View {
     }
     
     private func getRemoteURL() -> URL? {
-        // Vérifier d'abord thumbnailUrl pour les URLs distantes
+        // Vérifier uniquement thumbnailUrl pour les URLs distantes d'images
         if let thumbnailUrl = item.thumbnailUrl, 
            !thumbnailUrl.isEmpty,
            !thumbnailUrl.hasPrefix("images/"), // Ignorer les anciens chemins locaux
            !thumbnailUrl.hasPrefix("file:///var/mobile/Media/PhotoData/"), // Ignorer les fichiers temporaires iOS
+           !thumbnailUrl.hasPrefix("file:///"),
            let url = URL(string: thumbnailUrl) {
-            return url
-        }
-        
-        // Fallback vers l'URL principale (seulement si c'est une vraie URL web)
-        if let urlString = item.url, 
-           !urlString.hasPrefix("file:///"),
-           let url = URL(string: urlString),
-           url.scheme == "http" || url.scheme == "https" {
             return url
         }
         

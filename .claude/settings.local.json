@@ -7,7 +7,9 @@
       "WebSearch",
       "WebFetch(domain:nilcoalescing.com)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: améliorer l''architecture et ajouter de nouvelles fonctionnalités\n\n- Ajouter une animation de rebond subtile aux transitions de la barre de recherche\n- Refactoriser les repositories avec méthodes upsert, rename et updateCategories\n- Ajouter InfoSheet pour afficher les informations de l''application\n- Améliorer le menu ellipsis avec options contextuelles (Add Category/Note)\n- Ajouter la fonctionnalité de création de notes textuelles vides\n- Migrer BackupService pour utiliser les repositories au lieu de SwiftData direct\n- Améliorer la gestion des catégories avec réorganisation et renommage via repository\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: améliorer l''architecture et ajouter de nouvelles fonctionnalités\n\n- Ajouter une animation de rebond subtile aux transitions de la barre de recherche\n- Refactoriser les repositories avec méthodes upsert, rename et updateCategories\n- Ajouter InfoSheet pour afficher les informations de l''application\n- Améliorer le menu ellipsis avec options contextuelles (Add Category/Note)\n- Ajouter la fonctionnalité de création de notes textuelles vides\n- Migrer BackupService pour utiliser les repositories au lieu de SwiftData direct\n- Améliorer la gestion des catégories avec réorganisation et renommage via repository\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": [],
     "ask": []

@@ -232,7 +232,7 @@ struct MainView: View {
                 selectedContentType: viewModel.selectedContentType,
                 totalPinsCount: filteredItems.count,
                 bottomPadding: 0,
-                availableCategories: allCategories.map { $0.name },
+                availableCategories: Array(Set(allCategories.map { $0.name })),
                 currentCategory: viewModel.selectedContentType,
                 onSelectAll: {
                     viewModel.selectAll(from: filteredItems)
