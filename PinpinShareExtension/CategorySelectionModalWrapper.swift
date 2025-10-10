@@ -71,7 +71,8 @@ struct CategorySelectionModalWrapper: View {
         .sheet(isPresented: $showingAddCategory) {
             RenameCategorySheet { categoryName in
                 addCategory(categoryName)
-                // Ne pas sélectionner automatiquement - laisser l'utilisateur choisir
+                // Sélectionner automatiquement la nouvelle catégorie et ajouter l'item dedans
+                handleCategorySelection(categoryName)
             }
         }
     }
@@ -287,6 +288,14 @@ struct RenameCategorySheet: View {
                         .textInputAutocapitalization(.words)
                         .submitLabel(.done)
                         .focused($isFieldFocused)
+                        .onSubmit {
+                            // Validation par le bouton du clavier
+                            let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmedName.isEmpty else { return }
+                            onCategoryAdded(trimmedName)
+                            categoryName = ""
+                            dismiss()
+                        }
                 }
                 
                 Spacer()
@@ -294,7 +303,6 @@ struct RenameCategorySheet: View {
             .background(Color(UIColor.systemBackground))
             .ignoresSafeArea(.all)
             .animation(.easeInOut(duration: 0.3), value: categoryName.isEmpty)
-            .navigationTitle("New Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
