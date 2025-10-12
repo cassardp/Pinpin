@@ -11,7 +11,6 @@ struct MainView: View {
     @StateObject private var dataService = DataService.shared
     private let userPreferences = UserPreferences.shared
     @StateObject private var viewModel = MainViewModel()
-    @StateObject private var syncService: SwiftDataSyncService
     @Namespace private var heroNamespace
 
     @Query(sort: \Category.sortOrder, order: .forward)
@@ -67,10 +66,6 @@ struct MainView: View {
     init() {
         let dataService = DataService.shared
         self._dataService = StateObject(wrappedValue: dataService)
-        
-        // Initialiser le service de sync avec le contexte
-        let context = dataService.container.mainContext
-        self._syncService = StateObject(wrappedValue: SwiftDataSyncService(modelContext: context))
     }
 
     var body: some View {
@@ -81,15 +76,6 @@ struct MainView: View {
             .fullScreenCover(item: $selectedItem) { item in
                 ItemDetailView(item: item, namespace: heroNamespace)
                     .navigationTransition(.zoom(sourceID: item.id, in: heroNamespace))
-            }
-            .task {
-                syncService.startListening()
-            }
-            .onDisappear {
-                syncService.stopListening()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                syncService.forceRefresh()
             }
             .sensoryFeedback(.selection, trigger: hapticTrigger)
             .sheet(isPresented: $isSettingsOpen) {
@@ -157,7 +143,6 @@ struct MainView: View {
                 dynamicCornerRadius: dynamicCornerRadius,
                 isSelectionMode: viewModel.isSelectionMode,
                 selectedItems: viewModel.selectedItems,
-                syncServiceLastSaveDate: syncService.lastSaveDate,
                 storageStatsRefreshTrigger: storageStatsRefreshTrigger,
                 dataService: dataService,
                 minColumns: AppConstants.minColumns,

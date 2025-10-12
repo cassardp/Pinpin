@@ -18,7 +18,6 @@ struct MainContentScrollView: View {
     let dynamicCornerRadius: CGFloat
     let isSelectionMode: Bool
     let selectedItems: Set<UUID>
-    let syncServiceLastSaveDate: Date
     let storageStatsRefreshTrigger: Int
     let dataService: DataService
     let minColumns: Int

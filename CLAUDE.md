@@ -39,7 +39,6 @@ xcodebuild -alltargets -quiet
 3. **Services** (`Pinpin/Services/`)
    - `DataService`: Service principal @MainActor, singleton, expose repositories via API haut niveau
    - `BackupService`: Export/import JSON + images embarquées (format dossier avec items.json + images/)
-   - `CloudSyncService`: Wrapper de statut CloudKit (la sync réelle est gérée par SwiftData .automatic)
    - `ImageOptimizationService`: Compression images pour SwiftData (max 1MB)
    - `OCRService`: Extraction texte des images (Vision framework)
    - `MaintenanceService`: Cleanup et migrations
@@ -66,9 +65,13 @@ xcodebuild -alltargets -quiet
 ### SwiftData + CloudKit Setup
 
 - Container principal: `iCloud.com.misericode.Pinpin`
-- Configuration: `.cloudKitDatabase: .automatic` délègue la sync à SwiftData (pas de CloudKit manual)
-- CloudSyncService sert uniquement pour afficher le statut dans SettingsView
-- App Group permet le partage entre app principale et extensions
+- Configuration: `.cloudKitDatabase: .private(AppConstants.cloudKitContainerID)`
+- **SwiftData gère TOUT automatiquement** (iOS 18+) :
+  - Synchronisation CloudKit automatique
+  - Merge automatique des changements entre app et extension
+  - `@Query` se rafraîchit automatiquement au foreground
+  - **Aucun code de sync nécessaire** - 100% natif
+  - App Group permet le partage du container entre processus
 
 ### Important Patterns
 

@@ -13,8 +13,6 @@ struct MenuBarView: View {
     @Query(sort: \ContentItem.createdAt, order: .reverse) private var items: [ContentItem]
     @Environment(\.openWindow) private var openWindow
 
-    @State private var syncService: SwiftDataSyncService?
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header
@@ -39,17 +37,8 @@ struct MenuBarView: View {
         }
         .frame(width: 250)
         .padding(.vertical, 8)
-        .id(syncService?.lastSaveDate)
         .onAppear {
             print("📊 MenuBarView: \(items.count) items au démarrage")
-
-            // Initialiser et démarrer le service de sync
-            let service = SwiftDataSyncService(modelContext: modelContext)
-            service.startListening()
-            syncService = service
-        }
-        .onDisappear {
-            syncService?.stopListening()
         }
     }
 }
