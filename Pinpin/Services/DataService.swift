@@ -83,7 +83,109 @@ final class DataService: ObservableObject {
     }
     
     private init() {
-        // Pas de catégories par défaut
+        // Nettoyage automatique au démarrage
+        Task { @MainActor in
+            await performStartupCleanup()
+        }
+    }
+    
+    // MARK: - Startup Cleanup
+    
+    private func performStartupCleanup() async {
+        do {
+            // 1. Supprimer les items en double (même ID)
+            try await removeDuplicateItems()
+            
+            // 2. Fusionner les catégories en double
+            try await mergeDuplicateCategories()
+            
+            // 3. Supprimer les catégories vides
+            try await cleanupEmptyCategories()
+            
+            print("[DataService] ✅ Startup cleanup completed")
+        } catch {
+            print("[DataService] ⚠️ Startup cleanup error: \(error)")
+        }
+    }
+    
+    private func removeDuplicateItems() async throws {
+        let itemsDescriptor = FetchDescriptor<ContentItem>(
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        let allItems = try context.fetch(itemsDescriptor)
+        
+        var itemsByID: [UUID: [ContentItem]] = [:]
+        for item in allItems {
+            itemsByID[item.id, default: []].append(item)
+        }
+        
+        var hasChanges = false
+        
+        for (_, items) in itemsByID where items.count > 1 {
+            // Garder le premier (plus ancien), supprimer les autres
+            let duplicates = Array(items.dropFirst())
+            
+            for duplicate in duplicates {
+                context.delete(duplicate)
+                hasChanges = true
+            }
+        }
+        
+        if hasChanges {
+            try context.save()
+            print("[DataService] 🗑️ Removed duplicate items")
+        }
+    }
+    
+    private func mergeDuplicateCategories() async throws {
+        let categoriesDescriptor = FetchDescriptor<Category>(
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        let allCategories = try context.fetch(categoriesDescriptor)
+        
+        // Grouper par nom (insensible à la casse)
+        var categoryGroups: [String: [Category]] = [:]
+        for category in allCategories {
+            let normalizedName = category.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            categoryGroups[normalizedName, default: []].append(category)
+        }
+        
+        var hasChanges = false
+        
+        for (_, categories) in categoryGroups where categories.count > 1 {
+            let keeper = categories[0]
+            let duplicates = Array(categories.dropFirst())
+            
+            for duplicate in duplicates {
+                if let items = duplicate.contentItems {
+                    for item in items {
+                        item.category = keeper
+                    }
+                }
+                context.delete(duplicate)
+                hasChanges = true
+            }
+        }
+        
+        if hasChanges {
+            try context.save()
+            print("[DataService] 🔀 Merged duplicate categories")
+        }
+    }
+    
+    private func cleanupEmptyCategories() async throws {
+        let categoriesDescriptor = FetchDescriptor<Category>()
+        let allCategories = try context.fetch(categoriesDescriptor)
+        
+        let emptyCategories = allCategories.filter { ($0.contentItems?.count ?? 0) == 0 }
+        
+        if !emptyCategories.isEmpty {
+            for category in emptyCategories {
+                context.delete(category)
+            }
+            try context.save()
+            print("[DataService] 🧹 Cleaned \(emptyCategories.count) empty categories")
+        }
     }
     
     // MARK: - Content Items Management

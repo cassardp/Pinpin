@@ -34,8 +34,13 @@ final class CategoryRepository {
         let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
 
-        // Vérifier que le nouveau nom n'existe pas déjà (sauf si c'est la même catégorie)
+        // Vérifier que le nouveau nom n'existe pas déjà (exact, sauf si c'est la même catégorie)
         if let existing = try fetchByName(trimmedName), existing.id != category.id {
+            return
+        }
+        
+        // Vérifier aussi insensible à la casse
+        if let existing = try fetchByNameCaseInsensitive(trimmedName), existing.id != category.id {
             return
         }
 
@@ -64,6 +69,15 @@ final class CategoryRepository {
         )
         return try context.fetch(descriptor).first
     }
+    
+    /// Recherche une catégorie par nom (insensible à la casse)
+    func fetchByNameCaseInsensitive(_ name: String) throws -> Category? {
+        let normalizedName = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let allCategories = try fetchAll()
+        return allCategories.first { 
+            $0.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) == normalizedName 
+        }
+    }
 
     func fetchById(_ id: UUID) throws -> Category? {
         let descriptor = FetchDescriptor<Category>(
@@ -91,8 +105,13 @@ final class CategoryRepository {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
         
-        // Vérifier que le nom n'existe pas déjà
+        // Vérifier que le nom n'existe pas déjà (exact)
         if try exists(name: trimmedName) {
+            return
+        }
+        
+        // Vérifier aussi insensible à la casse
+        if try fetchByNameCaseInsensitive(trimmedName) != nil {
             return
         }
         
@@ -114,14 +133,26 @@ final class CategoryRepository {
     }
     
     func findOrCreate(name: String) throws -> Category {
-        if let existingCategory = try fetchByName(name) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            // Fallback sur une catégorie par défaut si le nom est vide
+            return try findOrCreateMiscCategory()
+        }
+        
+        // Chercher d'abord avec la casse exacte
+        if let existingCategory = try fetchByName(trimmedName) {
+            return existingCategory
+        }
+        
+        // Chercher ensuite insensible à la casse pour éviter les doublons
+        if let existingCategory = try fetchByNameCaseInsensitive(trimmedName) {
             return existingCategory
         }
 
         // Créer une nouvelle catégorie
         let existingCategories = try fetchAll()
         let newCategory = Category(
-            name: name,
+            name: trimmedName,
             sortOrder: Int32(existingCategories.count),
             isDefault: existingCategories.isEmpty
         )
