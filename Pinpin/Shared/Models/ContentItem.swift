@@ -51,6 +51,11 @@ final class ContentItem {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.category = category
+
+        // ⚠️ Validation : Un ContentItem ne devrait jamais être sans catégorie
+        if category == nil {
+            print("⚠️ [ContentItem] Item créé sans catégorie (ID: \(id)) - Cela peut causer des problèmes de sync CloudKit")
+        }
     }
 }
 

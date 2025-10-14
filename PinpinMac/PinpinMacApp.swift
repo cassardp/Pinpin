@@ -11,8 +11,8 @@ import UserNotifications
 
 @main
 struct PinpinMacApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+    @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([ContentItem.self, Category.self])
         let configuration = ModelConfiguration(
@@ -28,6 +28,11 @@ struct PinpinMacApp: App {
         }
     }()
 
+    init() {
+        // Passer le container à AppDelegate
+        appDelegate.modelContainer = sharedModelContainer
+    }
+
     var body: some Scene {
         // Menu Bar App (pas de fenêtre par défaut)
         MenuBarExtra("Pinpin", image: "MenuBarIcon") {
@@ -35,7 +40,7 @@ struct PinpinMacApp: App {
                 .modelContainer(sharedModelContainer)
         }
         .menuBarExtraStyle(.window)
-        
+
         // Fenêtre optionnelle (cachée par défaut)
         WindowGroup(id: "main") {
             ContentView()
@@ -47,6 +52,8 @@ struct PinpinMacApp: App {
 
 // AppDelegate pour cacher l'icône du Dock
 class AppDelegate: NSObject, NSApplicationDelegate {
+    var modelContainer: ModelContainer?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Cacher l'icône du Dock (Menu Bar App uniquement)
         NSApp.setActivationPolicy(.accessory)
@@ -56,6 +63,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if granted {
                 print("✅ Notifications autorisées (macOS)")
             }
+        }
+
+        // 🔧 Force CloudKit sync initialization
+        // Sans ça, le premier item ajouté peut ne pas sync
+        Task { @MainActor in
+            guard let container = self.modelContainer else {
+                print("⚠️ ModelContainer non disponible")
+                return
+            }
+
+            let context = container.mainContext
+            // Force un fetch pour "réveiller" CloudKit
+            let descriptor = FetchDescriptor<ContentItem>(sortBy: [SortDescriptor(\.createdAt)])
+            _ = try? context.fetch(descriptor)
+            print("🔧 CloudKit initialisé au démarrage")
         }
     }
 }
