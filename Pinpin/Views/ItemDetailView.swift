@@ -13,6 +13,9 @@ struct ItemDetailView: View {
     let namespace: Namespace.ID
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Category.sortOrder, order: .forward)
+    private var allCategories: [Category]
     
     // Interactive pull-to-dismiss visuals
     @State private var scaleFactor: CGFloat = 1
@@ -24,11 +27,6 @@ struct ItemDetailView: View {
     @State private var showAddCategory = false
     @State private var newCategoryName = ""
     @State private var categoryMenuTrigger = 0
-    
-    // DataService singleton
-    private var dataService: DataService {
-        DataService.shared
-    }
     
     var body: some View {
         ScrollView {
@@ -53,7 +51,7 @@ struct ItemDetailView: View {
                 // Barre d'actions moderne
                 HStack(spacing: 0) {
                     // Changer de catégorie (menu contextuel ou sheet d'ajout)
-                    let categoryNames = dataService.fetchCategoryNames()
+                    let categoryNames = allCategories.map { $0.name }
                     
                     if categoryNames.count <= 1 {
                         // S'il n'y a qu'une seule catégorie, ouvrir la sheet d'ajout
@@ -165,7 +163,9 @@ struct ItemDetailView: View {
                 onSave: {
                     let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmedName.isEmpty {
-                        dataService.addCategory(name: trimmedName)
+                        let newCategory = Category(name: trimmedName)
+                        modelContext.insert(newCategory)
+                        try? modelContext.save()
                         changeCategory(to: trimmedName)
                         newCategoryName = ""
                         showAddCategory = false
@@ -215,7 +215,9 @@ struct ItemDetailView: View {
     }
     
     private func changeCategory(to category: String) {
-        dataService.updateContentItem(item, categoryName: category)
+        guard let targetCategory = allCategories.first(where: { $0.name == category }) else { return }
+        item.category = targetCategory
+        try? modelContext.save()
     }
 }
 

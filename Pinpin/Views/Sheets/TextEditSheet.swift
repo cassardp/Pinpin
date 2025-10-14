@@ -74,11 +74,9 @@ struct TextEditSheet: View {
 
         guard !cleanTitle.isEmpty else { return }
 
-        let contentRepo = ContentItemRepository(context: modelContext)
-
         if let existingItem = item {
             // Mode édition : mettre à jour l'item existant
-            contentRepo.updateTitle(existingItem, title: cleanTitle)
+            existingItem.title = cleanTitle
         } else {
             // Mode création : créer un nouvel item seulement si le texte n'est pas vide
             let newItem = ContentItem(
@@ -92,11 +90,7 @@ struct TextEditSheet: View {
             modelContext.insert(newItem)
         }
 
-        do {
-            try modelContext.save()
-        } catch {
-            print("Erreur lors de la sauvegarde: \(error)")
-        }
+        try? modelContext.save()
     }
 }
 

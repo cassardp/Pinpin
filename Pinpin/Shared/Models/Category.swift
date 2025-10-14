@@ -12,8 +12,6 @@ import SwiftData
 final class Category {
     var id: UUID = UUID()
     var name: String = ""
-    var colorHex: String = "#007AFF"
-    var iconName: String = "folder"
     var sortOrder: Int32 = 0
     var isDefault: Bool = false
     var createdAt: Date = Date()
@@ -26,8 +24,6 @@ final class Category {
     init(
         id: UUID = UUID(),
         name: String = "",
-        colorHex: String = "#007AFF",
-        iconName: String = "folder",
         sortOrder: Int32 = 0,
         isDefault: Bool = false,
         createdAt: Date = Date(),
@@ -35,8 +31,6 @@ final class Category {
     ) {
         self.id = id
         self.name = name
-        self.colorHex = colorHex
-        self.iconName = iconName
         self.sortOrder = sortOrder
         self.isDefault = isDefault
         self.createdAt = createdAt

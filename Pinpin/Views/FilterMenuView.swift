@@ -16,7 +16,6 @@ struct FilterMenuView: View {
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
 
-    private let dataService = DataService.shared
     private let userPreferences = UserPreferences.shared
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
@@ -90,14 +89,11 @@ struct FilterMenuView: View {
             updates.append((category, Int32(reorderedCategories.count + offset)))
         }
 
-        // Utiliser le DataService pour persister via repository
-        do {
-            let categoryRepo = CategoryRepository(context: modelContext)
-            categoryRepo.updateSortOrder(categories: updates)
-            try modelContext.save()
-        } catch {
-            print("[FilterMenuView] Failed to update sort order: \(error)")
+        // Mettre à jour l'ordre directement
+        for (category, newOrder) in updates {
+            category.sortOrder = newOrder
         }
+        try? modelContext.save()
     }
     
     var body: some View {
@@ -260,17 +256,13 @@ func saveRenamedCategory(_ category: Category) {
             return
         }
 
-        do {
-            let categoryRepo = CategoryRepository(context: modelContext)
-            try categoryRepo.rename(category, newName: newName)
-            try modelContext.save()
+        category.name = newName
+        try? modelContext.save()
 
-            if selectedContentType == oldName {
-                selectedContentType = newName
-            }
-        } catch {
-            print("Failed to rename category: \(error)")
+        if selectedContentType == oldName {
+            selectedContentType = newName
         }
+        
         resetRenameState()
     }
 
@@ -282,7 +274,9 @@ func saveNewCategory() {
             return
         }
 
-        dataService.addCategory(name: newName)
+        let newCategory = Category(name: newName)
+        modelContext.insert(newCategory)
+        try? modelContext.save()
         selectedContentType = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide
         resetRenameState()
     }
@@ -294,7 +288,23 @@ func saveNewCategory() {
     
 func deleteCategory(_ category: Category) {
         let name = category.name
-        dataService.deleteCategory(category)
+        
+        // Réassigner les items à "Misc" si nécessaire
+        if let items = category.contentItems, !items.isEmpty {
+            // Trouver ou créer "Misc"
+            let miscCategory = allCategories.first(where: { $0.name == "Misc" }) ?? {
+                let misc = Category(name: "Misc")
+                modelContext.insert(misc)
+                return misc
+            }()
+            
+            for item in items {
+                item.category = miscCategory
+            }
+        }
+        
+        modelContext.delete(category)
+        try? modelContext.save()
         
         if selectedContentType == name {
             selectedContentType = nil
@@ -339,12 +349,20 @@ func deleteCategory(_ category: Category) {
 
 // MARK: - Preview
 #Preview {
-    FilterMenuView(
+    let schema = Schema([ContentItem.self, Category.self])
+    let configuration = ModelConfiguration(
+        schema: schema,
+        groupContainer: .identifier(AppConstants.groupID),
+        cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
+    )
+    let container = try! ModelContainer(for: schema, configurations: [configuration])
+    
+    return FilterMenuView(
         selectedContentType: .constant(nil),
         isMenuOpen: .constant(false),
         isMenuDragging: false,
         onOpenAbout: {},
         onOpenSettings: {}
     )
-    .modelContainer(DataService.shared.container)
+    .modelContainer(container)
 }

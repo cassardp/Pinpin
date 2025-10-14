@@ -12,21 +12,17 @@ struct MainContentScrollView: View {
     private let userPreferences = UserPreferences.shared
     
     let filteredItems: [ContentItem]
-    let totalItemsCount: Int
-    let displayLimit: Int
     let dynamicSpacing: CGFloat
     let dynamicCornerRadius: CGFloat
     let isSelectionMode: Bool
     let selectedItems: Set<UUID>
     let storageStatsRefreshTrigger: Int
-    let dataService: DataService
     let minColumns: Int
     let maxColumns: Int
     
     let onCategoryChange: () -> Void
     let onSearchQueryChange: (String) -> Void
     let onMenuStateChange: (Bool) -> Void
-    let onLoadMore: (Int) -> Void
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
@@ -117,9 +113,7 @@ struct MainContentScrollView: View {
             selectedContentType: selectedContentType,
             isSelectionMode: isSelectionMode,
             selectedItems: selectedItems,
-            dataService: dataService,
             showTitle: true,
-            onLoadMore: onLoadMore,
             onToggleSelection: onToggleSelection,
             onDeleteItem: onDeleteItem,
             onStorageStatsRefresh: onStorageStatsRefresh,
@@ -131,14 +125,8 @@ struct MainContentScrollView: View {
     // MARK: - Timeline Content
     private var timelineContent: some View {
         let groups = groupedByDate(filteredItems)
-        // Pré-calculer les offsets pour éviter les recalculs
-        let groupOffsets = groups.indices.map { index in
-            groups.prefix(index).reduce(0) { $0 + $1.items.count }
-        }
         
         return ForEach(Array(groups.enumerated()), id: \.element.date) { groupIndex, group in
-            let offset = groupOffsets[groupIndex]
-            
             Section {
                 ContentGridView(
                     items: group.items,
@@ -150,13 +138,7 @@ struct MainContentScrollView: View {
                     selectedContentType: selectedContentType,
                     isSelectionMode: isSelectionMode,
                     selectedItems: selectedItems,
-                    dataService: dataService,
                     showTitle: false,
-                    onLoadMore: { itemIndex in
-                        // Utiliser l'offset pré-calculé
-                        let globalIndex = offset + itemIndex
-                        onLoadMore(globalIndex)
-                    },
                     onToggleSelection: onToggleSelection,
                     onDeleteItem: onDeleteItem,
                     onStorageStatsRefresh: onStorageStatsRefresh,

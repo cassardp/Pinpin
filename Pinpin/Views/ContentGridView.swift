@@ -10,9 +10,7 @@ struct ContentGridView: View {
     let selectedContentType: String?
     let isSelectionMode: Bool
     let selectedItems: Set<UUID>
-    let dataService: DataService
     let showTitle: Bool
-    let onLoadMore: (Int) -> Void
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
@@ -39,9 +37,6 @@ struct ContentGridView: View {
             PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
                 ForEach(items.indices, id: \.self) { index in
                     buildCard(for: items[index])
-                        .onAppear {
-                            onLoadMore(index)
-                        }
                 }
             }
             .id(selectedContentType ?? "all")
@@ -70,7 +65,6 @@ struct ContentGridView: View {
             if !isSelectionMode {
                 ContentItemContextMenu(
                     item: item,
-                    dataService: dataService,
                     onStorageStatsRefresh: onStorageStatsRefresh,
                     onDeleteRequest: { onDeleteItem(item) }
                 )

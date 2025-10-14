@@ -1,0 +1,141 @@
+DEFINE SCHEMA
+
+    -- ========================================
+    -- CATÉGORIES
+    -- ========================================
+    RECORD TYPE CD_Category (
+        CD_colorHex     STRING,
+        CD_createdAt    TIMESTAMP QUERYABLE SORTABLE,
+        CD_entityName   STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_iconName     STRING SEARCHABLE SORTABLE,
+        CD_id           STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_isDefault    INT64 QUERYABLE SORTABLE,
+        CD_name         STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_sortOrder    INT64 QUERYABLE SORTABLE,
+        CD_updatedAt    TIMESTAMP QUERYABLE SORTABLE,
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    -- ========================================
+    -- ÉLÉMENTS DE CONTENU
+    -- ========================================
+    RECORD TYPE CD_ContentItem (
+        CD_category          STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_createdAt         TIMESTAMP QUERYABLE SORTABLE,
+        CD_entityName        STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_id                STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_imageData         BYTES QUERYABLE SORTABLE,
+        CD_imageData_ckAsset ASSET,
+        CD_isHidden          INT64 QUERYABLE SORTABLE,
+        CD_itemDescription   STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_metadata          BYTES QUERYABLE SORTABLE,
+        CD_postItColor       STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_thumbnailUrl      STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_title             STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_updatedAt         TIMESTAMP QUERYABLE SORTABLE,
+        CD_url               STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_userId            STRING QUERYABLE SEARCHABLE SORTABLE,
+        "___createTime"      TIMESTAMP,
+        "___createdBy"       REFERENCE,
+        "___etag"            STRING,
+        "___modTime"         TIMESTAMP,
+        "___modifiedBy"      REFERENCE,
+        "___recordID"        REFERENCE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    -- ========================================
+    -- ORDRE DES CATÉGORIES (legacy - conservé pour compatibilité)
+    -- ========================================
+    RECORD TYPE CD_CategoryOrderPreference (
+        CD_categoryName STRING SEARCHABLE SORTABLE,
+        CD_createdAt    TIMESTAMP QUERYABLE SORTABLE,
+        CD_entityName   STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_id           STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_sortOrder    INT64 QUERYABLE SORTABLE,
+        CD_updatedAt    TIMESTAMP QUERYABLE SORTABLE,
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    -- ========================================
+    -- PRÉFÉRENCES UTILISATEUR
+    -- ========================================
+    RECORD TYPE CD_UserPreferencesModel (
+        CD_categoryOrder       BYTES QUERYABLE SORTABLE,
+        CD_disableCornerRadius INT64 QUERYABLE SORTABLE,
+        CD_entityName          STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_id                  STRING QUERYABLE SEARCHABLE SORTABLE,
+        CD_isMainPreferences   INT64 QUERYABLE SORTABLE,
+        CD_lastUpdated         TIMESTAMP QUERYABLE SORTABLE,
+        CD_showCategoryTitles  INT64 QUERYABLE SORTABLE,
+        CD_showTimelineView    INT64 QUERYABLE SORTABLE,
+        CD_showURLs            INT64 QUERYABLE SORTABLE,
+        CD_themeMode           STRING QUERYABLE SEARCHABLE SORTABLE,
+        "___createTime"        TIMESTAMP,
+        "___createdBy"         REFERENCE,
+        "___etag"              STRING,
+        "___modTime"           TIMESTAMP,
+        "___modifiedBy"        REFERENCE,
+        "___recordID"          REFERENCE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    -- ========================================
+    -- UTILISATEURS (legacy - conservé pour compatibilité)
+    -- ========================================
+    RECORD TYPE Users (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        roles           LIST<INT64>,
+        GRANT WRITE TO "_creator",
+        GRANT READ TO "_world"
+    );
+
+-- ========================================
+-- CHANGEMENTS ET NOTES
+-- ========================================
+-- ⚠️  TYPES ET CHAMPS LEGACY (CloudKit ne permet pas la suppression en production):
+--    - CD_CategoryOrderPreference (type complet) - remplacé par categoryOrder dans UserPreferencesModel
+--    - Users (type complet) - non utilisé dans le code Swift
+--    - CD_colorHex (CD_Category) - non utilisé dans le code Swift
+--    - CD_iconName (CD_Category) - non utilisé dans le code Swift
+--    - CD_postItColor (CD_ContentItem) - non utilisé dans le code Swift
+--
+-- ✅ AJOUTÉ à CD_UserPreferencesModel:
+--    - CD_showCategoryTitles
+--    - CD_showTimelineView
+--
+-- 📝 NOTES IMPORTANTES:
+--    - Les types/champs legacy restent dans CloudKit mais ne sont pas mappés dans Swift
+--    - Les nouveaux enregistrements peuvent omettre ces champs (ils seront nil/null)
+--    - Aucun impact sur les données existantes
+--    - CloudKit ne permet JAMAIS de supprimer des types ou champs en production
+--
+-- ⚠️  RECOMMANDATIONS FUTURES:
+--    1. Migrer vers CD_imageData_ckAsset pour les images volumineuses (>1MB)
+--    2. Considérer l'utilisation d'une REFERENCE pour CD_category au lieu de STRING
+--    3. Nettoyer les enregistrements CD_CategoryOrderPreference obsolètes via script

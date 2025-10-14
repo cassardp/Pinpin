@@ -4,14 +4,17 @@ import UIKit
 import SafariServices
 
 struct ContentItemContextMenu: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Category.sortOrder, order: .forward)
+    private var allCategories: [Category]
+    
     let item: ContentItem
-    let dataService: DataService
     let onStorageStatsRefresh: () -> Void
     let onDeleteRequest: () -> Void
     
     // Initialisation directe des catégories pour éviter le délai d'affichage
     private var categoryNames: [String] {
-        dataService.fetchCategoryNames()
+        allCategories.map { $0.name }
     }
     
     // Afficher "Search Similar" seulement si une image exploitable est disponible
@@ -90,7 +93,9 @@ struct ContentItemContextMenu: View {
     }
     
     private func changeCategory(to category: String) {
-        dataService.updateContentItem(item, categoryName: category)
+        guard let targetCategory = allCategories.first(where: { $0.name == category }) else { return }
+        item.category = targetCategory
+        try? modelContext.save()
         onStorageStatsRefresh()
     }
     

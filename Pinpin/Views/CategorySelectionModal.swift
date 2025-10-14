@@ -6,15 +6,22 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct CategorySelectionModal: View {
-    @StateObject private var dataService = DataService.shared
-    @State private var categoryNames: [String] = []
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Category.sortOrder, order: .forward)
+    private var allCategories: [Category]
+    
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
     @Environment(\.dismiss) private var dismiss
     
     let onCategorySelected: (String) -> Void
+    
+    private var categoryNames: [String] {
+        allCategories.map { $0.name }
+    }
     
     init(defaultCategory: String? = nil, onCategorySelected: @escaping (String) -> Void) {
         self.onCategorySelected = onCategorySelected
@@ -96,9 +103,6 @@ struct CategorySelectionModal: View {
             }
             .background(Color(UIColor.systemBackground))
         }
-        .onAppear {
-            loadCategoryNames()
-        }
         .sheet(isPresented: $showingAddCategory) {
             RenameCategorySheet(
                 name: $newCategoryName,
@@ -109,8 +113,9 @@ struct CategorySelectionModal: View {
                 onSave: {
                     let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmedName.isEmpty {
-                        dataService.addCategory(name: trimmedName)
-                        loadCategoryNames()
+                        let newCategory = Category(name: trimmedName)
+                        modelContext.insert(newCategory)
+                        try? modelContext.save()
                         onCategorySelected(trimmedName)
                         newCategoryName = ""
                         dismiss()
@@ -120,10 +125,6 @@ struct CategorySelectionModal: View {
         }
     }
     
-    // MARK: - Actions
-    private func loadCategoryNames() {
-        categoryNames = dataService.fetchCategoryNames()
-    }
 }
 
 // MARK: - Category Card
@@ -132,7 +133,7 @@ struct CategoryCard: View {
     let isSelected: Bool
     let action: () -> Void
     
-    @StateObject private var dataService = DataService.shared
+    @Environment(\.modelContext) private var modelContext
     @State private var randomItem: ContentItem?
     @State private var itemCount: Int = 0
     
@@ -217,8 +218,21 @@ struct CategoryCard: View {
     }
     
     private func loadCategoryData() {
-        randomItem = dataService.getRandomItemForCategory(title)
-        itemCount = dataService.getItemCountForCategory(title)
+        // Compter les items de cette catégorie
+        let descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { $0.category?.name == title }
+        )
+        itemCount = (try? modelContext.fetchCount(descriptor)) ?? 0
+        
+        // Récupérer un item aléatoire
+        if itemCount > 0 {
+            var randomDescriptor = FetchDescriptor<ContentItem>(
+                predicate: #Predicate { $0.category?.name == title },
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+            randomDescriptor.fetchLimit = 1
+            randomItem = try? modelContext.fetch(randomDescriptor).first
+        }
     }
 }
 

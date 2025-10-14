@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable private var userPreferences = UserPreferences.shared
-    @StateObject private var dataService = DataService.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     

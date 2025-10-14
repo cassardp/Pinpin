@@ -6,25 +6,21 @@
 //
 
 import SwiftUI
-import Combine
 
 @MainActor
-final class MainViewModel: ObservableObject {
-    // MARK: - Published Properties
-    @Published var searchQuery: String = ""
-    @Published var selectedContentType: String?
-    @Published var isSelectionMode: Bool = false
-    @Published var selectedItems: Set<UUID> = []
-    @Published var showSearchBar: Bool = false
-    @Published var scrollProgress: CGFloat = 0
-    @Published var displayLimit: Int = AppConstants.itemsPerPage
-    
-    // MARK: - Dependencies
-    private let dataService = DataService.shared
+@Observable
+final class MainViewModel {
+    // MARK: - State Properties
+    var searchQuery: String = ""
+    var selectedContentType: String?
+    var isSelectionMode: Bool = false
+    var selectedItems: Set<UUID> = []
+    var showSearchBar: Bool = false
+    var scrollProgress: CGFloat = 0
     
     // MARK: - Filtering Logic
     
-    /// Filtre les items selon la catégorie et la recherche avec pagination
+    /// Filtre les items selon la catégorie et la recherche
     func filteredItems(from allItems: [ContentItem]) -> [ContentItem] {
         // Filtrage par catégorie
         let typeFiltered: [ContentItem]
@@ -36,58 +32,13 @@ final class MainViewModel: ObservableObject {
         
         // Filtrage par recherche
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let searchFiltered: [ContentItem]
         if query.isEmpty {
-            searchFiltered = typeFiltered
-        } else {
-            searchFiltered = typeFiltered.filter { item in
-                matchesSearchQuery(item: item, query: query)
-            }
+            return typeFiltered
         }
         
-        // Déduplication par id pour éviter les doublons visuels
-        let unique = uniquedById(searchFiltered)
-        
-        // Pagination côté UI
-        return Array(unique.prefix(displayLimit))
-    }
-    
-    /// Compte total des items (avant pagination) pour savoir s'il y en a plus
-    func totalItemsCount(from allItems: [ContentItem]) -> Int {
-        // Filtrage par catégorie
-        let typeFiltered: [ContentItem]
-        if let selectedType = selectedContentType {
-            typeFiltered = allItems.filter { $0.safeCategoryName == selectedType }
-        } else {
-            typeFiltered = allItems
-        }
-        
-        // Filtrage par recherche
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if query.isEmpty {
-            return uniquedById(typeFiltered).count
-        }
-        
-        let filtered = typeFiltered.filter { item in
+        return typeFiltered.filter { item in
             matchesSearchQuery(item: item, query: query)
         }
-        return uniquedById(filtered).count
-    }
-    
-    /// Charge plus d'items (augmente la limite)
-    func loadMoreIfNeeded(currentIndex: Int, totalItems: Int, totalBeforePagination: Int) {
-        // Charger plus si on arrive vers la fin (5 items avant)
-        if currentIndex >= totalItems - 5 && displayLimit < totalBeforePagination {
-            let oldLimit = displayLimit
-            displayLimit += AppConstants.itemsPerPage
-            print("📄 Pagination: Loading more items - from \(oldLimit) to \(displayLimit) (currentIndex: \(currentIndex)/\(totalItems), total: \(totalBeforePagination))")
-        }
-    }
-    
-    /// Reset la pagination (au changement de catégorie ou recherche)
-    func resetPagination() {
-        displayLimit = AppConstants.itemsPerPage
-        print("🔄 Pagination: Reset to \(displayLimit) items")
     }
     
     /// Vérifie si un item correspond à la requête de recherche
@@ -128,15 +79,6 @@ final class MainViewModel: ObservableObject {
         selectedItems = Set(items.map { $0.safeId })
     }
     
-    func deleteSelectedItems(from items: [ContentItem]) {
-        let itemsToDelete = items.filter { selectedItems.contains($0.safeId) }
-        for item in itemsToDelete {
-            dataService.deleteContentItem(item)
-        }
-        selectedItems.removeAll()
-        isSelectionMode = false
-    }
-    
     func cancelSelection() {
         selectedItems.removeAll()
         isSelectionMode = false
@@ -156,14 +98,12 @@ final class MainViewModel: ObservableObject {
     
     func clearSearch() {
         searchQuery = ""
-        resetPagination()
     }
     
     // MARK: - Category Management
     
     func selectCategory(_ category: String?) {
         selectedContentType = category
-        resetPagination()
     }
     
     func clearCategory() {
@@ -184,11 +124,5 @@ final class MainViewModel: ObservableObject {
         
         shareText += "Shared from Pinpin"
         return shareText
-    }
-
-    // MARK: - Dedup Helper
-    private func uniquedById(_ items: [ContentItem]) -> [ContentItem] {
-        var seen = Set<UUID>()
-        return items.filter { seen.insert($0.id).inserted }
     }
 }

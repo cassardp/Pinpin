@@ -225,27 +225,41 @@ class ShareViewController: UIViewController, ObservableObject {
         // Utiliser le contenu final si disponible, sinon le contenu temporaire
         let finalContent = self.sharedContent ?? contentData
 
-        // Sauvegarder via repositories
+        // Sauvegarder
         Task { @MainActor in
             let context = modelContainer.mainContext
-            let categoryRepo = CategoryRepository(context: context)
-            let contentRepo = ContentItemRepository(context: context)
+            
+            // Capturer les valeurs localement pour le Predicate
+            let contentTitle = finalContent.title
+            let contentUrl = finalContent.url
 
             do {
                 // Vérifier si un item identique a été créé récemment (évite les doublons accidentels)
-                // Fenêtre de 10 secondes pour bloquer les ajouts rapides involontaires
-                if let existingItem = try contentRepo.fetchRecentDuplicate(
-                    title: finalContent.title,
-                    url: finalContent.url,
-                    withinSeconds: 10.0
-                ) {
+                let tenSecondsAgo = Date().addingTimeInterval(-10)
+                let duplicateDescriptor = FetchDescriptor<ContentItem>(
+                    predicate: #Predicate { item in
+                        item.title == contentTitle &&
+                        item.url == contentUrl &&
+                        item.createdAt > tenSecondsAgo
+                    }
+                )
+                
+                if let existingItem = try context.fetch(duplicateDescriptor).first {
                     print("[ShareExtension] ⚠️ Item identique créé il y a \(Int(Date().timeIntervalSince(existingItem.createdAt)))s, skip pour éviter doublon accidentel")
                     self.completeRequest()
                     return
                 }
 
-                // Trouver ou créer la catégorie via repository
-                let categoryObject = try categoryRepo.findOrCreate(name: category)
+                // Trouver ou créer la catégorie
+                let categoryName = category
+                let categoryDescriptor = FetchDescriptor<Category>(
+                    predicate: #Predicate { $0.name == categoryName }
+                )
+                let categoryObject = try context.fetch(categoryDescriptor).first ?? {
+                    let newCategory = Category(name: category)
+                    context.insert(newCategory)
+                    return newCategory
+                }()
 
                 // Créer le ContentItem
                 let newItem = ContentItem(
@@ -258,7 +272,7 @@ class ShareViewController: UIViewController, ObservableObject {
                     category: categoryObject
                 )
 
-                contentRepo.insert(newItem)
+                context.insert(newItem)
 
                 // Sauvegarder
                 try context.save()

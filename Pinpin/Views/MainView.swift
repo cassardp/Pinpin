@@ -8,9 +8,8 @@ import SwiftData
 
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var dataService = DataService.shared
     private let userPreferences = UserPreferences.shared
-    @StateObject private var viewModel = MainViewModel()
+    @State private var viewModel = MainViewModel()
     @Namespace private var heroNamespace
 
     @Query(sort: \Category.sortOrder, order: .forward)
@@ -57,15 +56,8 @@ struct MainView: View {
     private var filteredItems: [ContentItem] {
         viewModel.filteredItems(from: allContentItems)
     }
-    
-    // Total avant pagination
-    private var totalItemsCount: Int {
-        viewModel.totalItemsCount(from: allContentItems)
-    }
 
     init() {
-        let dataService = DataService.shared
-        self._dataService = StateObject(wrappedValue: dataService)
     }
 
     var body: some View {
@@ -137,26 +129,16 @@ struct MainView: View {
                 scrollProgress: $viewModel.scrollProgress,
                 hapticTrigger: $hapticTrigger,
                 filteredItems: filteredItems,
-                totalItemsCount: totalItemsCount,
-                displayLimit: viewModel.displayLimit,
                 dynamicSpacing: dynamicSpacing,
                 dynamicCornerRadius: dynamicCornerRadius,
                 isSelectionMode: viewModel.isSelectionMode,
                 selectedItems: viewModel.selectedItems,
                 storageStatsRefreshTrigger: storageStatsRefreshTrigger,
-                dataService: dataService,
                 minColumns: AppConstants.minColumns,
                 maxColumns: AppConstants.maxColumns,
                 onCategoryChange: handleCategoryChange,
                 onSearchQueryChange: handleSearchQueryChange,
                 onMenuStateChange: handleMenuStateChange,
-                onLoadMore: { index in
-                    viewModel.loadMoreIfNeeded(
-                        currentIndex: index,
-                        totalItems: filteredItems.count,
-                        totalBeforePagination: totalItemsCount
-                    )
-                },
                 onToggleSelection: { uuid in
                     viewModel.toggleItemSelection(uuid)
                 },
@@ -223,7 +205,7 @@ struct MainView: View {
                     viewModel.selectAll(from: filteredItems)
                 },
                 onDeleteSelected: {
-                    viewModel.deleteSelectedItems(from: filteredItems)
+                    deleteSelectedItems(from: filteredItems)
                     storageStatsRefreshTrigger += 1
                 },
                 onRestoreBar: {
@@ -249,7 +231,8 @@ struct MainView: View {
         Button("Delete", role: .destructive) {
             if let item = itemToDelete {
                 withAnimation(.bouncy(duration: 0.5)) {
-                    dataService.deleteContentItem(item)
+                    modelContext.delete(item)
+                    try? modelContext.save()
                     storageStatsRefreshTrigger += 1
                 }
             }
@@ -288,7 +271,9 @@ private extension MainView {
         let itemsToMove = items.filter { viewModel.selectedItems.contains($0.safeId) }
         guard let targetCategory = allCategories.first(where: { $0.name == categoryName }) else { return }
 
-        ContentItemRepository(context: modelContext).updateCategories(itemsToMove, category: targetCategory)
+        for item in itemsToMove {
+            item.category = targetCategory
+        }
         try? modelContext.save()
 
         viewModel.selectedItems.removeAll()
@@ -297,12 +282,33 @@ private extension MainView {
 
     func createNewTextNote() {
         textEditItem = nil
-        textEditTargetCategory = if let selectedType = viewModel.selectedContentType {
-            allCategories.first { $0.name == selectedType }
+        
+        // Déterminer la catégorie cible
+        if let selectedType = viewModel.selectedContentType {
+            textEditTargetCategory = allCategories.first { $0.name == selectedType }
         } else {
-            try? CategoryRepository(context: modelContext).findOrCreateMiscCategory()
+            // Trouver ou créer "Misc"
+            if let misc = allCategories.first(where: { $0.name == "Misc" }) {
+                textEditTargetCategory = misc
+            } else {
+                let misc = Category(name: "Misc")
+                modelContext.insert(misc)
+                try? modelContext.save()
+                textEditTargetCategory = misc
+            }
         }
+        
         showTextEditSheet = true
+    }
+    
+    func deleteSelectedItems(from items: [ContentItem]) {
+        let itemsToDelete = items.filter { viewModel.selectedItems.contains($0.safeId) }
+        for item in itemsToDelete {
+            modelContext.delete(item)
+        }
+        try? modelContext.save()
+        viewModel.selectedItems.removeAll()
+        viewModel.isSelectionMode = false
     }
 }
 

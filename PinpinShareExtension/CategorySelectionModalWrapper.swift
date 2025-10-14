@@ -14,12 +14,27 @@ struct CategorySelectionModalWrapper: View {
     let onCategorySelected: (String) -> Void
     let onCancel: () -> Void
     
-    @State private var categories: [String] = []
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Category.sortOrder, order: .forward)
+    private var allCategories: [Category]
+    
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
     @State private var selectedCategory: String? = nil
     
-    private let dataService = ShareExtensionDataService.shared
+    private var categories: [String] {
+        // Filtrer et trier les catégories
+        let filtered = allCategories.filter { category in
+            if category.name.lowercased() == "misc" {
+                return (category.contentItems?.count ?? 0) > 0
+            }
+            return true
+        }
+        
+        return filtered
+            .sorted { ($0.contentItems?.count ?? 0) > ($1.contentItems?.count ?? 0) }
+            .map { $0.name }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -65,9 +80,6 @@ struct CategorySelectionModalWrapper: View {
             .background(Color(UIColor.systemBackground))
         }
         .ignoresSafeArea(.all)
-        .onAppear {
-            loadCategories()
-        }
         .sheet(isPresented: $showingAddCategory) {
             RenameCategorySheet { categoryName in
                 addCategory(categoryName)
@@ -77,29 +89,11 @@ struct CategorySelectionModalWrapper: View {
         }
     }
     
-    private func loadCategories() {
-        let categoryNames = dataService.fetchCategoryNames()
-        
-        // Filtrer les catégories : masquer "Misc" si elle est vide
-        let filteredCategories = categoryNames.filter { categoryName in
-            if categoryName.lowercased() == "misc" {
-                let itemCount = dataService.countItems(for: categoryName)
-                return itemCount > 0 // Masquer Misc si vide
-            }
-            return true // Garder toutes les autres catégories
-        }
-        
-        // Trier les catégories par nombre d'items (décroissant)
-        categories = filteredCategories.sorted { categoryA, categoryB in
-            let countA = dataService.countItems(for: categoryA)
-            let countB = dataService.countItems(for: categoryB)
-            return countA > countB
-        }
-    }
     
     private func addCategory(_ name: String) {
-        dataService.addCategory(name: name)
-        loadCategories() // Recharger la liste
+        let newCategory = Category(name: name)
+        modelContext.insert(newCategory)
+        try? modelContext.save()
     }
     
     private func handleCategorySelection(_ categoryName: String) {
@@ -145,9 +139,9 @@ struct CategoryCard: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @Environment(\.modelContext) private var modelContext
     @State private var firstImageData: Data? = nil
     @State private var itemCount: Int = 0
-    private let dataService = ShareExtensionDataService.shared
     
     // Style uniforme pour les catégories sans items (comme l'icône d'ajout)
     private var fallbackIconView: some View {
@@ -217,13 +211,24 @@ struct CategoryCard: View {
     }
     
     private func loadCategoryCount() {
-        // Compter les vrais items pour cette catégorie
-        itemCount = dataService.countItems(for: title)
+        let descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { $0.category?.name == title }
+        )
+        itemCount = (try? modelContext.fetchCount(descriptor)) ?? 0
     }
     
     private func loadFirstImageData() {
-        // Récupérer la première image de la catégorie depuis SwiftData
-        firstImageData = dataService.fetchFirstImageData(for: title)
+        var descriptor = FetchDescriptor<ContentItem>(
+            predicate: #Predicate { item in
+                item.category?.name == title && item.imageData != nil
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        
+        if let item = try? modelContext.fetch(descriptor).first {
+            firstImageData = item.imageData
+        }
     }
 }
 

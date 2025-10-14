@@ -175,17 +175,18 @@ class ShareViewController: NSViewController {
                 let container = try ModelContainer(for: schema, configurations: [configuration])
                 let context = container.mainContext
 
-                // Utiliser les repositories
-                let categoryRepo = CategoryRepository(context: context)
-                let contentRepo = ContentItemRepository(context: context)
-
                 // Vérifier si un item identique a été créé récemment (évite les doublons accidentels)
-                // Fenêtre de 10 secondes pour bloquer les ajouts rapides involontaires
-                if let existingItem = try? contentRepo.fetchRecentDuplicate(
-                    title: title,
-                    url: url.absoluteString,
-                    withinSeconds: 10.0
-                ) {
+                let tenSecondsAgo = Date().addingTimeInterval(-10)
+                let urlString = url.absoluteString
+                let duplicateDescriptor = FetchDescriptor<ContentItem>(
+                    predicate: #Predicate { item in
+                        item.title == title &&
+                        item.url == urlString &&
+                        item.createdAt > tenSecondsAgo
+                    }
+                )
+                
+                if let existingItem = try? context.fetch(duplicateDescriptor).first {
                     print("⚠️ Item identique créé il y a \(Int(Date().timeIntervalSince(existingItem.createdAt)))s, skip pour éviter doublon accidentel")
                     DispatchQueue.main.async {
                         self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
@@ -193,8 +194,15 @@ class ShareViewController: NSViewController {
                     return
                 }
 
-                // Trouver ou créer la catégorie "Misc" via repository
-                let category = try categoryRepo.findOrCreateMiscCategory()
+                // Trouver ou créer la catégorie "Misc"
+                let categoryDescriptor = FetchDescriptor<Category>(
+                    predicate: #Predicate { $0.name == "Misc" }
+                )
+                let category = try context.fetch(categoryDescriptor).first ?? {
+                    let misc = Category(name: "Misc")
+                    context.insert(misc)
+                    return misc
+                }()
 
                 // Préparer les métadonnées OCR
                 var metadata: Data? = nil
@@ -212,7 +220,7 @@ class ShareViewController: NSViewController {
                     category: category
                 )
 
-                contentRepo.insert(item)
+                context.insert(item)
                 try context.save()
                 
                 print("✅ Contenu sauvegardé: \(title)")
