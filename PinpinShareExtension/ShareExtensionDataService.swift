@@ -14,10 +14,7 @@ final class ShareExtensionDataService {
 
     // MARK: - SwiftData Container
     lazy var container: ModelContainer = {
-        prepareSharedContainerIfNeeded()
         let schema = Schema([ContentItem.self, Category.self])
-
-        // Configuration pour App Group AVEC CloudKit (même config que l'app principale)
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(AppConstants.groupID),
@@ -25,17 +22,9 @@ final class ShareExtensionDataService {
         )
 
         do {
-            let container = try ModelContainer(for: schema, configurations: [configuration])
-            return container
+            return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            print("Erreur lors de la création du ModelContainer dans l'extension: \(error)")
-            // Fallback vers un container en mémoire pour éviter le crash
-            do {
-                let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-                return try ModelContainer(for: schema, configurations: [fallbackConfig])
-            } catch {
-                fatalError("Impossible de créer même un ModelContainer en mémoire: \(error)")
-            }
+            fatalError("Impossible de créer ModelContainer dans l'extension: \(error)")
         }
     }()
 
@@ -94,25 +83,6 @@ final class ShareExtensionDataService {
             print("[ShareExtension][DataService] ✅ Sauvegarde réussie!")
         } catch {
             print("[ShareExtension][DataService] ❌ Erreur sauvegarde: \(error)")
-        }
-    }
-
-    private func prepareSharedContainerIfNeeded() {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppConstants.groupID) else {
-            print("[ShareExtension][DataService] ❌ IMPOSSIBLE d'accéder au container partagé")
-            return
-        }
-        print("[ShareExtension][DataService] ✅ Container URL: \(containerURL.path)")
-
-        let libraryURL = containerURL.appendingPathComponent("Library", isDirectory: true)
-        let supportURL = libraryURL.appendingPathComponent("Application Support", isDirectory: true)
-        print("[ShareExtension][DataService] 📁 Support URL: \(supportURL.path)")
-
-        do {
-            try FileManager.default.createDirectory(at: supportURL, withIntermediateDirectories: true)
-            print("[ShareExtension][DataService] ✅ Répertoire créé/vérifié")
-        } catch {
-            print("[ShareExtension][DataService] ❌ Erreur préparation: \(error)")
         }
     }
 }

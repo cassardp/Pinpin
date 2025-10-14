@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  PinpinMac
 //
-//  Interface minimale pour visualiser la synchronisation
+//  Interface minimale
 //
 
 import SwiftUI
@@ -25,7 +25,7 @@ struct ContentView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
-                Text("Synchronisation CloudKit active")
+                Text("Automatic sync with iPhone")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

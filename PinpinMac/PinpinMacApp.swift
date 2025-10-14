@@ -15,7 +15,6 @@ struct PinpinMacApp: App {
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([ContentItem.self, Category.self])
-
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(AppConstants.groupID),
@@ -25,19 +24,7 @@ struct PinpinMacApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            print("[PinpinMac] ❌ Erreur création ModelContainer: \(error)")
-
-            // Fallback en mémoire
-            do {
-                let fallbackConfig = ModelConfiguration(
-                    schema: schema,
-                    isStoredInMemoryOnly: true
-                )
-                print("[PinpinMac] ⚠️ Utilisation container en mémoire")
-                return try ModelContainer(for: schema, configurations: [fallbackConfig])
-            } catch {
-                fatalError("Impossible de créer ModelContainer: \(error)")
-            }
+            fatalError("Impossible de créer ModelContainer: \(error)")
         }
     }()
 

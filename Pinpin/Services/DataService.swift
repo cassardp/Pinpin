@@ -15,9 +15,7 @@ final class DataService: ObservableObject {
     
     // MARK: - SwiftData Container
     private lazy var _container: ModelContainer = {
-        MaintenanceService.shared.prepareSharedContainer()
         let schema = Schema([ContentItem.self, Category.self])
-        
         let configuration = ModelConfiguration(
             schema: schema,
             groupContainer: .identifier(AppConstants.groupID),
@@ -27,19 +25,7 @@ final class DataService: ObservableObject {
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            print("[DataService] ❌ Erreur création ModelContainer: \(error)")
-            
-            // Fallback en mémoire
-            do {
-                let fallbackConfig = ModelConfiguration(
-                    schema: schema,
-                    isStoredInMemoryOnly: true
-                )
-                print("[DataService] ⚠️ Utilisation container en mémoire")
-                return try ModelContainer(for: schema, configurations: [fallbackConfig])
-            } catch {
-                fatalError("Impossible de créer ModelContainer: \(error)")
-            }
+            fatalError("Impossible de créer ModelContainer: \(error)")
         }
     }()
     
@@ -54,11 +40,6 @@ final class DataService: ObservableObject {
     // MARK: - Repositories
     private lazy var contentItemRepository = ContentItemRepository(context: context)
     private lazy var categoryRepository = CategoryRepository(context: context)
-
-    // MARK: - Services
-    // Note: CloudSyncService est conservé uniquement pour l'affichage du statut dans SettingsView
-    // SwiftData avec .automatic gère la vraie synchronisation CloudKit
-    let cloudSyncService = CloudSyncService()
     
     // MARK: - State Management
     @Published var isLoading = false
@@ -68,19 +49,6 @@ final class DataService: ObservableObject {
     
     private let itemsPerPage = AppConstants.itemsPerPage
     private var currentLimit = 50
-    
-    // MARK: - iCloud Sync (délégué à CloudSyncService)
-    var isSyncing: Bool {
-        cloudSyncService.isSyncing
-    }
-    
-    var lastSyncDate: Date? {
-        cloudSyncService.lastSyncDate
-    }
-    
-    var isiCloudAvailable: Bool {
-        cloudSyncService.isAvailable
-    }
     
     private init() {
         // Nettoyage automatique au démarrage
@@ -263,13 +231,20 @@ final class DataService: ObservableObject {
         do {
             let category = try categoryRepository.findOrCreate(name: categoryName)
             
+            let metadataData: Data?
+            if !metadata.isEmpty {
+                metadataData = try? JSONSerialization.data(withJSONObject: metadata)
+            } else {
+                metadataData = nil
+            }
+            
             let newItem = ContentItem(
                 title: title,
                 itemDescription: description,
                 url: url,
                 thumbnailUrl: thumbnailUrl,
                 imageData: imageData,
-                metadata: MaintenanceService.shared.encodeMetadata(metadata),
+                metadata: metadataData,
                 category: category
             )
             
@@ -453,16 +428,6 @@ final class DataService: ObservableObject {
         }
     }
     
-    // MARK: - iCloud Sync Methods (délégués)
-    
-    func isiCloudSyncUpToDate() -> Bool {
-        cloudSyncService.isUpToDate()
-    }
-    
-    func getiCloudSyncStatus() -> String {
-        cloudSyncService.getStatusText()
-    }
-    
     // MARK: - Save Context
     
     func save() {
@@ -478,9 +443,5 @@ final class DataService: ObservableObject {
     
     private func updatePaginationState(totalFetched: Int, limit: Int) {
         hasMoreItems = totalFetched > limit
-    }
-    
-    private func prepareSharedContainerIfNeeded() {
-        MaintenanceService.shared.prepareSharedContainer()
     }
 }
