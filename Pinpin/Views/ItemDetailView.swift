@@ -152,7 +152,7 @@ struct ItemDetailView: View {
             if let urlString = item.url,
                !urlString.isEmpty,
                let url = URL(string: urlString) {
-                ShareSheet(items: [url])
+                ActivityViewController(activityItems: [url])
             }
         }
         .sheet(isPresented: $showAddCategory) {
@@ -262,3 +262,13 @@ private struct ActionButtonLabel: View {
     }
 }
 
+// Wrapper pour UIActivityViewController
+struct ActivityViewController: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
