@@ -19,6 +19,7 @@ class ShareViewController: NSViewController {
     }
     
     override func loadView() {
+        print("🚀 [ShareExtension] loadView appelé")
         // Créer une vue minimale (invisible)
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 1, height: 1))
         view.wantsLayer = true
@@ -41,25 +42,32 @@ class ShareViewController: NSViewController {
     }
     
     private func processURL() {
+        print("🔍 [ShareExtension] processURL démarré")
         guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem else {
+            print("❌ [ShareExtension] Pas d'extensionItem")
             closeImmediately()
             return
         }
         
         guard let attachments = extensionItem.attachments, !attachments.isEmpty else {
+            print("❌ [ShareExtension] Pas d'attachments")
             closeImmediately()
             return
         }
+        print("📎 [ShareExtension] \(attachments.count) attachment(s) trouvé(s)")
         
         // Essayer tous les types
         let attachment = attachments[0]
         
         // Utiliser loadObject au lieu de loadItem (solution macOS)
         if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
+            print("🔗 [ShareExtension] Type URL détecté, chargement...")
             _ = attachment.loadObject(ofClass: URL.self) { [weak self] (url, error) in
                 if let url = url {
+                    print("✅ [ShareExtension] URL chargée: \(url.absoluteString)")
                     self?.handleURL(url, title: extensionItem.attributedContentText?.string)
                 } else {
+                    print("❌ [ShareExtension] Erreur chargement URL: \(error?.localizedDescription ?? "unknown")")
                     self?.closeImmediately()
                 }
             }
@@ -82,6 +90,7 @@ class ShareViewController: NSViewController {
     }
     
     private func handleURL(_ url: URL, title: String?) {
+        print("🎯 [ShareExtension] handleURL appelé pour: \(url.absoluteString)")
         let displayTitle = title ?? url.host ?? url.absoluteString
         
         // Récupérer les métadonnées (avec image)
@@ -147,13 +156,15 @@ class ShareViewController: NSViewController {
     }
     
     private func saveToSwiftData(url: URL, title: String, imageData: Data?, ocrText: String?) {
+        print("💾 [ShareExtension] saveToSwiftData démarré pour: \(title)")
         Task { @MainActor in
             // Vérifier si on a accès à l'App Group avant de continuer
             guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") else {
-                print("❌ Accès App Group refusé ou non configuré")
+                print("❌ [ShareExtension] Accès App Group refusé ou non configuré")
                 closeImmediately()
                 return
             }
+            print("✅ [ShareExtension] App Group accessible: \(groupURL.path)")
             
             // Vérifier si on peut accéder au dossier
             guard FileManager.default.isReadableFile(atPath: groupURL.path) else {
@@ -163,6 +174,7 @@ class ShareViewController: NSViewController {
             }
             
             do {
+                print("🗄️ [ShareExtension] Création du ModelContainer...")
                 let schema = Schema([ContentItem.self, Category.self])
                 
                 // IMPORTANT : Utiliser l'App Group pour partager avec l'app principale
@@ -173,6 +185,7 @@ class ShareViewController: NSViewController {
                 )
                 
                 let container = try ModelContainer(for: schema, configurations: [configuration])
+                print("✅ [ShareExtension] ModelContainer créé avec succès")
                 let context = container.mainContext
 
                 // Vérifier si un item identique a été créé récemment (évite les doublons accidentels)
@@ -238,7 +251,8 @@ class ShareViewController: NSViewController {
                 }
                 
             } catch {
-                print("❌ Erreur lors de la sauvegarde: \(error.localizedDescription)")
+                print("❌ [ShareExtension] Erreur lors de la sauvegarde: \(error.localizedDescription)")
+                print("❌ [ShareExtension] Erreur détaillée: \(error)")
                 closeImmediately()
             }
         }
