@@ -427,7 +427,7 @@ private extension ShareViewController {
     }
     
     func embedCategorySelectionView(_ view: CategorySelectionModalWrapper) {
-        let hostingController = UIHostingController(rootView: view)
+        let hostingController = UIHostingController(rootView: view.modelContainer(modelContainer))
         addChild(hostingController)
         self.view.addSubview(hostingController.view)
         
