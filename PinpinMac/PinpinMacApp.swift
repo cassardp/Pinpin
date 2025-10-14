@@ -21,8 +21,15 @@ struct PinpinMacApp: App {
             cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
 
+        print("📦 Configuration SwiftData macOS:")
+        print("   • App Group: \(AppConstants.groupID)")
+        print("   • CloudKit Container: \(AppConstants.cloudKitContainerID)")
+        print("   • CloudKit Database: .private")
+
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            print("✅ ModelContainer créé avec succès")
+            return container
         } catch {
             fatalError("Impossible de créer ModelContainer: \(error)")
         }
@@ -54,9 +61,30 @@ struct PinpinMacApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var modelContainer: ModelContainer?
 
+    func checkiCloudStatus() {
+        // Vérifier si iCloud est disponible
+        if let ubiquityToken = FileManager.default.ubiquityIdentityToken {
+            print("✅ iCloud est disponible et connecté")
+            print("   Token: \(ubiquityToken)")
+        } else {
+            print("❌ iCloud n'est PAS disponible ou non connecté")
+            print("   L'utilisateur doit se connecter à iCloud dans les Réglages Système")
+        }
+
+        // Vérifier l'accès au container iCloud spécifique
+        if let containerURL = FileManager.default.url(forUbiquityContainerIdentifier: AppConstants.cloudKitContainerID) {
+            print("✅ Container iCloud accessible: \(containerURL.path)")
+        } else {
+            print("❌ Container iCloud NON accessible: \(AppConstants.cloudKitContainerID)")
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Cacher l'icône du Dock (Menu Bar App uniquement)
         NSApp.setActivationPolicy(.accessory)
+
+        // Vérifier le statut iCloud
+        checkiCloudStatus()
 
         // Demander la permission pour les notifications
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
@@ -74,10 +102,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             let context = container.mainContext
+
             // Force un fetch pour "réveiller" CloudKit
             let descriptor = FetchDescriptor<ContentItem>(sortBy: [SortDescriptor(\.createdAt)])
-            _ = try? context.fetch(descriptor)
-            print("🔧 CloudKit initialisé au démarrage")
+            if let items = try? context.fetch(descriptor) {
+                print("🔧 CloudKit initialisé au démarrage")
+                print("📊 Nombre d'items chargés: \(items.count)")
+
+                // Afficher les détails des items pour debug
+                for (index, item) in items.prefix(5).enumerated() {
+                    print("   Item \(index + 1): \(item.title) - créé le \(item.createdAt)")
+                }
+
+                if items.count > 5 {
+                    print("   ... et \(items.count - 5) autres items")
+                }
+            } else {
+                print("⚠️ Impossible de charger les items")
+            }
         }
     }
 }

@@ -15,7 +15,8 @@
       "WebFetch(domain:carolanelefebvre.medium.com)",
       "Bash(plutil:*)",
       "Bash(rm:*)",
-      "Bash(rmdir:*)"
+      "Bash(rmdir:*)",
+      "Read(//Users/patrice/Library/**)"
     ],
     "deny": [],
     "ask": []

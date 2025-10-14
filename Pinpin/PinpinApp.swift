@@ -17,9 +17,26 @@ struct PinpinApp: App {
             groupContainer: .identifier(AppConstants.groupID),
             cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
-        
+
+        print("📦 Configuration SwiftData iOS:")
+        print("   • App Group: \(AppConstants.groupID)")
+        print("   • CloudKit Container: \(AppConstants.cloudKitContainerID)")
+        print("   • CloudKit Database: .private")
+
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            print("✅ ModelContainer créé avec succès")
+
+            // Log le nombre d'items au démarrage
+            Task { @MainActor in
+                let context = container.mainContext
+                let descriptor = FetchDescriptor<ContentItem>(sortBy: [SortDescriptor(\.createdAt)])
+                if let items = try? context.fetch(descriptor) {
+                    print("📊 Nombre d'items chargés (iOS): \(items.count)")
+                }
+            }
+
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
