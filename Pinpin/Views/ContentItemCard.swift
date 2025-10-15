@@ -50,6 +50,7 @@ struct ContentItemCard: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .drawingGroup() // Rasterise la card pour optimiser le rendu
         .animation(.smooth(duration: 0.4), value: cornerRadius)
         .animation(.smooth(duration: 0.5), value: userPreferences.showURLs)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
