@@ -11,7 +11,6 @@ import SwiftData
 struct MenuBarView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ContentItem.createdAt, order: .reverse) private var items: [ContentItem]
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

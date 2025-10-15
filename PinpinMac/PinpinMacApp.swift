@@ -41,19 +41,12 @@ struct PinpinMacApp: App {
     }
 
     var body: some Scene {
-        // Menu Bar App (pas de fenêtre par défaut)
+        // Menu Bar App uniquement (pas de fenêtre)
         MenuBarExtra("Pinpin", image: "MenuBarIcon") {
             MenuBarView()
                 .modelContainer(sharedModelContainer)
         }
         .menuBarExtraStyle(.window)
-
-        // Fenêtre optionnelle (cachée par défaut)
-        WindowGroup(id: "main") {
-            ContentView()
-                .modelContainer(sharedModelContainer)
-        }
-        .defaultSize(width: 800, height: 600)
     }
 }
 
