@@ -181,7 +181,7 @@ class ShareViewController: NSViewController {
                 let configuration = ModelConfiguration(
                     schema: schema,
                     groupContainer: .identifier(AppConstants.groupID),
-                    cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
+                    cloudKitDatabase: .automatic
                 )
                 
                 let container = try ModelContainer(for: schema, configurations: [configuration])

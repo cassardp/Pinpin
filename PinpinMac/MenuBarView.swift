@@ -2,29 +2,17 @@
 //  MenuBarView.swift
 //  PinpinMac
 //
-//  Vue Menu Bar pour Pinpin
+//  Menu Bar minimal
 //
 
 import SwiftUI
-import SwiftData
 
 struct MenuBarView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \ContentItem.createdAt, order: .reverse) private var items: [ContentItem]
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Header
-            HStack {
-                Text("Pinpin")
-                    .font(.headline)
-                Spacer()
-                Text("\(items.count)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal)
-            .padding(.top, 8)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Pinpin")
+                .font(.headline)
+                .padding(12)
 
             Divider()
 
@@ -34,10 +22,6 @@ struct MenuBarView: View {
             .keyboardShortcut("q")
             .padding(8)
         }
-        .frame(width: 250)
-        .padding(.vertical, 8)
-        .onAppear {
-            print("📊 MenuBarView: \(items.count) items au démarrage")
-        }
+        .frame(width: 180)
     }
 }
