@@ -13,7 +13,7 @@ struct SquareContentView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Rectangle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.gray.opacity(0.2))
                 .aspectRatio(1.0, contentMode: .fit)
                 .overlay(
                     Group {
