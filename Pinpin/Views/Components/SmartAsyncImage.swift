@@ -36,36 +36,21 @@ struct SmartAsyncImage: View {
                     image
                         .resizable()
                 } placeholder: {
-                    placeholderView
+                    Color.gray.opacity(0.3)
                 }
             } else {
                 // Placeholder par défaut
-                placeholderView
+                Color.gray.opacity(0.3)
             }
         }
         .task {
             // Decode image OFF main thread (iOS 18 best practice)
             guard let imageData = item.imageData else { return }
             
-            // Petit délai aléatoire pour étaler la charge CPU au démarrage
-            // Évite le spike quand 20-30 images se décodent en même temps
-            try? await Task.sleep(nanoseconds: UInt64.random(in: 0...20_000_000)) // 0-20ms
-            
             imageFromData = await Task.detached {
                 UIImage(data: imageData)
             }.value
         }
-        .onDisappear {
-            // Libère la RAM quand l'image sort du viewport
-            // LazyVStack ne recycle pas, donc on doit le faire manuellement
-            imageFromData = nil
-        }
-    }
-    
-    // MARK: - Placeholder View
-    
-    private var placeholderView: some View {
-        Color(white: 0.95)
     }
     
     private func getRemoteURL() -> URL? {
