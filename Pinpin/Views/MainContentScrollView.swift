@@ -70,35 +70,12 @@ struct MainContentScrollView: View {
             if filteredItems.isEmpty {
                 emptyStateView
             } else {
-                // Titre unique en haut pour le mode timeline
-                if userPreferences.showTimelineView && selectedContentType == nil && userPreferences.showCategoryTitles {
-                    categoryTitle
-                }
-                
-                if userPreferences.showTimelineView && selectedContentType == nil {
-                    timelineContent
-                } else {
-                    simpleListContent
-                }
-                
+                simpleListContent
                 storageStats
             }
         }
         .padding(.horizontal, 10)
         .overlay(pinchShield)
-    }
-    
-    // MARK: - Category Title
-    private var categoryTitle: some View {
-        Text("All")
-            .font(.system(size: 24, design: .serif))
-            .italic()
-            .fontWeight(.thin)
-            .foregroundStyle(.primary)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.bottom, 32)
-            .padding(.top, 20)
     }
     
     // MARK: - Simple List Content
@@ -120,60 +97,6 @@ struct MainContentScrollView: View {
             onItemTap: onItemTap,
             heroNamespace: heroNamespace
         )
-    }
-    
-    // MARK: - Timeline Content
-    private var timelineContent: some View {
-        let groups = groupedByDate(filteredItems)
-        
-        return ForEach(Array(groups.enumerated()), id: \.element.date) { groupIndex, group in
-            Section {
-                ContentGridView(
-                    items: group.items,
-                    numberOfColumns: numberOfColumns,
-                    dynamicSpacing: dynamicSpacing,
-                    dynamicCornerRadius: dynamicCornerRadius,
-                    isPinching: isPinching,
-                    pinchScale: pinchScale,
-                    selectedContentType: selectedContentType,
-                    isSelectionMode: isSelectionMode,
-                    selectedItems: selectedItems,
-                    showTitle: false,
-                    onToggleSelection: onToggleSelection,
-                    onDeleteItem: onDeleteItem,
-                    onStorageStatsRefresh: onStorageStatsRefresh,
-                    onItemTap: onItemTap,
-                    heroNamespace: heroNamespace
-                )
-            } header: {
-                // Ne pas afficher le séparateur pour le premier groupe
-                if groupIndex > 0 {
-                    dateSeparator(for: group.date)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Date Separator
-    private func dateSeparator(for date: Date) -> some View {
-        HStack(spacing: 24) {
-            Rectangle()
-                .fill(Color(uiColor: .systemGray5).opacity(0.7))
-                .frame(height: 1)
-
-            Text(formatDate(date))
-                .font(.system(size: 18, design: .serif))
-                .italic()
-                .foregroundColor(.gray)
-                .fixedSize()
-
-            Rectangle()
-                .fill(Color(uiColor: .systemGray5).opacity(0.7))
-                .frame(height: 1)
-        }
-        .padding(.horizontal, 4)
-        .padding(.top, 48)
-        .padding(.bottom, 32)
     }
     
     // MARK: - Pinch Shield
@@ -235,52 +158,6 @@ struct MainContentScrollView: View {
             .padding(.top, 50)
             .padding(.bottom, 90)
             .id(storageStatsRefreshTrigger)
-        }
-    }
-    
-    // MARK: - Date Grouping
-    private struct DateGroup {
-        let date: Date
-        let items: [ContentItem]
-    }
-    
-    private func groupedByDate(_ items: [ContentItem]) -> [DateGroup] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: items) { item -> Date in
-            calendar.startOfDay(for: item.createdAt)
-        }
-        
-        return grouped
-            .map { DateGroup(date: $0.key, items: $0.value) }
-            .sorted { $0.date > $1.date }
-    }
-    
-    // MARK: - Date Formatting
-    private static let calendar = Calendar.current
-    
-    private static let currentYearFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEEE, MMMM d"
-        return formatter
-    }()
-
-    private static let otherYearFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEEE, MMMM d, yyyy"
-        return formatter
-    }()
-
-    private func formatDate(_ date: Date) -> String {
-        let now = Date()
-
-        if Self.calendar.isDateInYesterday(date) {
-            return "Yesterday"
-        } else if Self.calendar.isDate(date, equalTo: now, toGranularity: .year) {
-            return Self.currentYearFormatter.string(from: date)
-        } else {
-            return Self.otherYearFormatter.string(from: date)
         }
     }
 }

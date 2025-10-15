@@ -10,11 +10,17 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable private var userPreferences = UserPreferences.shared
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                Text("Settings")
+                    .font(.system(size: 16))
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 32)
+                
                 VStack(spacing: 0) {
                     SettingsToggleRow(
                         title: "Show Cards URLs",
@@ -46,36 +52,8 @@ struct SettingsView: View {
                         isOn: $userPreferences.hideCategoryTitles
                     )
 
-                    // Ligne de séparation
-                    Divider()
-                        .background(Color.gray.opacity(0.1))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-
-                    SettingsToggleRow(
-                        title: colorScheme == .dark ? "Light Mode" : "Dark Mode",
-                        subtitle: "",
-                        isOn: $userPreferences.forceDarkMode
-                    )
-
-                    // Ligne de séparation
-                    Divider()
-                        .background(Color.gray.opacity(0.1))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-
-                    SettingsToggleRow(
-                        title: "Hide Timeline",
-                        subtitle: "",
-                        isOn: Binding(
-                            get: { !userPreferences.showTimelineView },
-                            set: { userPreferences.showTimelineView = !$0 }
-                        )
-                    )
-
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 40)
 
                 Spacer(minLength: 0)
             }
