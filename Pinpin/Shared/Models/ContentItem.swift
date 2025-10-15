@@ -10,6 +10,10 @@ import SwiftData
 
 @Model
 final class ContentItem {
+    // Index pour optimiser les requêtes (iOS 18+)
+    // Une seule macro #Index avec tous les index séparés par des virgules
+    #Index<ContentItem>([\.createdAt], [\.isHidden])
+    
     var id: UUID = UUID()
     var title: String = "Nouveau contenu"
     var itemDescription: String?
@@ -94,13 +98,21 @@ extension ContentItem {
         return id
     }
     
+    /// Cache pour éviter le parsing JSON répété (iOS 18 @MainActor optimization)
+    private static var metadataCache: [UUID: [String: String]] = [:]
+    
     /// Dictionnaire des métadonnées pour compatibilité
     var metadataDict: [String: String] {
+        // Vérifier le cache d'abord
+        if let cached = Self.metadataCache[id] {
+            return cached
+        }
+        
         guard let metadata = metadata else { return [:] }
         
         do {
             if let dict = try JSONSerialization.jsonObject(with: metadata) as? [String: Any] {
-                return dict.compactMapValues { value in
+                let result = dict.compactMapValues { value in
                     if let stringValue = value as? String {
                         return stringValue
                     } else if let numberValue = value as? NSNumber {
@@ -109,6 +121,9 @@ extension ContentItem {
                         return String(describing: value)
                     }
                 }
+                // Mettre en cache
+                Self.metadataCache[id] = result
+                return result
             }
         } catch {
             print("Erreur lors du parsing des métadonnées: \(error)")
