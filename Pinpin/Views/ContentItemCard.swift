@@ -16,7 +16,8 @@ struct ContentItemCard: View {
     let onSelectionTap: (() -> Void)?
     let onItemTap: (() -> Void)?
     let heroNamespace: Namespace.ID
-    @State private var hapticTrigger: Int = 0
+    
+    @State private var hapticTrigger = 0
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -50,7 +51,6 @@ struct ContentItemCard: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        .drawingGroup() // Rasterise la card pour optimiser le rendu
         .animation(.smooth(duration: 0.4), value: cornerRadius)
         .animation(.smooth(duration: 0.5), value: userPreferences.showURLs)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)

@@ -44,12 +44,6 @@ struct MainContentScrollView: View {
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
         .scrollDisabled(isMenuOpen || isSettingsOpen)
-        // iOS 18 API - Détection de visibilité (optionnel, pas nécessaire pour < 1000 items)
-        // .onScrollTargetVisibilityChange(idType: ContentItem.ID.self) { visibleIds in
-        //     if let last = filteredItems.last, visibleIds.contains(last.id) {
-        //         // Détection fin de scroll pour analytics ou feedback
-        //     }
-        // }
         .onChange(of: selectedContentType) {
             onCategoryChange()
         }

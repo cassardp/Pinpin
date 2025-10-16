@@ -17,46 +17,26 @@ struct PinterestLayout: Layout {
         self.itemSpacing = itemSpacing
     }
     
-    // Cache pour stocker les hauteurs calculées
-    struct Cache {
-        var heights: [CGFloat] = []
-        var cardWidth: CGFloat = 0
-    }
-    
-    func makeCache(subviews: Subviews) -> Cache {
-        Cache()
-    }
-    
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let safeProposalWidth = proposal.replacingUnspecifiedDimensions().width
         let totalSpacing = itemSpacing * CGFloat(numberOfColumns - 1)
         let cardWidth = (safeProposalWidth - totalSpacing) / CGFloat(numberOfColumns)
         
-        // Vider le cache si la largeur a changé
-        if cache.cardWidth != cardWidth {
-            cache.heights.removeAll()
-            cache.cardWidth = cardWidth
-        }
-        
-        // Calculer et mettre en cache les hauteurs si nécessaire
-        if cache.heights.isEmpty {
-            cache.heights = subviews.map { subView in
-                subView.sizeThatFits(.init(width: cardWidth, height: nil)).height
-            }
-        }
-        
         var columnHeights = [CGFloat](repeating: 0.0, count: numberOfColumns)
         
-        for height in cache.heights {
-            // 1. Trouver la colonne avec la hauteur minimale
+        for subView in subviews {
+            // 1. Calculer la hauteur de la subview basée sur sa largeur
+            let height = subView.sizeThatFits(.init(width: cardWidth, height: nil)).height
+            
+            // 2. Trouver la colonne avec la hauteur minimale
             let columnIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })!.offset
             
-            // 2. Ajouter l'espacement si la colonne contient déjà des éléments
+            // 3. Ajouter l'espacement si la colonne contient déjà des éléments
             if columnHeights[columnIndex] > 0 {
                 columnHeights[columnIndex] += itemSpacing
             }
             
-            // 3. Ajouter la hauteur de l'élément à la colonne
+            // 4. Ajouter la hauteur de l'élément à la colonne
             columnHeights[columnIndex] += height
         }
         
@@ -66,31 +46,30 @@ struct PinterestLayout: Layout {
         )
     }
     
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) {
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let safeProposalWidth = proposal.replacingUnspecifiedDimensions().width
         let totalSpacing = itemSpacing * CGFloat(numberOfColumns - 1)
         let cardWidth = (safeProposalWidth - totalSpacing) / CGFloat(numberOfColumns)
         
         var yOffset = [CGFloat](repeating: bounds.minY, count: numberOfColumns)
         
-        for (index, subView) in subviews.enumerated() {
+        for subView in subviews {
             // 1. Trouver la colonne avec l'offset Y minimal (colonne la plus courte)
             let columnIndex = yOffset.enumerated().min(by: { $0.element < $1.element })!.offset
             
             // 2. Calculer la position X basée sur l'index de la colonne
             let x = bounds.minX + (cardWidth + itemSpacing) * CGFloat(columnIndex)
             
-            // 3. Utiliser la hauteur du cache au lieu de la recalculer
-            let height = cache.heights[index]
+            let height = subView.sizeThatFits(.init(width: cardWidth, height: nil)).height
             let y = yOffset[columnIndex]
             
-            // 4. Placer la subview à la position calculée
+            // 3. Placer la subview à la position calculée
             subView.place(
                 at: CGPoint(x: x, y: y),
                 proposal: ProposedViewSize(width: cardWidth, height: height)
             )
             
-            // 5. Mettre à jour l'offset Y pour cette colonne
+            // 4. Mettre à jour l'offset Y pour cette colonne
             yOffset[columnIndex] += height + itemSpacing
         }
     }

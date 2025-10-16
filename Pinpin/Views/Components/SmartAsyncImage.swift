@@ -13,6 +13,7 @@ struct SmartAsyncImage: View {
     let height: CGFloat?
     
     @State private var imageFromData: UIImage?
+    @State private var hasLoadedImage = false
     
     init(
         item: ContentItem,
@@ -43,13 +44,21 @@ struct SmartAsyncImage: View {
                 Color.gray.opacity(0.3)
             }
         }
-        .task {
-            // Decode image OFF main thread (iOS 18 best practice)
-            guard let imageData = item.imageData else { return }
-            
-            imageFromData = await Task.detached {
-                UIImage(data: imageData)
-            }.value
+        .onAppear {
+            // Charger une seule fois
+            if !hasLoadedImage {
+                loadImageFromData()
+                hasLoadedImage = true
+            }
+        }
+    }
+    
+    private func loadImageFromData() {
+        // Charger l'image depuis SwiftData
+        guard let imageData = item.imageData else { return }
+        
+        if let uiImage = UIImage(data: imageData) {
+            self.imageFromData = uiImage
         }
     }
     
