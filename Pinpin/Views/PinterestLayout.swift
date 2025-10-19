@@ -12,21 +12,36 @@ struct PinterestLayout: Layout {
     let numberOfColumns: Int
     let itemSpacing: CGFloat
     
+    struct Cache {
+        var itemHeights: [CGFloat] = []
+        var cardWidth: CGFloat = 0
+    }
+    
     init(numberOfColumns: Int = 2, itemSpacing: CGFloat = 10) {
         self.numberOfColumns = numberOfColumns
         self.itemSpacing = itemSpacing
     }
     
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    func makeCache(subviews: Subviews) -> Cache {
+        Cache()
+    }
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
         let safeProposalWidth = proposal.replacingUnspecifiedDimensions().width
         let totalSpacing = itemSpacing * CGFloat(numberOfColumns - 1)
         let cardWidth = (safeProposalWidth - totalSpacing) / CGFloat(numberOfColumns)
         
+        // Stocker la largeur dans le cache
+        cache.cardWidth = cardWidth
+        cache.itemHeights.removeAll(keepingCapacity: true)
+        cache.itemHeights.reserveCapacity(subviews.count)
+        
         var columnHeights = [CGFloat](repeating: 0.0, count: numberOfColumns)
         
         for subView in subviews {
-            // 1. Calculer la hauteur de la subview basée sur sa largeur
+            // 1. Calculer la hauteur de la subview et la stocker dans le cache
             let height = subView.sizeThatFits(.init(width: cardWidth, height: nil)).height
+            cache.itemHeights.append(height)
             
             // 2. Trouver la colonne avec la hauteur minimale
             let columnIndex = columnHeights.enumerated().min(by: { $0.element < $1.element })!.offset
@@ -46,30 +61,28 @@ struct PinterestLayout: Layout {
         )
     }
     
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let safeProposalWidth = proposal.replacingUnspecifiedDimensions().width
-        let totalSpacing = itemSpacing * CGFloat(numberOfColumns - 1)
-        let cardWidth = (safeProposalWidth - totalSpacing) / CGFloat(numberOfColumns)
-        
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) {
+        let cardWidth = cache.cardWidth
         var yOffset = [CGFloat](repeating: bounds.minY, count: numberOfColumns)
         
-        for subView in subviews {
+        for (index, subView) in subviews.enumerated() {
             // 1. Trouver la colonne avec l'offset Y minimal (colonne la plus courte)
             let columnIndex = yOffset.enumerated().min(by: { $0.element < $1.element })!.offset
             
             // 2. Calculer la position X basée sur l'index de la colonne
             let x = bounds.minX + (cardWidth + itemSpacing) * CGFloat(columnIndex)
             
-            let height = subView.sizeThatFits(.init(width: cardWidth, height: nil)).height
+            // 3. Récupérer la hauteur depuis le cache (pas de recalcul !)
+            let height = cache.itemHeights[index]
             let y = yOffset[columnIndex]
             
-            // 3. Placer la subview à la position calculée
+            // 4. Placer la subview à la position calculée
             subView.place(
                 at: CGPoint(x: x, y: y),
                 proposal: ProposedViewSize(width: cardWidth, height: height)
             )
             
-            // 4. Mettre à jour l'offset Y pour cette colonne
+            // 5. Mettre à jour l'offset Y pour cette colonne
             yOffset[columnIndex] += height + itemSpacing
         }
     }

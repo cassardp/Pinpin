@@ -65,9 +65,10 @@ struct MainView: View {
             .overlay(alignment: .bottom) {
                 floatingSearchBarView
             }
-            .fullScreenCover(item: $selectedItem) { item in
+            .sheet(item: $selectedItem) { item in
                 ItemDetailView(item: item, namespace: heroNamespace)
                     .navigationTransition(.zoom(sourceID: item.id, in: heroNamespace))
+                    .presentationDragIndicator(.hidden)
             }
             .sensoryFeedback(.selection, trigger: hapticTrigger)
             .sheet(isPresented: $isSettingsOpen) {

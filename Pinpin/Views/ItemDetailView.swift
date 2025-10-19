@@ -19,7 +19,7 @@ struct ItemDetailView: View {
     
     // Interactive pull-to-dismiss visuals
     @State private var scaleFactor: CGFloat = 1
-    @State private var cornerRadius: CGFloat = 16
+    @State private var cornerRadius: CGFloat = 32
     @State private var chromeOpacity: CGFloat = 1
     
     // États pour les actions
@@ -37,10 +37,22 @@ struct ItemDetailView: View {
                 } label: {
                     SmartAsyncImage(item: item)
                         .aspectRatio(contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                        .clipShape(
+                            UnevenRoundedRectangle(
+                                topLeadingRadius: cornerRadius,
+                                bottomLeadingRadius: 16,
+                                bottomTrailingRadius: 16,
+                                topTrailingRadius: cornerRadius
+                            )
+                        )
                         .overlay(
-                            RoundedRectangle(cornerRadius: cornerRadius)
-                                .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
+                            UnevenRoundedRectangle(
+                                topLeadingRadius: cornerRadius,
+                                bottomLeadingRadius: 16,
+                                bottomTrailingRadius: 16,
+                                topTrailingRadius: cornerRadius
+                            )
+                            .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
                         )
                 }
                 .buttonStyle(.plain)
@@ -142,7 +154,6 @@ struct ItemDetailView: View {
                 Spacer()
                     .frame(height: 20)
             }
-            .padding(.top, 60)
             .frame(maxWidth: .infinity, alignment: .top)
             .scaleEffect(scaleFactor)
         }
@@ -184,14 +195,14 @@ struct ItemDetailView: View {
             if newValue >= 0 {
                 // Normal
                 scaleFactor = 1
-                cornerRadius = 16
+                cornerRadius = 32
                 chromeOpacity = 1
             } else {
                 // Pulled down
                 // Clamp factors to keep things reasonable
                 let pull = min(max(-newValue, 0), 100)
                 scaleFactor = max(0.85, 1 - (0.1 * (pull / 50)))
-                cornerRadius = max(16, 55 - (35 / 50 * pull))
+                cornerRadius = max(32, 55 - (23 / 50 * pull))
                 chromeOpacity = max(0, 1 - (pull / 50))
             }
         }
