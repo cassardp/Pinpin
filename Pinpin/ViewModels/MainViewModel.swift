@@ -17,52 +17,86 @@ final class MainViewModel {
     var selectedItems: Set<UUID> = []
     var showSearchBar: Bool = false
     var scrollProgress: CGFloat = 0
-    
+
+    // MARK: - Cache Properties
+    private var cachedFilteredItems: [ContentItem] = []
+    private var lastAllItemsIDs: [UUID] = []
+    private var lastSearchQuery: String = ""
+    private var lastSelectedType: String?
+
     // MARK: - Filtering Logic
-    
-    /// Filtre les items selon la catégorie et la recherche
+
+    /// Filtre les items selon la catégorie et la recherche (avec cache)
     func filteredItems(from allItems: [ContentItem]) -> [ContentItem] {
-        // Filtrage par catégorie
+        let currentItemIDs = allItems.map { $0.safeId }
+        let currentQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        // Vérifier si le cache est toujours valide
+        let cacheValid = currentItemIDs == lastAllItemsIDs
+            && currentQuery == lastSearchQuery
+            && selectedContentType == lastSelectedType
+
+        if cacheValid {
+            return cachedFilteredItems
+        }
+
+        // Recalculer et mettre en cache
         let typeFiltered: [ContentItem]
         if let selectedType = selectedContentType {
             typeFiltered = allItems.filter { $0.safeCategoryName == selectedType }
         } else {
             typeFiltered = allItems
         }
-        
-        // Filtrage par recherche
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if query.isEmpty {
-            return typeFiltered
+
+        let result: [ContentItem]
+        if currentQuery.isEmpty {
+            result = typeFiltered
+        } else {
+            result = typeFiltered.filter { item in
+                matchesSearchQuery(item: item, query: currentQuery)
+            }
         }
-        
-        return typeFiltered.filter { item in
-            matchesSearchQuery(item: item, query: query)
-        }
+
+        // Mettre à jour le cache
+        cachedFilteredItems = result
+        lastAllItemsIDs = currentItemIDs
+        lastSearchQuery = currentQuery
+        lastSelectedType = selectedContentType
+
+        return result
     }
     
-    /// Vérifie si un item correspond à la requête de recherche
+    /// Vérifie si un item correspond à la requête de recherche (optimisé)
     private func matchesSearchQuery(item: ContentItem, query: String) -> Bool {
         let title = item.title.lowercased()
-        let description = (item.metadataDict["best_description"] ?? item.itemDescription ?? "").lowercased()
         let url = item.url?.lowercased() ?? ""
-        let metadataValues = item.metadataDict.values
+
+        // Gestion spéciale pour Twitter/X avec early return
+        if query == "twitter" {
+            return title.contains("twitter") || title.contains("x.com")
+                || url.contains("x.com")
+        }
+
+        // Vérifier d'abord les champs simples (plus rapide)
+        if title.contains(query) || url.contains(query) {
+            return true
+        }
+
+        // Parser metadata uniquement si nécessaire (plus coûteux)
+        let metadata = item.metadataDict
+        let description = (metadata["best_description"] ?? item.itemDescription ?? "").lowercased()
+
+        if description.contains(query) {
+            return true
+        }
+
+        // Chercher dans les métadonnées uniquement en dernier recours
+        let metadataValues = metadata.values
             .joined(separator: " ")
             .lowercased()
             .replacingOccurrences(of: "_", with: " ")
-        
-        // Gestion spéciale pour Twitter/X
-        if query == "twitter" {
-            return title.contains("twitter") || title.contains("x.com")
-                || description.contains("twitter") || description.contains("x.com")
-                || url.contains("x.com")
-                || metadataValues.contains("twitter") || metadataValues.contains("x.com")
-        }
-        
-        return title.contains(query)
-            || description.contains(query)
-            || url.contains(query)
-            || metadataValues.contains(query)
+
+        return metadataValues.contains(query)
     }
     
     // MARK: - Selection Management
