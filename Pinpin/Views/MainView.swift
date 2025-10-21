@@ -52,7 +52,7 @@ struct MainView: View {
     @Query(sort: \ContentItem.createdAt, order: .reverse)
     private var allContentItems: [ContentItem]
 
-    // Items filtrés via ViewModel
+    // Items filtrés via ViewModel (cached dans le ViewModel)
     private var filteredItems: [ContentItem] {
         viewModel.filteredItems(from: allContentItems)
     }
