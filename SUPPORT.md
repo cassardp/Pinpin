@@ -5,7 +5,7 @@ Thank you for using Pinpin! We are here to help.
 ## Contact Us
 
 If you have any questions, feedback, or need assistance, please contact us via email:
-**contact@pinpin.app**
+**cassard@gmail.com**
 
 ## Report Issues
 
