@@ -4,16 +4,18 @@ import UIKit
 class ImageUploadService {
     static let shared = ImageUploadService()
     
-    // Uploadcare public key (provided by user)
-    private let uploadcarePublicKey = "f43283317c792cb79050"
-    private let uploadURL = "https://upload.uploadcare.com/base/"
+    // Supabase Configuration
+    private let projectURL = "https://ucbaswjuwwjgayehlfpl.supabase.co"
+    private let bucketName = "images"
+    // Using the anon key retrieved from project configuration
+    private let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjYmFzd2p1d3dqZ2F5ZWhsZnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1ODM0MjUsImV4cCI6MjA4MzE1OTQyNX0.eW5kDQkdOmTLMGiciu4FgjI29JV9YOGNLao1lnP1rps"
     
     private init() {}
     
     func uploadImage(_ image: UIImage, completion: @escaping (Result<String, Error>) -> Void) {
-        // Déplacer tout le traitement sur un thread background
+        // Run on background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            // Downscale l'image pour accélérer l'upload ET le téléchargement par Google
+            // Resize image to max 800px to speed up upload/download
             let maxDimension: CGFloat = 800
             let scaledImage: UIImage
             
@@ -36,19 +38,18 @@ class ImageUploadService {
                 return
             }
             
-            // Log de la taille de l'image
+            // Log image size
             let imageSizeKB = Double(imageData.count) / 1024.0
-            let imageSizeMB = imageSizeKB / 1024.0
             let dimensions = "\(Int(scaledImage.size.width))x\(Int(scaledImage.size.height))"
+            print("📊 Image à uploader vers Supabase: \(String(format: "%.1f", imageSizeKB)) KB (\(dimensions))")
             
-            if imageSizeMB >= 1.0 {
-                print("📊 Image à uploader: \(String(format: "%.2f", imageSizeMB)) MB (\(dimensions))")
-            } else {
-                print("📊 Image à uploader: \(String(format: "%.1f", imageSizeKB)) KB (\(dimensions))")
-            }
+            // Generate unique filename
+            let filename = "\(UUID().uuidString).jpg"
             
-            // Uploadcare: multipart direct binaire
-            guard let url = URL(string: self.uploadURL) else {
+            // Supabase Storage URL: POST /storage/v1/object/{bucket}/{path}
+            let urlString = "\(self.projectURL)/storage/v1/object/\(self.bucketName)/\(filename)"
+            
+            guard let url = URL(string: urlString) else {
                 DispatchQueue.main.async {
                     completion(.failure(ImageUploadError.invalidURL))
                 }
@@ -57,37 +58,13 @@ class ImageUploadService {
             
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
-            
-            let boundary = "Boundary-\(UUID().uuidString)"
-            request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-            
-            var body = Data()
-            
-            // UPLOADCARE_PUB_KEY
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"UPLOADCARE_PUB_KEY\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(self.uploadcarePublicKey)".data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-
-            // UPLOADCARE_STORE=0 (ne pas stocker en permanence)
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"UPLOADCARE_STORE\"\r\n\r\n".data(using: .utf8)!)
-            body.append("0".data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-
-            // file (binary JPEG)
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-            body.append(imageData)
-            body.append("\r\n".data(using: .utf8)!)
-            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-            
-            request.httpBody = body
+            request.setValue("Bearer \(self.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+            request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+            request.httpBody = imageData
             
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
-                    print("❌ Erreur réseau Uploadcare: \(error.localizedDescription)")
+                    print("❌ Erreur réseau Supabase: \(error.localizedDescription)")
                     DispatchQueue.main.async {
                         completion(.failure(error))
                     }
@@ -95,51 +72,32 @@ class ImageUploadService {
                 }
                 
                 if let httpResponse = response as? HTTPURLResponse {
-                    print("📡 Réponse HTTP Uploadcare: \(httpResponse.statusCode)")
-                }
-                
-                guard let data = data else {
-                    print("❌ Aucune donnée reçue d'Uploadcare")
-                    DispatchQueue.main.async {
-                        completion(.failure(ImageUploadError.noData))
-                    }
-                    return
-                }
-                
-                // Debug: afficher la réponse brute
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("📄 Réponse Uploadcare: \(responseString)")
-                }
-                
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        if let uuid = json["file"] as? String, !uuid.isEmpty {
-                            let cdnURL = "https://ucarecdn.com/\(uuid)/"
-                            print("✅ Upload Uploadcare réussi: \(cdnURL)")
-                            DispatchQueue.main.async {
-                                completion(.success(cdnURL))
-                            }
-                        } else {
-                            print("❌ Réponse Uploadcare invalide ou échec")
-                            DispatchQueue.main.async {
-                                completion(.failure(ImageUploadError.invalidResponse))
-                            }
+                    if (200...299).contains(httpResponse.statusCode) {
+                        // Success! Construct public URL
+                        // Public URL format: {projectURL}/storage/v1/object/public/{bucket}/{path}
+                        let publicURL = "\(self.projectURL)/storage/v1/object/public/\(self.bucketName)/\(filename)"
+                        print("✅ Upload Supabase réussi: \(publicURL)")
+                        DispatchQueue.main.async {
+                            completion(.success(publicURL))
                         }
                     } else {
-                        print("❌ JSON Uploadcare invalide")
+                        print("📡 Erreur HTTP Supabase: \(httpResponse.statusCode)")
+                        if let data = data, let responseString = String(data: data, encoding: .utf8) {
+                            print("📄 Réponse Supabase: \(responseString)")
+                        }
                         DispatchQueue.main.async {
-                            completion(.failure(ImageUploadError.invalidResponse))
+                            completion(.failure(ImageUploadError.serverError(code: httpResponse.statusCode)))
                         }
                     }
-                } catch {
-                    print("❌ Erreur parsing JSON Uploadcare: \(error.localizedDescription)")
+                } else {
                     DispatchQueue.main.async {
-                        completion(.failure(error))
+                        completion(.failure(ImageUploadError.invalidResponse))
                     }
                 }
             }.resume()
         }
     }
+
 }
 
 enum ImageUploadError: Error, LocalizedError {
@@ -147,6 +105,7 @@ enum ImageUploadError: Error, LocalizedError {
     case invalidURL
     case noData
     case invalidResponse
+    case serverError(code: Int)
     
     var errorDescription: String? {
         switch self {
@@ -158,6 +117,8 @@ enum ImageUploadError: Error, LocalizedError {
             return "No data received from server"
         case .invalidResponse:
             return "Invalid response from server"
+        case .serverError(let code):
+            return "Server returned error code: \(code)"
         }
     }
 }

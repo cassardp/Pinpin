@@ -58,31 +58,15 @@ final class SimilarSearchService {
     
     private static func openGoogleLens(with imageURL: String, query: String?, originalSize: CGSize) {
         let startTime = Date()
-        // Adapter la preview Uploadcare au ratio d'origine (pas de déformation)
-        // On borne le côté le plus long à 800 px
-        let maxLongSide: CGFloat = 800
-        let w = max(originalSize.width, 1)
-        let h = max(originalSize.height, 1)
-        let targetW: Int
-        let targetH: Int
-        if w >= h {
-            targetW = Int(maxLongSide)
-            targetH = Int(round(maxLongSide * (h / w)))
-        } else {
-            targetH = Int(maxLongSide)
-            targetW = Int(round(maxLongSide * (w / h)))
-        }
-        let previewURL = makeUploadcarePreviewURL(from: imageURL, width: max(targetW, 1), height: max(targetH, 1))
-        let encodedImageURL = previewURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        
+        let encodedImageURL = imageURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         var googleLensURL = "https://lens.google.com/upload?url=\(encodedImageURL)"
         
         if let query = query, !query.isEmpty {
             let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             googleLensURL += "&q=\(encodedQuery)"
-            print("🗜️ Uploadcare preview URL: \(previewURL)")
             print("📝 Query de recherche: \(query)")
         } else {
-            print("🗜️ Uploadcare preview URL: \(previewURL)")
             print("📝 Sans query spécifique (All)")
         }
         
@@ -138,23 +122,7 @@ final class SimilarSearchService {
         }
     }
 
-    // Construit une URL Uploadcare avec transformation preview WxH
-    private static func makeUploadcarePreviewURL(from base: String, width: Int, height: Int) -> String {
-        // Formats attendus: https://ucarecdn.com/<uuid>/[...]
-        // On insère "-/preview/WxH/" en suffixe (si déjà présent, on remplace)
-        guard var components = URLComponents(string: base) else { return base }
-        var path = components.path
-        if path.hasSuffix("/") == false { path += "/" }
-        // Supprimer une ancienne preview éventuelle simple (best-effort, KISS)
-        if path.contains("-/preview/") {
-            if let range = path.range(of: "-/preview/") {
-                path = String(path[..<range.lowerBound])
-            }
-        }
-        path += "-/preview/\(width)x\(height)/"
-        components.path = path
-        return components.string ?? base
-    }
+
     
     private static func showLoadingCapsule() {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
