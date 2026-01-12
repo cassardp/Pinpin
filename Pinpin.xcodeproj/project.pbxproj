@@ -565,7 +565,6 @@
 				INFOPLIST_FILE = PinpinMac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -618,7 +617,6 @@
 				INFOPLIST_FILE = PinpinMac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pinpin;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

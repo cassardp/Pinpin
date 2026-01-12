@@ -1,0 +1,328 @@
+//
+//  MacMainView.swift
+//  PinpinMac
+//
+//  Vue principale de l'application Mac avec grille masonry
+//
+
+import SwiftUI
+import SwiftData
+
+struct MacMainView: View {
+    @Environment(\.modelContext) private var modelContext
+    
+    // Constante pour "All Pins"
+    private static let allPinsValue = "___ALL_PINS___"
+    
+    @Query(sort: \ContentItem.createdAt, order: .reverse)
+    private var allContentItems: [ContentItem]
+    
+    @Query(sort: \Category.sortOrder, order: .forward)
+    private var allCategories: [Category]
+    
+    @State private var selectedCategory: String = MacMainView.allPinsValue
+    @State private var searchQuery: String = ""
+    @State private var numberOfColumns: Int = 5
+    @State private var selectedItem: ContentItem? = nil
+    @State private var showSettings: Bool = false
+    @State private var hoveredItemId: UUID? = nil
+    
+    private var isAllPinsSelected: Bool {
+        selectedCategory == Self.allPinsValue
+    }
+    
+    private var filteredItems: [ContentItem] {
+        var items = allContentItems
+        
+        // Filtrer par catégorie (sauf si "All Pins" est sélectionné)
+        if !isAllPinsSelected {
+            items = items.filter { $0.safeCategoryName == selectedCategory }
+        }
+        
+        // Filtrer par recherche
+        if !searchQuery.isEmpty {
+            items = items.filter { item in
+                item.title.localizedCaseInsensitiveContains(searchQuery) ||
+                (item.itemDescription?.localizedCaseInsensitiveContains(searchQuery) ?? false) ||
+                (item.url?.localizedCaseInsensitiveContains(searchQuery) ?? false)
+            }
+        }
+        
+        return items
+    }
+    
+    private var categoryNames: [String] {
+        allCategories.map { $0.name }
+    }
+    
+    var body: some View {
+        NavigationSplitView {
+            // Sidebar avec catégories
+            sidebarView
+        } detail: {
+            // Vue principale avec grille
+            mainContentView
+        }
+        .navigationSplitViewStyle(.balanced)
+        .sheet(item: $selectedItem) { item in
+            MacItemDetailView(item: item)
+                .frame(minWidth: 600, minHeight: 500)
+        }
+    }
+    
+    // MARK: - Sidebar
+    
+    private var sidebarView: some View {
+        VStack {
+            Spacer()
+            
+            VStack(alignment: .leading, spacing: 4) {
+                // Option "All"
+                MacCategoryRow(
+                    title: "All",
+                    isSelected: isAllPinsSelected,
+                    isEmpty: allContentItems.isEmpty
+                ) {
+                    selectedCategory = Self.allPinsValue
+                }
+                
+                // Catégories
+                ForEach(categoryNames, id: \.self) { category in
+                    MacCategoryRow(
+                        title: category,
+                        isSelected: selectedCategory == category,
+                        isEmpty: countForCategory(category) == 0
+                    ) {
+                        selectedCategory = category
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            
+            Spacer()
+        }
+        .frame(minWidth: 200, maxWidth: 280)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    
+    private func countForCategory(_ category: String) -> Int {
+        allContentItems.filter { $0.safeCategoryName == category }.count
+    }
+    
+    // MARK: - Main Content
+    
+    private var mainContentView: some View {
+        VStack(spacing: 0) {
+            // Toolbar
+            toolbarView
+            
+            Divider()
+            
+            // Grille des items
+            if filteredItems.isEmpty {
+                emptyStateView
+            } else {
+                ScrollView {
+                    MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
+                        ForEach(filteredItems) { item in
+                            MacContentCard(
+                                item: item,
+                                isHovered: hoveredItemId == item.id,
+                                onTap: { selectedItem = item },
+                                onOpenURL: { openURL(for: item) }
+                            )
+                            .onHover { isHovered in
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    hoveredItemId = isHovered ? item.id : nil
+                                }
+                            }
+                            .contextMenu {
+                                contextMenuContent(for: item)
+                            }
+                        }
+                    }
+                    .padding(24)
+                }
+                .background(Color(nsColor: .windowBackgroundColor))
+            }
+        }
+    }
+    
+    // MARK: - Toolbar
+    
+    private var toolbarView: some View {
+        HStack(spacing: 16) {
+            // Titre de la catégorie
+            Text(isAllPinsSelected ? "All Pins" : selectedCategory)
+                .font(.title2)
+                .fontWeight(.semibold)
+            
+            Spacer()
+            
+            // Barre de recherche
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                TextField("Search...", text: $searchQuery)
+                    .textFieldStyle(.plain)
+                if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(8)
+            .frame(width: 250)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            
+            Divider()
+                .frame(height: 24)
+            
+            // Contrôle du nombre de colonnes
+            HStack(spacing: 8) {
+                Button {
+                    if numberOfColumns > 2 {
+                        withAnimation(.spring(response: 0.3)) {
+                            numberOfColumns -= 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: "minus")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .disabled(numberOfColumns <= 2)
+                
+                Text("\(numberOfColumns)")
+                    .font(.system(.body, design: .monospaced))
+                    .frame(width: 30)
+                
+                Button {
+                    if numberOfColumns < 10 {
+                        withAnimation(.spring(response: 0.3)) {
+                            numberOfColumns += 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .disabled(numberOfColumns >= 10)
+            }
+            .padding(.horizontal, 8)
+            
+            // Compteur d'items
+            Text("\(filteredItems.count) pins")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    
+    // MARK: - Empty State
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "pin.slash")
+                .font(.system(size: 64))
+                .foregroundColor(.secondary)
+            
+            Text("No pins found")
+                .font(.title2)
+                .fontWeight(.medium)
+            
+            if !searchQuery.isEmpty {
+                Text("Try a different search term")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else if !isAllPinsSelected {
+                Text("This category is empty")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("Share links from Safari to add pins")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+    
+    // MARK: - Context Menu
+    
+    @ViewBuilder
+    private func contextMenuContent(for item: ContentItem) -> some View {
+        if let url = item.url, let validURL = URL(string: url) {
+            Button {
+                NSWorkspace.shared.open(validURL)
+            } label: {
+                Label("Open in Browser", systemImage: "safari")
+            }
+            
+            Button {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(url, forType: .string)
+            } label: {
+                Label("Copy Link", systemImage: "link")
+            }
+            
+            Divider()
+        }
+        
+        Menu("Move to...") {
+            ForEach(categoryNames, id: \.self) { categoryName in
+                if categoryName != item.safeCategoryName {
+                    Button(categoryName) {
+                        moveToCategory(item: item, categoryName: categoryName)
+                    }
+                }
+            }
+        }
+        
+        Divider()
+        
+        Button(role: .destructive) {
+            deleteItem(item)
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func openURL(for item: ContentItem) {
+        guard let urlString = item.url,
+              let url = URL(string: urlString) else { return }
+        NSWorkspace.shared.open(url)
+    }
+    
+    private func moveToCategory(item: ContentItem, categoryName: String) {
+        guard let category = allCategories.first(where: { $0.name == categoryName }) else { return }
+        item.category = category
+        try? modelContext.save()
+    }
+    
+    private func deleteItem(_ item: ContentItem) {
+        withAnimation {
+            modelContext.delete(item)
+            try? modelContext.save()
+        }
+    }
+}
