@@ -177,15 +177,15 @@ class ShareViewController: NSViewController {
                 print("🗄️ [ShareExtension] Création du ModelContainer...")
                 let schema = Schema([ContentItem.self, Category.self])
                 
-                // IMPORTANT : Utiliser l'App Group pour partager avec l'app principale
+                // IMPORTANT : Utiliser le même container CloudKit que l'app principale et iOS
                 let configuration = ModelConfiguration(
                     schema: schema,
                     groupContainer: .identifier(AppConstants.groupID),
-                    cloudKitDatabase: .automatic
+                    cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
                 )
                 
                 let container = try ModelContainer(for: schema, configurations: [configuration])
-                print("✅ [ShareExtension] ModelContainer créé avec succès")
+                print("✅ [ShareExtension] ModelContainer créé avec CloudKit: \(AppConstants.cloudKitContainerID)")
                 let context = container.mainContext
 
                 // Vérifier si un item identique a été créé récemment (évite les doublons accidentels)
