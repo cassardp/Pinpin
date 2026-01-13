@@ -82,7 +82,8 @@ class ContentServiceCoreData: ObservableObject {
         description: String? = nil,
         url: String? = nil,
         metadata: [String: String] = [:],
-        thumbnailUrl: String? = nil
+        thumbnailUrl: String? = nil,
+        imageData: Data? = nil
     ) {
         let newItem = ContentItem(context: coreDataService.context)
         
@@ -98,6 +99,7 @@ class ContentServiceCoreData: ObservableObject {
         newItem.url = url
         newItem.metadata = metadata as NSDictionary
         newItem.thumbnailUrl = thumbnailUrl
+        newItem.imageData = imageData
         newItem.isHidden = false
         
         let now = Date()

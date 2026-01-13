@@ -26,8 +26,13 @@ struct SmartAsyncImage: View {
     
     var body: some View {
         Group {
-            if let localURL = localImageURL, FileManager.default.fileExists(atPath: localURL.path) {
-                // Afficher l'image locale
+            if let imageData = item.imageData, let image = platformImage(from: imageData) {
+                // Afficher l'image stockée dans Core Data (CloudKit)
+                Image(platformImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } else if let localURL = localImageURL, FileManager.default.fileExists(atPath: localURL.path) {
+                // Afficher l'image locale (Legacy / iOS sans sync)
                 AsyncImage(url: localURL) { image in
                     image
                         .resizable()
@@ -53,6 +58,16 @@ struct SmartAsyncImage: View {
             loadLocalImageIfAvailable()
         }
     }
+
+    #if os(macOS)
+    private func platformImage(from data: Data) -> NSImage? {
+        return NSImage(data: data)
+    }
+    #else
+    private func platformImage(from data: Data) -> UIImage? {
+        return UIImage(data: data)
+    }
+    #endif
     
     private func loadLocalImageIfAvailable() {
         // Utiliser directement thumbnailUrl de l'item
@@ -85,4 +100,16 @@ struct SmartAsyncImage: View {
         
         return nil
     }
+}
+
+extension Image {
+    #if os(macOS)
+    init(platformImage: NSImage) {
+        self.init(nsImage: platformImage)
+    }
+    #else
+    init(platformImage: UIImage) {
+        self.init(uiImage: platformImage)
+    }
+    #endif
 }

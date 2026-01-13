@@ -4,6 +4,10 @@
 <dict>
 	<key>aps-environment</key>
 	<string>development</string>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.misericode.Pinpin</string>

@@ -14,11 +14,38 @@ class CoreDataService: ObservableObject {
     static let shared = CoreDataService()
     
     private let groupID = "group.com.misericode.pinpin"
-    private let cloudKitContainerID = "iCloud.com.misericode.pinpin"
+    
+    // MARK: - Initialization
+    private init() {
+        // Observer pour le debugging CloudKit
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCloudKitEvent(_:)),
+            name: NSPersistentCloudKitContainer.eventChangedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleCloudKitEvent(_ notification: Notification) {
+        guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event else {
+            return
+        }
+        
+        if event.endDate == nil {
+            print("☁️ CloudKit: Start event: \(event.type == .import ? "Import" : "Export")")
+        } else {
+            if let error = event.error {
+                print("❌ CloudKit: Error event: \(event.type == .import ? "Import" : "Export") - \(error.localizedDescription)")
+            } else {
+                print("✅ CloudKit: Success event: \(event.type == .import ? "Import" : "Export")")
+            }
+        }
+    }
     
     // MARK: - Core Data Stack (local avec App Group)
-    lazy var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "Pinpin")
+    // MARK: - Core Data Stack (local avec App Group & CloudKit)
+    lazy var persistentContainer: NSPersistentCloudKitContainer = {
+        let container = NSPersistentCloudKitContainer(name: "Pinpin")
         
         // Configuration du store dans l'App Group
         guard let storeURL = FileManager.default
@@ -28,6 +55,11 @@ class CoreDataService: ObservableObject {
         }
         
         let storeDescription = NSPersistentStoreDescription(url: storeURL)
+        
+        // Configuration CloudKit
+        storeDescription.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+            containerIdentifier: "iCloud.com.misericode.Pinpin"
+        )
         
         // Historique et notifications pour synchronisation cross-process
         storeDescription.setOption(true as NSNumber, 
@@ -135,6 +167,34 @@ class CoreDataService: ObservableObject {
             return try context.fetch(request).first?.name ?? "Général"
         } catch {
             return "Général"
+        }
+    }
+    
+    /// Compte le nombre d'items pour une catégorie donnée
+    func countItems(for categoryName: String) -> Int {
+        let request: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+        request.predicate = NSPredicate(format: "category.name == %@", categoryName)
+        
+        do {
+            return try context.count(for: request)
+        } catch {
+            print("Erreur lors du comptage des items pour \(categoryName): \(error)")
+            return 0
+        }
+    }
+    
+    /// Récupère la première image d'une catégorie pour l'aperçu
+    func fetchFirstImageURL(for categoryName: String) -> String? {
+        let request: NSFetchRequest<ContentItem> = ContentItem.fetchRequest()
+        request.predicate = NSPredicate(format: "category.name == %@ AND thumbnailUrl != nil", categoryName)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \ContentItem.createdAt, ascending: false)]
+        request.fetchLimit = 1
+        
+        do {
+            let items = try context.fetch(request)
+            return items.first?.thumbnailUrl
+        } catch {
+            return nil
         }
     }
 }

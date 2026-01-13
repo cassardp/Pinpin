@@ -54,6 +54,19 @@ class SharedContentService: ObservableObject {
         let thumbnailUrl = contentData["thumbnailUrl"] as? String
         let metadata = contentData["metadata"] as? [String: String] ?? [:]
         
+        // Charger les données de l'image si disponbile
+        var imageData: Data?
+        if let relativePath = thumbnailUrl, !relativePath.isEmpty {
+            if let imageURL = SharedImageService.shared.getImageURL(from: relativePath) {
+                do {
+                    imageData = try Data(contentsOf: imageURL)
+                    print("[SharedContentService] Image chargée (\(imageData?.count ?? 0) bytes) depuis: \(relativePath)")
+                } catch {
+                     print("[SharedContentService] Erreur lecture image: \(error)")
+                }
+            }
+        }
+
         // Sauvegarder directement avec Core Data
         await MainActor.run {
             contentService.saveContentItem(
@@ -62,7 +75,8 @@ class SharedContentService: ObservableObject {
                 description: description,
                 url: url,
                 metadata: metadata,
-                thumbnailUrl: thumbnailUrl
+                thumbnailUrl: thumbnailUrl,
+                imageData: imageData
             )
             
             print("[SharedContentService] Contenu '\(category)' sauvegardé avec succès")

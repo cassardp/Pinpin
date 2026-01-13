@@ -14,13 +14,21 @@ struct PinpinApp: App {
     
     var body: some Scene {
         WindowGroup {
+            #if os(macOS)
+            MainViewMac()
+                .environment(\.managedObjectContext, coreDataService.context)
+                .font(.system(.body, design: .rounded))
+                .onAppear {
+                    coreDataService.createDefaultCategoriesIfNeeded()
+                }
+            #else
             MainView()
                 .environment(\.managedObjectContext, coreDataService.context)
                 .font(.system(.body, design: .rounded))
                 .onAppear {
-                    // Créer les catégories par défaut si nécessaire
                     coreDataService.createDefaultCategoriesIfNeeded()
                 }
+            #endif
         }
     }
 }
