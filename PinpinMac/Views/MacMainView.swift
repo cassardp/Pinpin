@@ -27,6 +27,12 @@ struct MacMainView: View {
     @State private var showSettings: Bool = false
     @State private var hoveredItemId: UUID? = nil
     
+    // Category editing state
+    @State private var categoryToRename: Category? = nil
+    @State private var categoryToDelete: Category? = nil
+    @State private var showDeleteCategoryAlert: Bool = false
+    @State private var renameCategoryName: String = ""
+    
     private var isAllPinsSelected: Bool {
         selectedCategory == Self.allPinsValue
     }
@@ -68,6 +74,29 @@ struct MacMainView: View {
             MacItemDetailView(item: item)
                 .frame(minWidth: 600, minHeight: 500)
         }
+        .sheet(item: $categoryToRename) { category in
+            MacRenameCategorySheet(
+                name: $renameCategoryName,
+                isEditing: true,
+                onCancel: {
+                    categoryToRename = nil
+                    renameCategoryName = ""
+                },
+                onSave: {
+                    renameCategory(category)
+                }
+            )
+        }
+        .alert("Delete Category", isPresented: $showDeleteCategoryAlert, presenting: categoryToDelete) { category in
+            Button("Cancel", role: .cancel) {
+                categoryToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                deleteCategory(category)
+            }
+        } message: { category in
+            Text("Are you sure you want to delete \"\(category.name)\"? The pins in this category will not be deleted.")
+        }
     }
     
     // MARK: - Sidebar
@@ -87,14 +116,23 @@ struct MacMainView: View {
                 }
                 
                 // Catégories
-                ForEach(categoryNames, id: \.self) { category in
+                ForEach(allCategories) { category in
                     MacCategoryRow(
-                        title: category,
-                        isSelected: selectedCategory == category,
-                        isEmpty: countForCategory(category) == 0
-                    ) {
-                        selectedCategory = category
-                    }
+                        title: category.name,
+                        isSelected: selectedCategory == category.name,
+                        isEmpty: countForCategory(category.name) == 0,
+                        action: {
+                            selectedCategory = category.name
+                        },
+                        onRename: {
+                            renameCategoryName = category.name
+                            categoryToRename = category
+                        },
+                        onDelete: {
+                            categoryToDelete = category
+                            showDeleteCategoryAlert = true
+                        }
+                    )
                 }
             }
             .padding(.horizontal, 24)
@@ -324,5 +362,38 @@ struct MacMainView: View {
             modelContext.delete(item)
             try? modelContext.save()
         }
+    }
+    
+    // MARK: - Category Management
+    
+    private func renameCategory(_ category: Category) {
+        let trimmedName = renameCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+        
+        // Update selected category if it was renamed
+        if selectedCategory == category.name {
+            selectedCategory = trimmedName
+        }
+        
+        category.name = trimmedName
+        category.updatedAt = Date()
+        try? modelContext.save()
+        
+        categoryToRename = nil
+        renameCategoryName = ""
+    }
+    
+    private func deleteCategory(_ category: Category) {
+        // If the deleted category was selected, switch to All Pins
+        if selectedCategory == category.name {
+            selectedCategory = Self.allPinsValue
+        }
+        
+        withAnimation {
+            modelContext.delete(category)
+            try? modelContext.save()
+        }
+        
+        categoryToDelete = nil
     }
 }

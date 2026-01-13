@@ -2,7 +2,7 @@
 //  MacCategoryRow.swift
 //  PinpinMac
 //
-//  Ligne de catégorie stylisée comme sur iPhone
+//  Ligne de catégorie stylisée comme sur iPhone avec menu contextuel
 //
 
 import SwiftUI
@@ -12,8 +12,14 @@ struct MacCategoryRow: View {
     let isSelected: Bool
     let isEmpty: Bool
     let action: () -> Void
+    var onRename: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
     
     @State private var isHovered = false
+    
+    private var hasContextMenu: Bool {
+        onRename != nil || onDelete != nil
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -45,6 +51,39 @@ struct MacCategoryRow: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 action()
             }
+        }
+        .if(hasContextMenu) { view in
+            view.contextMenu {
+                if let onRename = onRename {
+                    Button {
+                        onRename()
+                    } label: {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                }
+                
+                if let onDelete = onDelete {
+                    Divider()
+                    
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - View Extension for conditional modifier
+extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }
