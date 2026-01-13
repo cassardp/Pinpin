@@ -58,7 +58,22 @@ struct MacMainView: View {
     }
     
     private var categoryNames: [String] {
-        allCategories.map { $0.name }
+        visibleCategories.map { $0.name }
+    }
+    
+    // Catégories visibles (dédupliquées, Misc cachée si vide) - même logique qu'iOS
+    private var visibleCategories: [Category] {
+        var seen = Set<String>()
+        let uniqueCategories = allCategories.filter { category in
+            seen.insert(category.name.lowercased()).inserted
+        }
+        
+        return uniqueCategories.filter { category in
+            if category.name != "Misc" {
+                return true
+            }
+            return countForCategory(category.name) > 0
+        }
     }
     
     var body: some View {
@@ -116,7 +131,7 @@ struct MacMainView: View {
                 }
                 
                 // Catégories
-                ForEach(allCategories) { category in
+                ForEach(visibleCategories) { category in
                     MacCategoryRow(
                         title: category.name,
                         isSelected: selectedCategory == category.name,

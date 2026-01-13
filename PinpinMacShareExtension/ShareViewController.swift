@@ -238,13 +238,25 @@ class ShareViewController: NSViewController {
                 
                 print("✅ Contenu sauvegardé: \(title)")
 
-                // NSUserNotification est deprecated mais c'est la seule API qui fonctionne dans les Share Extensions
-                // UNUserNotification ne fonctionne pas dans les extensions (permissions refusées)
-                let notification = NSUserNotification()
-                notification.title = "Added to Pinpin"
-                notification.informativeText = title
-                notification.soundName = NSUserNotificationDefaultSoundName
-                NSUserNotificationCenter.default.deliver(notification)
+                // Notification de confirmation (UserNotifications framework moderne)
+                let content = UNMutableNotificationContent()
+                content.title = "Added to Pinpin"
+                content.body = title
+                content.sound = .default
+                
+                let request = UNNotificationRequest(
+                    identifier: UUID().uuidString,
+                    content: content,
+                    trigger: nil // Immediate delivery
+                )
+                
+                Task {
+                    do {
+                        try await UNUserNotificationCenter.current().add(request)
+                    } catch {
+                        print("⚠️ [ShareExtension] Notification error (expected in extensions): \(error.localizedDescription)")
+                    }
+                }
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     self.closeImmediately()
