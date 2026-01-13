@@ -9,17 +9,31 @@
 import Foundation
 
 class SharedContentService: ObservableObject {
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
     private let contentService: ContentServiceCoreData
     
     // Flag pour détecter les nouveaux contenus
     private static let newContentFlagKey = "hasNewSharedContent"
     
+    // Notifications
+    static let darwinNotificationName = "com.misericode.pinpin.newSharedContent"
+    static let localNotificationName = Notification.Name("LocalNewSharedContentNotification")
+    
     init(contentService: ContentServiceCoreData) {
         self.contentService = contentService
+        startObservingDarwinNotifications()
+    }
+    
+    deinit {
+        stopObservingDarwinNotifications()
     }
     
     func processPendingSharedContents() async {
+        // Toujours recréer l'instance pour éviter le cache stale sur Mac
+        let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
+        
+        // Force sync to ensure we see the latest data from the extension
+        sharedDefaults?.synchronize()
+        
         guard let pendingContents = sharedDefaults?.array(forKey: "pendingSharedContents") as? [[String: Any]],
               !pendingContents.isEmpty else {
             // Réinitialiser le flag même s'il n'y a rien à traiter
@@ -67,6 +81,9 @@ class SharedContentService: ObservableObject {
             }
         }
 
+        // Create immutable copy for thread safety
+        let finalImageData = imageData
+
         // Sauvegarder directement avec Core Data
         await MainActor.run {
             contentService.saveContentItem(
@@ -76,7 +93,7 @@ class SharedContentService: ObservableObject {
                 url: url,
                 metadata: metadata,
                 thumbnailUrl: thumbnailUrl,
-                imageData: imageData
+                imageData: finalImageData
             )
             
             print("[SharedContentService] Contenu '\(category)' sauvegardé avec succès")
@@ -84,6 +101,7 @@ class SharedContentService: ObservableObject {
     }
     
     func hasPendingSharedContents() -> Bool {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
         guard let pendingContents = sharedDefaults?.array(forKey: "pendingSharedContents") as? [[String: Any]] else {
             return false
         }
@@ -94,12 +112,17 @@ class SharedContentService: ObservableObject {
     
     /// Vérifie s'il y a du nouveau contenu partagé
     func hasNewSharedContent() -> Bool {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
+        // Force sync
+        sharedDefaults?.synchronize()
         return sharedDefaults?.bool(forKey: Self.newContentFlagKey) ?? false
     }
     
     /// Réinitialise le flag de nouveau contenu
     private func clearNewContentFlag() {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
         sharedDefaults?.set(false, forKey: Self.newContentFlagKey)
+        sharedDefaults?.synchronize()
     }
     
     /// Méthode appelée par l'extension pour signaler un nouveau contenu
@@ -107,5 +130,34 @@ class SharedContentService: ObservableObject {
         let sharedDefaults = UserDefaults(suiteName: "group.com.misericode.pinpin")
         sharedDefaults?.set(true, forKey: newContentFlagKey)
         sharedDefaults?.synchronize()
+    }
+    
+    // MARK: - Darwin Notifications
+    
+    private func startObservingDarwinNotifications() {
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        let observer = UnsafeRawPointer(Unmanaged.passUnretained(self).toOpaque())
+        
+        CFNotificationCenterAddObserver(center, observer, { center, observer, name, object, userInfo in
+            // Ce callback est C-style, on doit revenir vers Swift
+            DispatchQueue.main.async {
+                 // Traiter directement les données sans attendre la Vue
+                Task {
+                    let service = Unmanaged<SharedContentService>.fromOpaque(observer!).takeUnretainedValue()
+                    await service.processPendingSharedContents()
+                    
+                    // Notifier quand même pour l'UI si besoin
+                    NotificationCenter.default.post(name: SharedContentService.localNotificationName, object: nil)
+                }
+            }
+        }, Self.darwinNotificationName as CFString, nil, .deliverImmediately)
+        
+        print("[SharedContentService] Observation des notifications Darwin démarrée")
+    }
+    
+    private func stopObservingDarwinNotifications() {
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        let observer = UnsafeRawPointer(Unmanaged.passUnretained(self).toOpaque())
+        CFNotificationCenterRemoveObserver(center, observer, CFNotificationName(rawValue: Self.darwinNotificationName as CFString), nil)
     }
 }

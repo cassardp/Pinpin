@@ -52,7 +52,8 @@ class ShareViewController: UIViewController {
         guard let extensionContext = extensionContext,
               let extensionItem = extensionContext.inputItems.first as? NSExtensionItem,
               let attachments = extensionItem.attachments else {
-            completeRequest()
+            // Pas d'attachments trouvés - afficher l'interface vide
+            self.updateContentAfterProcessing(title: "", url: nil, description: nil, thumbnailPath: nil)
             return
         }
         
@@ -66,7 +67,8 @@ class ShareViewController: UIViewController {
                             self?.handleURL(url)
                         }
                     } else {
-                        self?.completeRequest()
+                        // Échec chargement URL
+                        self?.updateContentAfterProcessing(title: "Shared content", url: nil, description: "Could not load URL", thumbnailPath: nil)
                     }
                 }
                 return
@@ -82,7 +84,8 @@ class ShareViewController: UIViewController {
                             self?.handleText(text)
                         }
                     } else {
-                        self?.completeRequest()
+                        // Échec chargement texte
+                        self?.updateContentAfterProcessing(title: "Shared text", url: nil, description: "Could not load text", thumbnailPath: nil)
                     }
                 }
                 return
@@ -98,14 +101,16 @@ class ShareViewController: UIViewController {
                             self?.handleImageURL(imageURL)
                         }
                     } else {
-                        self?.completeRequest()
+                        // Échec chargement image
+                        self?.updateContentAfterProcessing(title: "Shared image", url: nil, description: "Could not load image", thumbnailPath: nil)
                     }
                 }
                 return
             }
         }
         
-        completeRequest()
+        // Aucun type supporté trouvé
+        self.updateContentAfterProcessing(title: "New Item", url: nil, description: nil, thumbnailPath: nil)
     }
     
     private func handleURL(_ url: URL) {
@@ -259,6 +264,13 @@ class ShareViewController: UIViewController {
             sharedDefaults.set(pendingContents, forKey: "pendingSharedContents")
             sharedDefaults.set(true, forKey: "hasNewSharedContent")
             sharedDefaults.synchronize()
+            
+            // Notifier l'application principale via Darwin Notification Center
+            let notificationName = "com.misericode.pinpin.newSharedContent" as CFString
+            let center = CFNotificationCenterGetDarwinNotifyCenter()
+            CFNotificationCenterPostNotification(center, CFNotificationName(notificationName), nil, nil, true)
+            
+            print("[ShareExtension] Notification Darwin envoyée")
         }
         
         completeRequest()

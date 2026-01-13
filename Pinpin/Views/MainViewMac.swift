@@ -44,11 +44,8 @@ struct MainViewMac: View {
         }
     }
     
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Category.sortOrder, ascending: true)],
-        animation: .default)
-    private var categories: FetchedResults<Category>
-    
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedCategory) {
@@ -105,6 +102,36 @@ struct MainViewMac: View {
         }
         .onAppear {
             contentService.loadContentItems()
+            Task {
+                if sharedContentService.hasNewSharedContent() {
+                    await sharedContentService.processPendingSharedContents()
+                }
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                Task {
+                    if sharedContentService.hasNewSharedContent() {
+                        await sharedContentService.processPendingSharedContents()
+                        // Recharger la liste après traitement
+                        await MainActor.run {
+                            contentService.loadContentItems()
+                        }
+                    }
+                }
+            }
+        }
+        // Écouter la notification Darwin (relayée localement) pour une mise à jour instantanée
+        .onReceive(NotificationCenter.default.publisher(for: SharedContentService.localNotificationName)) { _ in
+            print("[MainViewMac] Notification de nouveau contenu reçue !")
+            Task {
+                // Petit délai de sécurité pour l'écriture disque
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                await sharedContentService.processPendingSharedContents()
+                await MainActor.run {
+                    contentService.loadContentItems()
+                }
+            }
         }
     }
 }
