@@ -34,24 +34,8 @@ struct FilterMenuView: View {
     
     // Récupère toutes les catégories directement depuis SwiftData (ordre natif via sortOrder)
     private var availableCategories: [Category] {
-        // Dédupliquer par nom (garder la première occurrence)
-        var seen = Set<String>()
-        let uniqueCategories = allCategories.filter { category in
-            seen.insert(category.name.lowercased()).inserted
-        }
-        
-        // Filtrer les catégories "Misc" vides pour les cacher
-        let visibleCategories = uniqueCategories.filter { category in
-            // Toujours afficher les catégories non-Misc
-            if category.name != "Misc" {
-                return true
-            }
-            // Pour "Misc", l'afficher seulement si elle a des items
-            return countForType(category.name) > 0
-        }
-        
-        // Le tri est déjà fait par @Query(sort: \Category.sortOrder)
-        return visibleCategories
+        // Retourner toutes les catégories sans filtre ni déduplication pour debug
+        return allCategories
     }
     
     // Compte les items par type

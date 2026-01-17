@@ -124,9 +124,13 @@ struct MainContentScrollView: View {
                 var newColumns = numberOfColumns
                 
                 if finalScale > 1.08 {
-                    newColumns = numberOfColumns < maxColumns ? numberOfColumns + 1 : minColumns
+                    if numberOfColumns < maxColumns {
+                        newColumns = numberOfColumns + 1
+                    }
                 } else if finalScale < 0.92 {
-                    newColumns = numberOfColumns > minColumns ? numberOfColumns - 1 : maxColumns
+                    if numberOfColumns > minColumns {
+                        newColumns = numberOfColumns - 1
+                    }
                 }
                 
                 if newColumns != numberOfColumns {

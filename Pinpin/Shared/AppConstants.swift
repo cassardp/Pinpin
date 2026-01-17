@@ -34,18 +34,27 @@ enum AppConstants {
     static let hasCreatedDefaultCategoriesKey = "hasCreatedDefaultCategories"
     
     // MARK: - Layout
+    // MARK: - Layout
+    #if os(macOS)
+    static let minColumns = 3
+    static let maxColumns = 6
+    static let defaultColumns = 4
+    #else
     static let minColumns = 2
     static let maxColumns = 4
     static let defaultColumns = 3
+    #endif
     
     // MARK: - Dynamic Spacing
     static func spacing(for columns: Int) -> CGFloat {
         switch columns {
         case 1: return 12
         case 2: return 12
-        case 3: return 8
-        case 4: return 6
-        default: return 12
+        case 3: return 10
+        case 4: return 8
+        case 5: return 8
+        case 6: return 6
+        default: return 8
         }
     }
     
@@ -54,9 +63,11 @@ enum AppConstants {
         switch columns {
         case 1: return 18
         case 2: return 14
-        case 3: return 10
-        case 4: return 8
-        default: return 14
+        case 3: return 12
+        case 4: return 10
+        case 5: return 8
+        case 6: return 6
+        default: return 10
         }
     }
     

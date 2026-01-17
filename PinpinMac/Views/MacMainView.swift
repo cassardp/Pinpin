@@ -165,17 +165,11 @@ struct MacMainView: View {
     // MARK: - Main Content
     
     private var mainContentView: some View {
-        VStack(spacing: 0) {
-            // Toolbar
-            toolbarView
+        ZStack {
+            Color(nsColor: .windowBackgroundColor)
             
-            Divider()
-            
-            // Grille des items
-            if filteredItems.isEmpty {
-                emptyStateView
-            } else {
-                ScrollView {
+            ScrollView {
+                VStack(spacing: 0) {
                     MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
                         ForEach(filteredItems) { item in
                             MacContentCard(
@@ -195,97 +189,90 @@ struct MacMainView: View {
                         }
                     }
                     .padding(24)
+                    .padding(.bottom, 80) // Space for overlay
+                    
+                    // Stats at bottom of list
+                    if !filteredItems.isEmpty {
+                        StorageStatsView(
+                            selectedContentType: isAllPinsSelected ? nil : selectedCategory,
+                            filteredItems: filteredItems
+                        )
+                        .padding(.vertical, 32)
+                        .padding(.bottom, 80) // Supplementaire pour l'overlay
+                    }
                 }
-                .background(Color(nsColor: .windowBackgroundColor))
+            }
+            .background(Color(nsColor: .windowBackgroundColor))
+            
+            // Search Overlay
+            VStack {
+                Spacer()
+                searchOverlay
             }
         }
+        .gesture(magnifyGesture)
     }
     
-    // MARK: - Toolbar
+    // MARK: - Search Overlay
     
-    private var toolbarView: some View {
-        HStack(spacing: 16) {
-            // Titre de la catégorie
-            Text(isAllPinsSelected ? "All Pins" : selectedCategory)
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Spacer()
-            
-            // Barre de recherche
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-                TextField("Search...", text: $searchQuery)
-                    .textFieldStyle(.plain)
-                if !searchQuery.isEmpty {
-                    Button {
-                        searchQuery = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(8)
-            .frame(width: 250)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            )
-            
-            Divider()
-                .frame(height: 24)
-            
-            // Contrôle du nombre de colonnes
-            HStack(spacing: 8) {
-                Button {
-                    if numberOfColumns > 2 {
-                        withAnimation(.spring(response: 0.3)) {
-                            numberOfColumns -= 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "minus")
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .disabled(numberOfColumns <= 2)
-                
-                Text("\(numberOfColumns)")
-                    .font(.system(.body, design: .monospaced))
-                    .frame(width: 30)
-                
-                Button {
-                    if numberOfColumns < 10 {
-                        withAnimation(.spring(response: 0.3)) {
-                            numberOfColumns += 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .disabled(numberOfColumns >= 10)
-            }
-            .padding(.horizontal, 8)
-            
-            // Compteur d'items
-            Text("\(filteredItems.count) pins")
-                .font(.caption)
+    private var searchOverlay: some View {
+        HStack(spacing: 0) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
+                .padding(.leading, 12)
+            
+            TextField("Search...", text: $searchQuery)
+                .textFieldStyle(.plain)
+                .font(.system(size: 14))
+                .padding(.horizontal, 8)
+                .frame(height: 36)
+            
+            if !searchQuery.isEmpty {
+                Button {
+                    searchQuery = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 12)
+            }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 12)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .frame(width: 300, height: 44)
+        .background(
+            Capsule()
+                .fill(.regularMaterial)
+                .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 2)
+        )
+        .padding(.bottom, 24)
+    }
+    
+    // MARK: - Gestures
+    
+    @State private var pinchScale: CGFloat = 1.0
+    
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture()
+             .onChanged { value in
+                 // Optional: Interactive scale effect
+             }
+             .onEnded { value in
+                 let scale = value.magnification
+                 withAnimation(.spring(response: 0.3)) {
+                     if scale > 1.1 {
+                         // Zoom In -> Fewer columns
+                         if numberOfColumns > 3 {
+                             numberOfColumns -= 1
+                         }
+                     } else if scale < 0.9 {
+                         // Zoom Out -> More columns
+                         if numberOfColumns < 6 {
+                             numberOfColumns += 1
+                         }
+                     }
+                 }
+             }
     }
     
     // MARK: - Empty State
