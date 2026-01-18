@@ -20,7 +20,7 @@ struct MacContentCard: View {
             numberOfColumns: numberOfColumns,
             isSelectionMode: false
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(
             color: isHovered ? Color.black.opacity(0.2) : Color.black.opacity(0.08),
             radius: isHovered ? 16 : 6,

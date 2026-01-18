@@ -20,8 +20,9 @@ struct MacMainView: View {
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
     
+    private var searchQuery: String = ""
+    
     @State private var selectedCategory: String = MacMainView.allPinsValue
-    @State private var searchQuery: String = ""
     @State private var numberOfColumns: Int = 5
     @State private var selectedItem: ContentItem? = nil
     @State private var showSettings: Bool = false
@@ -61,20 +62,12 @@ struct MacMainView: View {
         visibleCategories.map { $0.name }
     }
     
-    // Catégories visibles (dédupliquées, Misc cachée si vide) - même logique qu'iOS
+    // Catégories visibles (toutes les catégories, comme sur iOS)
     private var visibleCategories: [Category] {
-        var seen = Set<String>()
-        let uniqueCategories = allCategories.filter { category in
-            seen.insert(category.name.lowercased()).inserted
-        }
-        
-        return uniqueCategories.filter { category in
-            if category.name != "Misc" {
-                return true
-            }
-            return countForCategory(category.name) > 0
-        }
+        return allCategories
     }
+    
+    @State private var searchQueryState: String = ""
     
     var body: some View {
         NavigationSplitView {
@@ -84,7 +77,7 @@ struct MacMainView: View {
             // Vue principale avec grille
             mainContentView
         }
-        .navigationSplitViewStyle(.balanced)
+        .navigationSplitViewStyle(.prominentDetail)
         .sheet(item: $selectedItem) { item in
             MacItemDetailView(item: item)
                 .frame(minWidth: 600, minHeight: 500)
@@ -127,7 +120,9 @@ struct MacMainView: View {
                     isSelected: isAllPinsSelected,
                     isEmpty: allContentItems.isEmpty
                 ) {
-                    selectedCategory = Self.allPinsValue
+                    withAnimation(.easeInOut(duration: 0.28)) {
+                        selectedCategory = Self.allPinsValue
+                    }
                 }
                 
                 // Catégories
@@ -137,7 +132,9 @@ struct MacMainView: View {
                         isSelected: selectedCategory == category.name,
                         isEmpty: countForCategory(category.name) == 0,
                         action: {
-                            selectedCategory = category.name
+                            withAnimation(.easeInOut(duration: 0.28)) {
+                                selectedCategory = category.name
+                            }
                         },
                         onRename: {
                             renameCategoryName = category.name
@@ -188,7 +185,8 @@ struct MacMainView: View {
                             }
                         }
                     }
-                    .padding(24)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
                     .padding(.bottom, 80) // Space for overlay
                     
                     // Stats at bottom of list
@@ -197,11 +195,12 @@ struct MacMainView: View {
                             selectedContentType: isAllPinsSelected ? nil : selectedCategory,
                             filteredItems: filteredItems
                         )
-                        .padding(.vertical, 32)
+                        .padding(.vertical, 24)
                         .padding(.bottom, 80) // Supplementaire pour l'overlay
                     }
                 }
             }
+            .ignoresSafeArea(edges: .top)
             
             // Search Overlay
             VStack {
@@ -222,15 +221,22 @@ struct MacMainView: View {
                 .foregroundColor(.secondary)
                 .padding(.leading, 12)
             
-            TextField("Search...", text: $searchQuery)
+            TextField("Search...", text: Binding(
+                get: { searchQueryState },
+                set: { newValue in
+                    withAnimation(.easeInOut(duration: 0.28)) {
+                        searchQueryState = newValue
+                    }
+                }
+            ))
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
                 .padding(.horizontal, 8)
                 .frame(height: 36)
             
-            if !searchQuery.isEmpty {
+            if !searchQueryState.isEmpty {
                 Button {
-                    searchQuery = ""
+                    searchQueryState = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary)
@@ -377,3 +383,4 @@ struct MacMainView: View {
         categoryToDelete = nil
     }
 }
+
