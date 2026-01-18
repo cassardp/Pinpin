@@ -71,8 +71,17 @@
 				Shared/Models/ContentItem.swift,
 				Shared/Models/UserPreferencesModel.swift,
 				Shared/Services/OCRService.swift,
+				Views/Components/SmartAsyncImage.swift,
 				Views/Components/StorageStatsView.swift,
+				Views/ContentCardView.swift,
+				Views/ContentViews/AdaptiveContentProperties.swift,
+				Views/ContentViews/LinkWithoutImageView.swift,
+				Views/ContentViews/SquareContentView.swift,
+				Views/ContentViews/StandardContentView.swift,
+				Views/ContentViews/TextOnlyContentView.swift,
+				Views/ContentViews/TikTokContentView.swift,
 				Views/EmptyStateView.swift,
+				Views/Sheets/TextEditSheet.swift,
 			);
 			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
 		};

@@ -83,9 +83,17 @@ struct TextOnlyContentView: View {
     
     /// Assombrit une couleur en réduisant ses composantes RGB
     private func darkenColor(_ color: Color, factor: Double) -> Color {
-        guard let components = UIColor(color).cgColor.components else {
+        #if os(macOS)
+        let nsColor = NSColor(color)
+        guard let components = nsColor.usingColorSpace(.sRGB)?.cgColor.components else {
             return Color.primary
         }
+        #else
+        let uiColor = UIColor(color)
+        guard let components = uiColor.cgColor.components else {
+            return Color.primary
+        }
+        #endif
         
         let r = components[0] * factor
         let g = components[1] * factor

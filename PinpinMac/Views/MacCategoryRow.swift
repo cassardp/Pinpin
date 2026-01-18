@@ -33,7 +33,7 @@ struct MacCategoryRow: View {
             
             // Titre
             Text(title)
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: 24, weight: .semibold))
                 .foregroundColor(isEmpty ? .secondary : .primary)
                 .lineLimit(1)
         }
@@ -76,14 +76,4 @@ struct MacCategoryRow: View {
     }
 }
 
-// MARK: - View Extension for conditional modifier
-extension View {
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-}
+

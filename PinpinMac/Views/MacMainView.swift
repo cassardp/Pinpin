@@ -173,6 +173,7 @@ struct MacMainView: View {
                         ForEach(filteredItems) { item in
                             MacContentCard(
                                 item: item,
+                                numberOfColumns: numberOfColumns,
                                 isHovered: hoveredItemId == item.id,
                                 onTap: { selectedItem = item },
                                 onOpenURL: { openURL(for: item) }

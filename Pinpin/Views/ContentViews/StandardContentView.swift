@@ -36,7 +36,11 @@ struct StandardContentView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
+                            #if os(macOS)
+                            .fill(Color(nsColor: .windowBackgroundColor))
+                            #else
                             .fill(Color(.systemGray6))
+                            #endif
                     )
             }
         }

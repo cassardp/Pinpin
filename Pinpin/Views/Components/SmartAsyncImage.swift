@@ -8,11 +8,17 @@
 import SwiftUI
 
 struct SmartAsyncImage: View {
+    #if os(macOS)
+    typealias PlatformImage = NSImage
+    #else
+    typealias PlatformImage = UIImage
+    #endif
+
     let item: ContentItem
     let width: CGFloat?
     let height: CGFloat?
     
-    @State private var imageFromData: UIImage?
+    @State private var imageFromData: PlatformImage?
     @State private var hasLoadedImage = false
     
     init(
@@ -29,8 +35,13 @@ struct SmartAsyncImage: View {
         Group {
             if let imageFromData = imageFromData {
                 // Priorité 1: Image depuis SwiftData
+                #if os(macOS)
+                Image(nsImage: imageFromData)
+                    .resizable()
+                #else
                 Image(uiImage: imageFromData)
                     .resizable()
+                #endif
             } else if let remoteURL = getRemoteURL() {
                 // Priorité 2: Image distante
                 AsyncImage(url: remoteURL) { image in
@@ -57,8 +68,8 @@ struct SmartAsyncImage: View {
         // Charger l'image depuis SwiftData
         guard let imageData = item.imageData else { return }
         
-        if let uiImage = UIImage(data: imageData) {
-            self.imageFromData = uiImage
+        if let platformImage = PlatformImage(data: imageData) {
+            self.imageFromData = platformImage
         }
     }
     

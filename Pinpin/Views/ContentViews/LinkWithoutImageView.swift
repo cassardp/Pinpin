@@ -20,18 +20,30 @@ struct LinkWithoutImageView: View {
             // Icône globe centrée
             Image(systemName: "globe")
                 .font(adaptive.font)
+                #if os(macOS)
+                .foregroundColor(Color(nsColor: .controlBackgroundColor))
+                #else
                 .foregroundColor(Color(.systemBackground))
+                #endif
                             
             // Titre nettoyé
             Text(cleanedTitle)
                 .font(adaptive.font)
+                #if os(macOS)
+                .foregroundColor(Color(nsColor: .controlBackgroundColor))
+                #else
                 .foregroundColor(Color(.systemBackground))
+                #endif
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
         }
         .padding(adaptive.padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.primary)
+        #if os(macOS)
+        .background(Color(nsColor: .controlBackgroundColor))
+        #else
+        .background(Color(.systemBackground))
+        #endif
     }
     
     /// Retourne le meilleur titre disponible
