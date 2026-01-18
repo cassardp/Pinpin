@@ -77,7 +77,7 @@ struct MacMainView: View {
             // Vue principale avec grille
             mainContentView
         }
-        .navigationSplitViewStyle(.prominentDetail)
+        .navigationSplitViewStyle(.balanced)
         .sheet(item: $selectedItem) { item in
             MacItemDetailView(item: item)
                 .frame(minWidth: 600, minHeight: 500)
@@ -153,7 +153,6 @@ struct MacMainView: View {
         }
         .frame(minWidth: 200, maxWidth: 280)
         .frame(maxHeight: .infinity)
-        .background(.ultraThinMaterial)
     }
     
     private func countForCategory(_ category: String) -> Int {
