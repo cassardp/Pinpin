@@ -155,7 +155,6 @@ struct MacMainView: View {
             Spacer()
         }
         .frame(minWidth: 200, maxWidth: 280)
-        .background(Color(nsColor: .windowBackgroundColor))
     }
     
     private func countForCategory(_ category: String) -> Int {
@@ -202,7 +201,6 @@ struct MacMainView: View {
                     }
                 }
             }
-            .background(Color(nsColor: .windowBackgroundColor))
             
             // Search Overlay
             VStack {
@@ -278,31 +276,9 @@ struct MacMainView: View {
     // MARK: - Empty State
     
     private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "pin.slash")
-                .font(.system(size: 64))
-                .foregroundColor(.secondary)
-            
-            Text("No pins found")
-                .font(.title2)
-                .fontWeight(.medium)
-            
-            if !searchQuery.isEmpty {
-                Text("Try a different search term")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            } else if !isAllPinsSelected {
-                Text("This category is empty")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            } else {
-                Text("Share links from Safari to add pins")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        EmptyStateView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .windowBackgroundColor))
     }
     
     // MARK: - Context Menu

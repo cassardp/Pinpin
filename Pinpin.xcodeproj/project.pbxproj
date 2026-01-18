@@ -69,7 +69,10 @@
 				Shared/AppConstants.swift,
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
+				Shared/Models/UserPreferencesModel.swift,
 				Shared/Services/OCRService.swift,
+				Views/Components/StorageStatsView.swift,
+				Views/EmptyStateView.swift,
 			);
 			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
 		};

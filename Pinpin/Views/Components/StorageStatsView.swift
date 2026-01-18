@@ -21,6 +21,7 @@ struct StorageStatsView: View {
 
             Spacer()
             
+            if isLoading {
                 Text("CALCUL EN COURS...")
                     .font(.caption)
                     .foregroundColor(.secondary)

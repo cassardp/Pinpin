@@ -16,20 +16,10 @@ struct EmptyStateView: View {
             VStack(spacing: 16) {
                 Text("NOTHING YET • START SHARING TO PINPIN!")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(UIColor.systemGray2))
+                    .foregroundColor(.secondary)
                 
             }
         }
-    }
-    
-    private func appIconName() -> String? {
-        guard let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],
-              let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
-              let iconFiles = primaryIcon["CFBundleIconFiles"] as? [String],
-              let iconFileName = iconFiles.last else {
-            return nil
-        }
-        return iconFileName
     }
 }
 
