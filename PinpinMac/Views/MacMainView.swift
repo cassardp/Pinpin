@@ -155,6 +155,8 @@ struct MacMainView: View {
             Spacer()
         }
         .frame(minWidth: 200, maxWidth: 280)
+        .frame(maxHeight: .infinity)
+        .background(.ultraThinMaterial)
     }
     
     private func countForCategory(_ category: String) -> Int {
@@ -165,8 +167,6 @@ struct MacMainView: View {
     
     private var mainContentView: some View {
         ZStack {
-            Color(nsColor: .windowBackgroundColor)
-            
             ScrollView {
                 VStack(spacing: 0) {
                     MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
@@ -209,6 +209,7 @@ struct MacMainView: View {
                 searchOverlay
             }
         }
+        .background(.ultraThinMaterial)
         .gesture(magnifyGesture)
     }
     
