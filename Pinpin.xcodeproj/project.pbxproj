@@ -19,6 +19,7 @@
 			remoteGlobalIDString = 4E19DB772DFC174F00357543;
 			remoteInfo = NeeedShareExtension;
 		};
+		4E5B8E892E9E956A00C148FC /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E5B8E882E9E956A00C148FC /* CloudKit.framework */; };
 		4E39734E2E8BC35A001357EA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4E9460E12DFADAC400FFE8F8 /* Project object */;
@@ -57,6 +58,7 @@
 		4E19DB782DFC174F00357543 /* PinpinShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PinpinShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E3972A92E8BBDBC001357EA /* PinpinMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PinpinMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E3973442E8BC35A001357EA /* PinpinMacShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PinpinMacShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E5B8E882E9E956A00C148FC /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		4E9460E92DFADAC400FFE8F8 /* Pinpin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pinpin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -203,6 +205,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E5B8E892E9E956A00C148FC /* CloudKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -230,6 +233,7 @@
 				4E19DB792DFC174F00357543 /* PinpinShareExtension */,
 				4E3972AA2E8BBDBC001357EA /* PinpinMac */,
 				4E3973452E8BC35A001357EA /* PinpinMacShareExtension */,
+				4E5B8E882E9E956A00C148FC /* CloudKit.framework */,
 				4E9460EA2DFADAC400FFE8F8 /* Products */,
 			);
 			sourceTree = "<group>";

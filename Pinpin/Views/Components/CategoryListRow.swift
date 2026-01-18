@@ -33,7 +33,7 @@ struct CategoryListRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 if isSelected {
                     Circle()
                         .fill(isEmpty ? Color.secondary : Color.primary)
@@ -47,7 +47,7 @@ struct CategoryListRow: View {
                     .foregroundColor(isEmpty ? .secondary : .primary)
                     .lineLimit(1)
             }
-            .padding(.vertical, -4)
+            .padding(.vertical, -6)
             
             Spacer()
             

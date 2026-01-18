@@ -22,7 +22,7 @@ struct MacCategoryRow: View {
     }
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             // Indicateur de sélection (petit point)
             if isSelected {
                 Circle()
@@ -37,13 +37,14 @@ struct MacCategoryRow: View {
                 .foregroundColor(isEmpty ? .secondary : .primary)
                 .lineLimit(1)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .opacity(isEmpty ? 0.6 : 1.0)
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
+        .pointerStyle(.link)
         .onHover { hovering in
             isHovered = hovering
         }

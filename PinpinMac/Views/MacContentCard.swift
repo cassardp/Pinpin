@@ -34,5 +34,6 @@ struct MacContentCard: View {
         .onTapGesture(count: 1) {
             onTap()
         }
+        .pointerStyle(.link)
     }
 }
