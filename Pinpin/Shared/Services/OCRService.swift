@@ -8,17 +8,36 @@
 import Foundation
 import Vision
 
+// Suppression de la redéclaration de PlatformImage si elle est déjà définie ailleurs (ImageUploadService)
+// ou utilisation d'une définition locale si nécessaire.
+// Pour éviter les conflits, nous allons utiliser ImageUploadService.PlatformImage s'il est disponible,
+// ou redéfinir localement avec un nom différent si nécessaire, mais ici le problème est que 
+// ImageUploadService l'a rendu public.
+
+// Solution: On supprime la définition ici et on importe celle de ImageUploadService si possible,
+// ou on conditionne. Mais le plus propre est de ne pas le redéfinir.
+// Cependant, comme ils sont dans le même module (probablement), cela crée un conflit.
+
 #if canImport(UIKit)
 import UIKit
-typealias PlatformImage = UIImage
+#if !os(watchOS)
+private typealias OCRPlatformImage = UIImage
+#endif
 #elseif canImport(AppKit)
 import AppKit
-typealias PlatformImage = NSImage
+private typealias OCRPlatformImage = NSImage
 #endif
 
 class OCRService {
     static let shared = OCRService()
     private init() {}
+    
+    #if canImport(UIKit)
+    typealias PlatformImage = UIImage
+    #elseif canImport(AppKit)
+    typealias PlatformImage = NSImage
+    #endif
+
 
     /// Extrait le texte d'une image en utilisant Vision OCR en mode accurate
     func extractText(from image: PlatformImage, completion: @escaping (String?) -> Void) {
@@ -85,7 +104,8 @@ class OCRService {
         #if canImport(UIKit)
         return image.cgImage
         #elseif canImport(AppKit)
-        return image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        var rect = CGRect(origin: .zero, size: image.size)
+        return image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
         #endif
     }
 }

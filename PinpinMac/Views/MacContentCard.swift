@@ -14,6 +14,22 @@ struct MacContentCard: View {
     let onTap: () -> Void
     let onOpenURL: () -> Void
     
+    private var hasExternalLink: Bool {
+        guard let urlString = item.url, !urlString.isEmpty else { return false }
+        
+        // Exclure les liens internes Supabase (images uploadées)
+        if urlString.contains("supabase.co") && urlString.contains("/storage/v1/object") {
+            return false
+        }
+        
+        // Exclure les liens locaux
+        if urlString.hasPrefix("file://") {
+            return false
+        }
+        
+        return true
+    }
+    
     var body: some View {
         ContentCardView(
             item: item,
@@ -28,12 +44,13 @@ struct MacContentCard: View {
         )
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovered)
-        .onTapGesture(count: 2) {
-            onOpenURL()
+        .onTapGesture {
+            if hasExternalLink {
+                onOpenURL()
+            }
         }
-        .onTapGesture(count: 1) {
-            onTap()
+        .if(hasExternalLink) { view in
+            view.pointerStyle(.link)
         }
-        .pointerStyle(.link)
     }
 }

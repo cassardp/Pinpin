@@ -1,5 +1,10 @@
-import Foundation
+#if canImport(UIKit)
 import UIKit
+public typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+import AppKit
+public typealias PlatformImage = NSImage
+#endif
 
 class ImageUploadService {
     static let shared = ImageUploadService()
@@ -12,26 +17,53 @@ class ImageUploadService {
     
     private init() {}
     
-    func uploadImage(_ image: UIImage, completion: @escaping (Result<String, Error>) -> Void) {
+    func uploadImage(_ image: PlatformImage, completion: @escaping (Result<String, Error>) -> Void) {
         // Run on background thread
         DispatchQueue.global(qos: .userInitiated).async {
             // Resize image to max 800px to speed up upload/download
             let maxDimension: CGFloat = 800
-            let scaledImage: UIImage
+            let scaledImage: PlatformImage
             
-            if image.size.width > maxDimension || image.size.height > maxDimension {
-                let scale = min(maxDimension / image.size.width, maxDimension / image.size.height)
-                let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+            // Cross-platform size and resize logic
+            let size = image.size
+            
+            if size.width > maxDimension || size.height > maxDimension {
+                let scale = min(maxDimension / size.width, maxDimension / size.height)
+                let newSize = CGSize(width: size.width * scale, height: size.height * scale)
                 
-                UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
-                image.draw(in: CGRect(origin: .zero, size: newSize))
-                scaledImage = UIGraphicsGetImageFromCurrentImageContext() ?? image
-                UIGraphicsEndImageContext()
+                #if os(macOS)
+                let newImage = NSImage(size: newSize)
+                newImage.lockFocus()
+                image.draw(in: NSRect(origin: .zero, size: newSize),
+                           from: NSRect(origin: .zero, size: size),
+                           operation: .copy,
+                           fraction: 1.0)
+                newImage.unlockFocus()
+                scaledImage = newImage
+                #else
+                let renderer = UIGraphicsImageRenderer(size: newSize)
+                scaledImage = renderer.image(actions: { _ in
+                    image.draw(in: CGRect(origin: .zero, size: newSize))
+                })
+                #endif
             } else {
                 scaledImage = image
             }
             
-            guard let imageData = scaledImage.jpegData(compressionQuality: 0.7) else {
+            // Convert to JPEG Data
+            let finalData: Data?
+            #if os(macOS)
+            if let tiffRepresentation = scaledImage.tiffRepresentation,
+               let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) {
+                finalData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
+            } else {
+                finalData = nil
+            }
+            #else
+            finalData = scaledImage.jpegData(compressionQuality: 0.7)
+            #endif
+            
+            guard let imageData = finalData else {
                 DispatchQueue.main.async {
                     completion(.failure(ImageUploadError.invalidImage))
                 }

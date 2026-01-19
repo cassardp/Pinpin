@@ -1,12 +1,20 @@
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
 import SafariServices
+typealias SearchPlatformImage = UIImage
+#elseif canImport(AppKit)
+import AppKit
+typealias SearchPlatformImage = NSImage
+#endif
 
 // KISS: regroupe la logique de "Search Similar" (upload + URL Lens + warm-up + présentation)
 final class SimilarSearchService {
+    #if os(iOS)
     // Capsule de chargement (UI minimale, anglaise comme le reste du code)
     private static var loadingCapsule: UIView?
+    #endif
     
     // API publique
     static func searchSimilarProducts(for item: ContentItem, query: String?) {
@@ -20,7 +28,9 @@ final class SimilarSearchService {
             showLoadingCapsule()
             
             // Upload via ImageUploadService existant
-            ImageUploadService.shared.uploadImage(image) { result in
+            // Note: ImageUploadService expects "PlatformImage". We assume it's compatible or we cast.
+            // Since we updated ImageUploadService to use PlatformImage which matches our conditional imports, this should work.
+            ImageUploadService.shared.uploadImage(image as PlatformImage) { result in
                 switch result {
                 case .success(let imageURL):
                     openGoogleLens(with: imageURL, query: query, originalSize: image.size)
@@ -35,8 +45,8 @@ final class SimilarSearchService {
     }
     
     // MARK: - Internals
-    private static func loadImage(from item: ContentItem, completion: @escaping (UIImage?) -> Void) {
-        if let imageData = item.imageData, let image = UIImage(data: imageData) {
+    private static func loadImage(from item: ContentItem, completion: @escaping (SearchPlatformImage?) -> Void) {
+        if let imageData = item.imageData, let image = SearchPlatformImage(data: imageData) {
             completion(image)
             return
         }
@@ -44,7 +54,7 @@ final class SimilarSearchService {
            let url = URL(string: thumbnailUrl) {
             URLSession.shared.dataTask(with: url) { data, _, _ in
                 DispatchQueue.main.async {
-                    if let data = data, let image = UIImage(data: data) {
+                    if let data = data, let image = SearchPlatformImage(data: data) {
                         completion(image)
                     } else {
                         completion(nil)
@@ -76,10 +86,18 @@ final class SimilarSearchService {
         
         guard let url = URL(string: googleLensURL) else {
             print("❌ URL Google Lens invalide")
+            hideLoadingCapsule()
             return
         }
         
-        print("🚀 Tentative d'ouverture de Google Lens avec SFSafariViewController...")
+        #if os(macOS)
+        print("🚀 Ouverture de Google Lens dans le navigateur par défaut (macOS)...")
+        DispatchQueue.main.async {
+            NSWorkspace.shared.open(url)
+            hideLoadingCapsule()
+        }
+        #else
+        print("🚀 Tentative d'ouverture de Google Lens avec SFSafariViewController (iOS)...")
         DispatchQueue.main.async {
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                let window = windowScene.windows.first,
@@ -118,13 +136,23 @@ final class SimilarSearchService {
                 }
             } else {
                 print("❌ Impossible de trouver le view controller")
+                // On pourrait essayer d'ouvrir dans Safari externe en fallback
+                UIApplication.shared.open(url)
+                hideLoadingCapsule()
             }
         }
+        #endif
     }
 
 
     
     private static func showLoadingCapsule() {
+        #if os(macOS)
+        // Sur macOS, on pourrait afficher un indicateur dans la barre de statut ou autre,
+        // mais pour l'instant on reste simple (le curseur systeme pourrait éventuellement changer)
+        // NSCursor.operationNotAllowed.push() // Exemple incorrect
+        print("⏳ Recherche Similar en cours...")
+        #else
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else { return }
         let capsule = UIView()
@@ -150,13 +178,18 @@ final class SimilarSearchService {
         capsule.alpha = 0
         UIView.animate(withDuration: 0.3) { capsule.alpha = 1 }
         loadingCapsule = capsule
+        #endif
     }
     
     private static func hideLoadingCapsule() {
+        #if os(macOS)
+        print("✅ Recherche terminée (ou erreur)")
+        #else
         guard let capsule = loadingCapsule else { return }
         UIView.animate(withDuration: 0.3, animations: { capsule.alpha = 0 }) { _ in
             capsule.removeFromSuperview()
             loadingCapsule = nil
         }
+        #endif
     }
 }

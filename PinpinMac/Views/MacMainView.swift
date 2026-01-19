@@ -24,7 +24,7 @@ struct MacMainView: View {
     
     @State private var selectedCategory: String = MacMainView.allPinsValue
     @State private var numberOfColumns: Int = 5
-    @State private var selectedItem: ContentItem? = nil
+
     @State private var showSettings: Bool = false
     @State private var hoveredItemId: UUID? = nil
     
@@ -78,10 +78,7 @@ struct MacMainView: View {
             mainContentView
         }
         .navigationSplitViewStyle(.balanced)
-        .sheet(item: $selectedItem) { item in
-            MacItemDetailView(item: item)
-                .frame(minWidth: 600, minHeight: 500)
-        }
+
         .sheet(item: $categoryToRename) { category in
             MacRenameCategorySheet(
                 name: $renameCategoryName,
@@ -171,7 +168,7 @@ struct MacMainView: View {
                                 item: item,
                                 numberOfColumns: numberOfColumns,
                                 isHovered: hoveredItemId == item.id,
-                                onTap: { selectedItem = item },
+                                onTap: { },
                                 onOpenURL: { openURL(for: item) }
                             )
                             .onHover { isHovered in
@@ -292,24 +289,21 @@ struct MacMainView: View {
     
     @ViewBuilder
     private func contextMenuContent(for item: ContentItem) -> some View {
-        if let url = item.url, let validURL = URL(string: url) {
-            Button {
-                NSWorkspace.shared.open(validURL)
-            } label: {
-                Label("Open in Browser", systemImage: "safari")
-            }
+        // 1. Share
+        if let urlString = item.url, 
+           let url = URL(string: urlString), 
+           !urlString.isEmpty, 
+           !urlString.hasPrefix("file://"), 
+           !urlString.hasPrefix("images/"), 
+           !urlString.contains("supabase.co") {
             
-            Button {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(url, forType: .string)
-            } label: {
-                Label("Copy Link", systemImage: "link")
+            ShareLink(item: url) {
+                Label("Share", systemImage: "square.and.arrow.up")
             }
-            
-            Divider()
         }
         
-        Menu("Move to...") {
+        // 2. Category (Move to...)
+        Menu {
             ForEach(categoryNames, id: \.self) { categoryName in
                 if categoryName != item.safeCategoryName {
                     Button(categoryName) {
@@ -317,14 +311,21 @@ struct MacMainView: View {
                     }
                 }
             }
+        } label: {
+            Label(item.safeCategoryName.capitalized, systemImage: "folder")
         }
+
+        // 3. Search Similar
+        MacSimilarSearchMenu(item: item)
         
         Divider()
         
+        // 4. Delete
         Button(role: .destructive) {
             deleteItem(item)
         } label: {
             Label("Delete", systemImage: "trash")
+                .foregroundStyle(.red)
         }
     }
     

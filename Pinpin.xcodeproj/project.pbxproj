@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		4E19DB822DFC174F00357543 /* PinpinShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4E19DB782DFC174F00357543 /* PinpinShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4E3973502E8BC35A001357EA /* PinpinMacShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4E3973442E8BC35A001357EA /* PinpinMacShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4E5B8E892E9E956A00C148FC /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E5B8E882E9E956A00C148FC /* CloudKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -19,7 +20,6 @@
 			remoteGlobalIDString = 4E19DB772DFC174F00357543;
 			remoteInfo = NeeedShareExtension;
 		};
-		4E5B8E892E9E956A00C148FC /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E5B8E882E9E956A00C148FC /* CloudKit.framework */; };
 		4E39734E2E8BC35A001357EA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4E9460E12DFADAC400FFE8F8 /* Project object */;
@@ -66,6 +66,8 @@
 		4E1835D72E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMac" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Services/ImageUploadService.swift,
+				Services/SimilarSearchService.swift,
 				Shared/AppConstants.swift,
 				Shared/Models/Category.swift,
 				Shared/Models/ContentItem.swift,
