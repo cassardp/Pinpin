@@ -24,7 +24,7 @@ struct StorageStatsView: View {
             if isLoading {
                 Text("CALCUL EN COURS...")
                     #if os(macOS)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     #else
                     .font(.system(size: 13))
                     #endif
@@ -33,7 +33,7 @@ struct StorageStatsView: View {
                 // Affichage des stats de stockage pour tous les cas
                 Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(formatFileSize(totalSize).uppercased())")
                     #if os(macOS)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     #else
                     .font(.system(size: 14))
                     #endif
