@@ -27,22 +27,19 @@ struct MacCategoryRow: View {
             if isSelected {
                 Circle()
                     .frame(width: 6, height: 6)
-                    .foregroundStyle(isEmpty ? .secondary : .primary)
                     .transition(.scale.combined(with: .opacity))
                     .padding(.top, 2)
-                    .opacity(isEmpty ? 0.6 : 1.0)
             }
             
             // Titre
             Text(title)
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundColor(isEmpty ? .secondary : .primary)
                 .lineLimit(1)
         }
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-        .opacity(isEmpty ? 0.6 : 1.0)
+        .opacity(isEmpty ? 0.3 : 1.0)
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
