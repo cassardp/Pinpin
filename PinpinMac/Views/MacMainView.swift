@@ -21,7 +21,7 @@ struct MacMainView: View {
     private var allCategories: [Category]
     
     @State private var selectedCategory: String = MacMainView.allPinsValue
-    @State private var numberOfColumns: Int = 5
+    @State private var numberOfColumns: Int = 4
 
     @State private var showSettings: Bool = false
     @State private var hoveredItemId: UUID? = nil
@@ -60,9 +60,14 @@ struct MacMainView: View {
         visibleCategories.map { $0.name }
     }
     
-    // Catégories visibles (toutes les catégories, comme sur iOS)
+    // Catégories visibles (masque "Misc" si elle est vide)
     private var visibleCategories: [Category] {
-        return allCategories
+        return allCategories.filter { category in
+            if category.name == "Misc" {
+                return countForCategory(category.name) > 0
+            }
+            return true
+        }
     }
     
     @State private var searchQueryState: String = ""

@@ -33,9 +33,14 @@ struct FilterMenuView: View {
     @State private var hapticTrigger: Int = 0
     
     // Récupère toutes les catégories directement depuis SwiftData (ordre natif via sortOrder)
+    // Masque "Misc" si elle est vide
     private var availableCategories: [Category] {
-        // Retourner toutes les catégories sans filtre ni déduplication pour debug
-        return allCategories
+        return allCategories.filter { category in
+            if category.name == "Misc" {
+                return countForType(category.name) > 0
+            }
+            return true
+        }
     }
     
     // Compte les items par type
@@ -208,6 +213,8 @@ private extension FilterMenuView {
     func resetEditingState() {
         guard isEditing else { return }
         isEditing = false
+        // Notifier la FloatingSearchBar pour désactiver l'état d'édition
+        NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestCloseEditing"), object: nil)
     }
     
     func prepareRename(for category: Category) {
@@ -262,6 +269,7 @@ func saveNewCategory() {
         modelContext.insert(newCategory)
         try? modelContext.save()
         selectedContentType = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide
+        resetEditingState() // Désactiver le mode édition après création
         resetRenameState()
     }
     
