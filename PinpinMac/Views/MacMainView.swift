@@ -160,43 +160,47 @@ struct MacMainView: View {
     
     private var mainContentView: some View {
         ZStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
-                        ForEach(filteredItems) { item in
-                            MacContentCard(
-                                item: item,
-                                numberOfColumns: numberOfColumns,
-                                isHovered: hoveredItemId == item.id,
-                                onTap: { },
-                                onOpenURL: { openURL(for: item) }
-                            )
-                            .onHover { isHovered in
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    hoveredItemId = isHovered ? item.id : nil
+            if filteredItems.isEmpty {
+                emptyStateView
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
+                            ForEach(filteredItems) { item in
+                                MacContentCard(
+                                    item: item,
+                                    numberOfColumns: numberOfColumns,
+                                    isHovered: hoveredItemId == item.id,
+                                    onTap: { },
+                                    onOpenURL: { openURL(for: item) }
+                                )
+                                .onHover { isHovered in
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        hoveredItemId = isHovered ? item.id : nil
+                                    }
+                                }
+                                .contextMenu {
+                                    contextMenuContent(for: item)
                                 }
                             }
-                            .contextMenu {
-                                contextMenuContent(for: item)
-                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 24)
+                        .padding(.bottom, 80) // Space for overlay
+                        
+                        // Stats at bottom of list
+                        if !filteredItems.isEmpty {
+                            StorageStatsView(
+                                selectedContentType: isAllPinsSelected ? nil : selectedCategory,
+                                filteredItems: filteredItems
+                            )
+                            .padding(.vertical, 24)
+                            .padding(.bottom, 80) // Supplementaire pour l'overlay
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-                    .padding(.bottom, 80) // Space for overlay
-                    
-                    // Stats at bottom of list
-                    if !filteredItems.isEmpty {
-                        StorageStatsView(
-                            selectedContentType: isAllPinsSelected ? nil : selectedCategory,
-                            filteredItems: filteredItems
-                        )
-                        .padding(.vertical, 24)
-                        .padding(.bottom, 80) // Supplementaire pour l'overlay
-                    }
                 }
+                .ignoresSafeArea(edges: .top)
             }
-            .ignoresSafeArea(edges: .top)
             
             // Search Overlay
             VStack {
@@ -280,9 +284,13 @@ struct MacMainView: View {
     // MARK: - Empty State
     
     private var emptyStateView: some View {
-        EmptyStateView()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(nsColor: .windowBackgroundColor))
+        VStack(spacing: 16) {
+            Text("NOTHING YET • START SHARING TO PINPIN!")
+                .font(.system(size: 12))
+                .foregroundColor(.gray.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
     
     // MARK: - Context Menu
