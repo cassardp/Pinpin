@@ -23,13 +23,21 @@ struct StorageStatsView: View {
             
             if isLoading {
                 Text("CALCUL EN COURS...")
+                    #if os(macOS)
                     .font(.system(size: 12))
-                    .foregroundColor(.gray.opacity(0.5))
+                    #else
+                    .font(.system(size: 13))
+                    #endif
+                    .foregroundColor(.gray.opacity(0.6))
             } else {
                 // Affichage des stats de stockage pour tous les cas
                 Text("\(imageCount) PIN\(imageCount > 1 ? "S" : "") • \(formatFileSize(totalSize).uppercased())")
+                    #if os(macOS)
                     .font(.system(size: 12))
-                    .foregroundColor(.gray.opacity(0.5))
+                    #else
+                    .font(.system(size: 14))
+                    #endif
+                    .foregroundColor(.gray.opacity(0.6))
             }
             
             Spacer()
