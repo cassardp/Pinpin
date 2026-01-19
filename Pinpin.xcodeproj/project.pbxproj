@@ -83,6 +83,7 @@
 				Views/ContentViews/TextOnlyContentView.swift,
 				Views/ContentViews/TikTokContentView.swift,
 				Views/EmptyStateView.swift,
+				Views/Sheets/RenameCategorySheet.swift,
 				Views/Sheets/TextEditSheet.swift,
 			);
 			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;

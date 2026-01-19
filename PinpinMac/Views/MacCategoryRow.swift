@@ -27,8 +27,9 @@ struct MacCategoryRow: View {
             if isSelected {
                 Circle()
                     .fill(isEmpty ? Color.secondary : Color.primary)
-                    .frame(width: 8, height: 8)
+                    .frame(width: 6, height: 6)
                     .transition(.scale.combined(with: .opacity))
+                    .padding(.top, 2)
             }
             
             // Titre

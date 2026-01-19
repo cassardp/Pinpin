@@ -69,8 +69,10 @@ struct MacMainView: View {
     
     @State private var searchQueryState: String = ""
     
+    @State private var columnVisibilityState: NavigationSplitViewVisibility = .automatic
+
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibilityState) {
             // Sidebar avec catégories
             sidebarView
         } detail: {
@@ -80,9 +82,8 @@ struct MacMainView: View {
         .navigationSplitViewStyle(.balanced)
 
         .sheet(item: $categoryToRename) { category in
-            MacRenameCategorySheet(
+            RenameCategorySheet(
                 name: $renameCategoryName,
-                isEditing: true,
                 onCancel: {
                     categoryToRename = nil
                     renameCategoryName = ""
@@ -185,7 +186,7 @@ struct MacMainView: View {
                             }
                         }
                         .padding(.horizontal, 24)
-                        .padding(.top, 24)
+                        .padding(.top, columnVisibilityState == .detailOnly ? 64 : 24)
                         .padding(.bottom, 80) // Space for overlay
                         
                         // Stats at bottom of list

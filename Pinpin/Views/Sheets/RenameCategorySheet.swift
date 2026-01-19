@@ -25,8 +25,10 @@ struct RenameCategorySheet: View {
                         .multilineTextAlignment(.center)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(.horizontal, 40)
+                        #if os(iOS)
                         .textInputAutocapitalization(.words)
                         .submitLabel(.done)
+                        #endif
                         .focused($isFieldFocused)
                         .onSubmit {
                             // Vérifier que le nom n'est pas vide avant de sauvegarder
@@ -35,13 +37,22 @@ struct RenameCategorySheet: View {
                             }
                         }
                 }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 120)
+                .padding(.bottom, 60)
                 
                 Spacer()
             }
+            #if os(iOS)
             .background(Color(UIColor.systemBackground))
+            #else
+            .background(Color(.windowBackgroundColor))
+            #endif
             .ignoresSafeArea(.all)
             .animation(.easeInOut(duration: 0.3), value: name.isEmpty)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: onCancel)
