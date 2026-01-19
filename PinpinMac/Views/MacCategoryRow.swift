@@ -26,10 +26,11 @@ struct MacCategoryRow: View {
             // Indicateur de sélection (petit point)
             if isSelected {
                 Circle()
-                    .fill(isEmpty ? Color.secondary : Color.primary)
                     .frame(width: 6, height: 6)
+                    .foregroundStyle(isEmpty ? .secondary : .primary)
                     .transition(.scale.combined(with: .opacity))
                     .padding(.top, 2)
+                    .opacity(isEmpty ? 0.6 : 1.0)
             }
             
             // Titre

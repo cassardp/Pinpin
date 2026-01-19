@@ -20,8 +20,6 @@ struct MacMainView: View {
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
     
-    private var searchQuery: String = ""
-    
     @State private var selectedCategory: String = MacMainView.allPinsValue
     @State private var numberOfColumns: Int = 5
 
@@ -47,11 +45,11 @@ struct MacMainView: View {
         }
         
         // Filtrer par recherche
-        if !searchQuery.isEmpty {
+        if !searchQueryState.isEmpty {
             items = items.filter { item in
-                item.title.localizedCaseInsensitiveContains(searchQuery) ||
-                (item.itemDescription?.localizedCaseInsensitiveContains(searchQuery) ?? false) ||
-                (item.url?.localizedCaseInsensitiveContains(searchQuery) ?? false)
+                item.title.localizedCaseInsensitiveContains(searchQueryState) ||
+                (item.itemDescription?.localizedCaseInsensitiveContains(searchQueryState) ?? false) ||
+                (item.url?.localizedCaseInsensitiveContains(searchQueryState) ?? false)
             }
         }
         
@@ -111,7 +109,7 @@ struct MacMainView: View {
         VStack {
             Spacer()
             
-            VStack(alignment: .leading, spacing: 4) {
+            List {
                 // Option "All"
                 MacCategoryRow(
                     title: "All",
@@ -122,6 +120,9 @@ struct MacMainView: View {
                         selectedCategory = Self.allPinsValue
                     }
                 }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                 
                 // Catégories
                 ForEach(visibleCategories) { category in
@@ -143,8 +144,13 @@ struct MacMainView: View {
                             showDeleteCategoryAlert = true
                         }
                     )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .padding(.horizontal, 24)
             
             Spacer()
