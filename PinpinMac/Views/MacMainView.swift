@@ -132,13 +132,8 @@ struct MacMainView: View {
     private var toolbarContent: some ToolbarContent {
         MacToolbarView(
             selectionManager: selectionManager,
-            isSidebarVisible: isSidebarVisible,
             categoryNames: categoryNames,
             allItemIds: allItemIds,
-            onAddNote: handleAddNote,
-            onAddCategory: prepareCreateCategory,
-            onSettings: handleSettings,
-            onAbout: handleAbout,
             onMoveToCategory: moveSelectedItemsToCategory,
             onDeleteSelected: handleDeleteSelected
         )
@@ -194,7 +189,7 @@ struct MacMainView: View {
     // MARK: - Sidebar
     
     private var sidebarView: some View {
-        VStack {
+        VStack(spacing: 0) {
             Spacer()
             
             List {
@@ -242,6 +237,20 @@ struct MacMainView: View {
             .padding(.horizontal, 24)
             
             Spacer()
+            
+            // MARK: - Bottom Menu
+            HStack {
+                MacSidebarMenu(
+                    onAddNote: handleAddNote,
+                    onAddCategory: prepareCreateCategory,
+                    onEditCategories: handleEditCategories,
+                    onSettings: handleSettings,
+                    onAbout: handleAbout
+                )
+                Spacer()
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 16)
         }
         .frame(minWidth: 200, maxWidth: 280)
         .frame(maxHeight: .infinity)
@@ -405,6 +414,11 @@ struct MacMainView: View {
     
     private func handleAbout() {
         showAbout = true
+    }
+    
+    private func handleEditCategories() {
+        // TODO: Implémenter le réordonnancement des catégories
+        // Pour l'instant, cette action est un placeholder
     }
     
     private func handleDeleteSelected() {

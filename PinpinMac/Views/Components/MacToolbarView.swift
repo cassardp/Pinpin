@@ -3,21 +3,18 @@
 //  PinpinMac
 //
 //  Toolbar native macOS avec états normal/selection
+//  Mode normal: uniquement le bouton checkmark pour activer la sélection
+//  Mode sélection: Cancel, Select All, Move, Delete
 //
 
 import SwiftUI
 
 struct MacToolbarView: ToolbarContent {
     @Bindable var selectionManager: MacSelectionManager
-    let isSidebarVisible: Bool
     let categoryNames: [String]
     let allItemIds: [UUID]
     
     // Actions
-    let onAddNote: () -> Void
-    let onAddCategory: () -> Void
-    let onSettings: () -> Void
-    let onAbout: () -> Void
     let onMoveToCategory: (String) -> Void
     let onDeleteSelected: () -> Void
     
@@ -25,29 +22,19 @@ struct MacToolbarView: ToolbarContent {
         if selectionManager.isSelectionMode {
             // MARK: - Selection Mode
             
-            // Cancel Button
+            // Cancel Button - à gauche de la toolbar
             ToolbarItem(placement: .navigation) {
-                Button {
-                    withAnimation(.snappy(duration: 0.25)) {
-                        selectionManager.toggleSelectionMode()
-                    }
+                Button(role: .close) {
+                    selectionManager.toggleSelectionMode()
                 } label: {
-                    Image(systemName: "xmark.circle")
-                        .font(.system(size: 14, weight: .medium))
+                    Image(systemName: "xmark")
                 }
                 .help("Cancel Selection")
             }
             
-            // Select All / Deselect All
-            ToolbarItem(placement: .navigation) {
-                if selectionManager.hasSelection {
-                    Button {
-                        selectionManager.deselectAll()
-                    } label: {
-                        Text("Deselect All")
-                            .font(.system(size: 12))
-                    }
-                } else {
+            // Select All - visible uniquement si aucune sélection
+            if !selectionManager.hasSelection {
+                ToolbarItem(placement: .navigation) {
                     Button {
                         selectionManager.selectAll(items: allItemIds)
                     } label: {
@@ -57,20 +44,7 @@ struct MacToolbarView: ToolbarContent {
                 }
             }
             
-            // Selection Count (center)
-            ToolbarItem(placement: .principal) {
-                if selectionManager.hasSelection {
-                    Text("\(selectionManager.selectedCount) selected")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Select items")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            
-            // Move to Category Menu
+            // Move to Category Menu avec compteur
             if selectionManager.hasSelection {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -82,54 +56,45 @@ struct MacToolbarView: ToolbarContent {
                             }
                         }
                     } label: {
-                        Label("Move", systemImage: "folder")
-                            .font(.system(size: 12))
+                        HStack(spacing: 4) {
+                            Text("\(selectionManager.selectedCount)")
+                                .font(.system(size: 12, weight: .semibold))
+                            Image(systemName: "folder")
+                                .font(.system(size: 13, weight: .medium))
+                        }
                     }
-                    .help("Move to Category")
+                    .help("Move \(selectionManager.selectedCount) item\(selectionManager.selectedCount > 1 ? "s" : "") to Category")
                 }
             }
             
-            // Delete Button
+            // Delete Button avec compteur - rouge
             if selectionManager.hasSelection {
                 ToolbarItem(placement: .primaryAction) {
                     Button(role: .destructive) {
                         onDeleteSelected()
                     } label: {
-                        Label("Delete", systemImage: "trash")
-                            .font(.system(size: 12))
+                        HStack(spacing: 4) {
+                            Text("\(selectionManager.selectedCount)")
+                                .font(.system(size: 12, weight: .semibold))
+                            Image(systemName: "trash")
+                                .font(.system(size: 13, weight: .medium))
+                        }
                     }
-                    .help("Delete Selected Items")
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .help("Delete \(selectionManager.selectedCount) item\(selectionManager.selectedCount > 1 ? "s" : "")")
                 }
             }
         } else {
             // MARK: - Normal Mode
             
-            // Settings Menu
-            ToolbarItem(placement: .navigation) {
-                MacSettingsMenu(
-                    onSettings: onSettings,
-                    onAbout: onAbout
-                )
-            }
-            
-            // Add Menu
-            ToolbarItem(placement: .navigation) {
-                MacAddMenu(
-                    isSidebarVisible: isSidebarVisible,
-                    onAddNote: onAddNote,
-                    onAddCategory: onAddCategory
-                )
-            }
-            
-            // Selection Mode Button
+            // Selection Mode Button - à droite de la toolbar
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    withAnimation(.snappy(duration: 0.25)) {
-                        selectionManager.toggleSelectionMode()
-                    }
+                    selectionManager.toggleSelectionMode()
                 } label: {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 14, weight: .medium))
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
                 }
                 .help("Enter Selection Mode")
             }

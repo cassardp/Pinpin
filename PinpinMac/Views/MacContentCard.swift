@@ -34,7 +34,7 @@ struct MacContentCard: View {
     }
     
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .topLeading) {
             ContentCardView(
                 item: item,
                 numberOfColumns: numberOfColumns,
@@ -48,16 +48,6 @@ struct MacContentCard: View {
             )
             .scaleEffect(isHovered ? 1.02 : 1.0)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovered)
-            .overlay {
-                if isSelectionMode {
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(
-                            isSelected ? Color.accentColor : Color.clear,
-                            lineWidth: 3
-                        )
-                        .animation(.snappy(duration: 0.2), value: isSelected)
-                }
-            }
             .onTapGesture {
                 if isSelectionMode {
                     onToggleSelection()
@@ -69,32 +59,23 @@ struct MacContentCard: View {
                 view.pointerStyle(.link)
             }
             
-            // Checkbox overlay (selection mode)
+            // Checkbox overlay en haut à gauche (style iOS)
             if isSelectionMode {
                 checkboxOverlay
             }
         }
     }
     
+    // Style identique à iOS : checkmark rouge en haut à gauche
     private var checkboxOverlay: some View {
-        ZStack {
-            Circle()
-                .fill(.regularMaterial)
-                .frame(width: 28, height: 28)
-            
+        Button(action: onToggleSelection) {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(isSelected ? .white : .secondary)
-                .symbolRenderingMode(.hierarchical)
-                .background {
-                    if isSelected {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 28, height: 28)
-                    }
-                }
+                .foregroundColor(isSelected ? .red : .gray)
+                .font(.system(size: 20))
+                .background(Color.white.opacity(0.8))
+                .clipShape(Circle())
         }
+        .buttonStyle(.plain)
         .padding(8)
-        .transition(.scale.combined(with: .opacity))
     }
 }
