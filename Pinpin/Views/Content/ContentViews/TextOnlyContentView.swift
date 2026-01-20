@@ -7,19 +7,6 @@
 
 import SwiftUI
 
-// MARK: - View Extension
-extension View {
-    /// Applique conditionnellement une transformation à une vue
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-}
-
 struct TextOnlyContentView: View {
     let item: ContentItem
     let numberOfColumns: Int

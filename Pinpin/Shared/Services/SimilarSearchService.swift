@@ -3,10 +3,8 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 import SafariServices
-typealias SearchPlatformImage = UIImage
 #elseif canImport(AppKit)
 import AppKit
-typealias SearchPlatformImage = NSImage
 #endif
 
 // KISS: regroupe la logique de "Search Similar" (upload + URL Lens + warm-up + présentation)
@@ -45,8 +43,8 @@ final class SimilarSearchService {
     }
     
     // MARK: - Internals
-    private static func loadImage(from item: ContentItem, completion: @escaping (SearchPlatformImage?) -> Void) {
-        if let imageData = item.imageData, let image = SearchPlatformImage(data: imageData) {
+    private static func loadImage(from item: ContentItem, completion: @escaping (PlatformImage?) -> Void) {
+        if let imageData = item.imageData, let image = PlatformImage(data: imageData) {
             completion(image)
             return
         }
@@ -54,7 +52,7 @@ final class SimilarSearchService {
            let url = URL(string: thumbnailUrl) {
             URLSession.shared.dataTask(with: url) { data, _, _ in
                 DispatchQueue.main.async {
-                    if let data = data, let image = SearchPlatformImage(data: data) {
+                    if let data = data, let image = PlatformImage(data: data) {
                         completion(image)
                     } else {
                         completion(nil)

@@ -50,9 +50,9 @@ struct InfoSheet: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(UIColor.systemBackground))
+            .background(Color.systemBackground)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .trailingCompat) {
                     Button("Done") {
                         dismiss()
                     }

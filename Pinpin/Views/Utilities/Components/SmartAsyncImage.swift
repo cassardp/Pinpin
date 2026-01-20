@@ -8,12 +8,6 @@
 import SwiftUI
 
 struct SmartAsyncImage: View {
-    #if os(macOS)
-    typealias PlatformImage = NSImage
-    #else
-    typealias PlatformImage = UIImage
-    #endif
-
     let item: ContentItem
     let width: CGFloat?
     let height: CGFloat?

@@ -81,11 +81,21 @@ struct CategorySelectionModalWrapper: View {
         }
         .ignoresSafeArea(.all)
         .sheet(isPresented: $showingAddCategory) {
-            RenameCategorySheet { categoryName in
-                addCategory(categoryName)
-                // Sélectionner automatiquement la nouvelle catégorie et ajouter l'item dedans
-                handleCategorySelection(categoryName)
-            }
+            RenameCategorySheet(
+                name: $newCategoryName,
+                onCancel: {
+                    showingAddCategory = false
+                    newCategoryName = ""
+                },
+                onSave: {
+                    if !newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        addCategory(newCategoryName)
+                        handleCategorySelection(newCategoryName)
+                        showingAddCategory = false
+                        newCategoryName = ""
+                    }
+                }
+            )
         }
     }
     
@@ -270,70 +280,3 @@ struct AddCategoryCard: View {
         }
     }
 }
-
-// MARK: - Rename Category Sheet
-struct RenameCategorySheet: View {
-    @State private var categoryName = ""
-    @Environment(\.dismiss) private var dismiss
-    let onCategoryAdded: (String) -> Void
-    @FocusState private var isFieldFocused: Bool
-    
-    var body: some View {
-        NavigationStack {
-            VStack {
-                Spacer()
-                
-                VStack(spacing: 40) {
-                    TextField("Category Name", text: $categoryName)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .padding(.horizontal, 40)
-                        .textInputAutocapitalization(.words)
-                        .submitLabel(.done)
-                        .focused($isFieldFocused)
-                        .onSubmit {
-                            // Validation par le bouton du clavier
-                            let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard !trimmedName.isEmpty else { return }
-                            onCategoryAdded(trimmedName)
-                            categoryName = ""
-                            dismiss()
-                        }
-                }
-                
-                Spacer()
-            }
-            .background(Color(UIColor.systemBackground))
-            .ignoresSafeArea(.all)
-            .animation(.easeInOut(duration: 0.3), value: categoryName.isEmpty)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        categoryName = ""
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmedName.isEmpty else { return }
-                        onCategoryAdded(trimmedName)
-                        categoryName = ""
-                        dismiss()
-                    }
-                    .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .onAppear {
-                categoryName = ""
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    isFieldFocused = true
-                }
-            }
-        }
-    }
-}
-
