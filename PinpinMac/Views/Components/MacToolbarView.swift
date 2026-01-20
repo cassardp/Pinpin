@@ -22,19 +22,23 @@ struct MacToolbarView: ToolbarContent {
         if selectionManager.isSelectionMode {
             // MARK: - Selection Mode
             
-            // Cancel Button - à gauche de la toolbar
-            ToolbarItem(placement: .navigation) {
+            // MARK: - Selection Mode
+            
+            ToolbarItem(placement: .principal) {
+                Spacer()
+            }
+            
+            ToolbarItemGroup(placement: .automatic) {
+                // Cancel Button
                 Button(role: .close) {
                     selectionManager.toggleSelectionMode()
                 } label: {
                     Image(systemName: "xmark")
                 }
                 .help("Cancel Selection")
-            }
-            
-            // Select All - visible uniquement si aucune sélection
-            if !selectionManager.hasSelection {
-                ToolbarItem(placement: .navigation) {
+                
+                // Select All - visible uniquement si aucune sélection
+                if !selectionManager.hasSelection {
                     Button {
                         selectionManager.selectAll(items: allItemIds)
                     } label: {
@@ -42,11 +46,9 @@ struct MacToolbarView: ToolbarContent {
                             .font(.system(size: 12))
                     }
                 }
-            }
-            
-            // Move to Category Menu avec compteur
-            if selectionManager.hasSelection {
-                ToolbarItem(placement: .primaryAction) {
+                
+                // Move to Category Menu avec compteur
+                if selectionManager.hasSelection {
                     Menu {
                         ForEach(categoryNames, id: \.self) { categoryName in
                             Button {
@@ -65,31 +67,33 @@ struct MacToolbarView: ToolbarContent {
                     }
                     .help("Move \(selectionManager.selectedCount) item\(selectionManager.selectedCount > 1 ? "s" : "") to Category")
                 }
-            }
-            
-            // Delete Button avec compteur - rouge
-            if selectionManager.hasSelection {
-                ToolbarItem(placement: .primaryAction) {
+                
+                // Delete Button avec compteur - rouge
+                if selectionManager.hasSelection {
                     Button(role: .destructive) {
                         onDeleteSelected()
                     } label: {
                         HStack(spacing: 4) {
-                            Text("\(selectionManager.selectedCount)")
-                                .font(.system(size: 12, weight: .semibold))
                             Image(systemName: "trash")
                                 .font(.system(size: 13, weight: .medium))
+                            Text("\(selectionManager.selectedCount)")
+                                .font(.system(size: 12, weight: .semibold))
                         }
+                        .foregroundStyle(Color(.systemRed))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
                     .help("Delete \(selectionManager.selectedCount) item\(selectionManager.selectedCount > 1 ? "s" : "")")
                 }
             }
         } else {
             // MARK: - Normal Mode
             
+            // Spacer pour pousser à droite
+            ToolbarItem(placement: .principal) {
+                Spacer()
+            }
+            
             // Selection Mode Button - à droite de la toolbar
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .automatic) {
                 Button {
                     selectionManager.toggleSelectionMode()
                 } label: {

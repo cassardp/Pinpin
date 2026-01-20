@@ -249,7 +249,7 @@ struct MacMainView: View {
                 )
                 Spacer()
             }
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 24)
             .padding(.bottom, 16)
         }
         .frame(minWidth: 200, maxWidth: 280)
