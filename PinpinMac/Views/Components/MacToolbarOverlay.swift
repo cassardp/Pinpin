@@ -26,33 +26,35 @@ struct MacToolbarOverlay: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Barre de recherche avec Liquid Glass
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.secondary)
-                
-                TextField("Search...", text: $searchQuery)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15))
-                
-                if !searchQuery.isEmpty {
-                    Button {
-                        searchQuery = ""
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.tertiary)
+            // Barre de recherche avec Liquid Glass - seulement en mode normal
+            if !selectionManager.isSelectionMode {
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("Search...", text: $searchQuery)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 15))
+                    
+                    if !searchQuery.isEmpty {
+                        Button {
+                            searchQuery = ""
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
-            }
-            .frame(height: 44)
-            .padding(.horizontal, 18)
-            .background(.regularMaterial, in: Capsule())
-            .overlay {
-                Capsule()
-                    .strokeBorder(.quaternary.opacity(0.5), lineWidth: 0.5)
+                .frame(height: 44)
+                .padding(.horizontal, 18)
+                .background(.regularMaterial, in: Capsule())
+                .overlay {
+                    Capsule()
+                        .strokeBorder(.quaternary.opacity(0.5), lineWidth: 0.5)
+                }
             }
             
             // Boutons avec Liquid Glass
@@ -67,6 +69,8 @@ struct MacToolbarOverlay: View {
                             } label: {
                                 Text("Select All")
                                     .font(.system(size: 14, weight: .regular))
+                                    .frame(height: 44)
+                                    .frame(maxWidth: 120)
                             }
                             .buttonStyle(.borderless)
                             .frame(height: 44)
@@ -93,6 +97,7 @@ struct MacToolbarOverlay: View {
                                     Text("\(selectionManager.selectedCount)")
                                         .font(.system(size: 13, weight: .medium))
                                 }
+                                .frame(height: 44)
                             }
                             .menuIndicator(.hidden)
                             .buttonStyle(.borderless)
@@ -115,6 +120,7 @@ struct MacToolbarOverlay: View {
                                         .font(.system(size: 13, weight: .medium))
                                 }
                                 .foregroundStyle(.white)
+                                .frame(height: 44)
                             }
                             .buttonStyle(.borderless)
                             .frame(height: 44)
@@ -129,6 +135,7 @@ struct MacToolbarOverlay: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .medium))
+                                .frame(width: 44, height: 44)
                         }
                         .buttonStyle(.borderless)
                         .frame(width: 44, height: 44)
@@ -145,6 +152,7 @@ struct MacToolbarOverlay: View {
                     } label: {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .medium))
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.borderless)
                     .frame(width: 44, height: 44)
@@ -159,6 +167,7 @@ struct MacToolbarOverlay: View {
         }
         .padding(.horizontal, 28)
         .padding(.vertical, 20)
+        .frame(maxWidth: 500) // Limite la largeur maximale
         .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive, action: onDeleteSelected)
