@@ -26,6 +26,7 @@ struct MacCategoryRow: View {
             // Indicateur de sélection (petit point)
             if isSelected {
                 Circle()
+                    .fill(isEmpty ? Color.secondary : Color(nsColor: .labelColor))
                     .frame(width: 6, height: 6)
                     .transition(.scale.combined(with: .opacity))
                     .padding(.top, 2)
@@ -35,11 +36,11 @@ struct MacCategoryRow: View {
             Text(title)
                 .font(.system(size: 24, weight: .semibold))
                 .lineLimit(1)
+                .opacity(isEmpty ? 0.3 : 1.0)
         }
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-        .opacity(isEmpty ? 0.3 : 1.0)
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
