@@ -66,6 +66,7 @@
 		4E1835D72E8E645100F911F4 /* Exceptions for "Pinpin" folder in "PinpinMac" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Services/UserPreferences.swift,
 				Shared/AppConstants.swift,
 				Shared/Core/PlatformColors.swift,
 				Shared/Core/PlatformTypes.swift,
@@ -88,6 +89,7 @@
 				Views/Content/ContentViews/StandardContentView.swift,
 				Views/Content/ContentViews/TextOnlyContentView.swift,
 				Views/Content/ContentViews/TikTokContentView.swift,
+				Views/Screens/SettingsView.swift,
 				Views/Utilities/Components/SmartAsyncImage.swift,
 				Views/Utilities/Components/StorageStatsView.swift,
 			);
