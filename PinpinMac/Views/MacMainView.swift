@@ -91,10 +91,6 @@ struct MacMainView: View {
 
     var body: some View {
         mainView
-            .toolbar {
-                toolbarContent
-            }
-            .searchable(text: $searchQueryState, prompt: "Search...")
             .sheet(isPresented: $showSettings) {
                 MacSettingsView()
             }
@@ -126,17 +122,6 @@ struct MacMainView: View {
             mainContentView
         }
         .navigationSplitViewStyle(.balanced)
-    }
-    
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        MacToolbarView(
-            selectionManager: selectionManager,
-            categoryNames: categoryNames,
-            allItemIds: allItemIds,
-            onMoveToCategory: moveSelectedItemsToCategory,
-            onDeleteSelected: handleDeleteSelected
-        )
     }
     
     private var addNoteSheet: some View {
@@ -297,8 +282,8 @@ struct MacMainView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.top, columnVisibilityState == .detailOnly ? 64 : 24)
+                        .padding(.horizontal, 16)
+                        .padding(.top, columnVisibilityState == .detailOnly ? 64 : 16)
                         .padding(.bottom, 80) // Space for stats
                         
                         // Stats at bottom of list
@@ -314,6 +299,16 @@ struct MacMainView: View {
                 }
                 .ignoresSafeArea(edges: .top)
             }
+        }
+        .overlay(alignment: .bottom) {
+            MacToolbarOverlay(
+                selectionManager: selectionManager,
+                categoryNames: categoryNames,
+                allItemIds: allItemIds,
+                onMoveToCategory: moveSelectedItemsToCategory,
+                onDeleteSelected: handleDeleteSelected,
+                searchQuery: $searchQueryState
+            )
         }
         .background(.ultraThinMaterial)
         .gesture(magnifyGesture)

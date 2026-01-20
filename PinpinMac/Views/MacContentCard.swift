@@ -62,8 +62,10 @@ struct MacContentCard: View {
             // Checkbox overlay en haut à gauche (style iOS)
             if isSelectionMode {
                 checkboxOverlay
+                    .transition(.identity)
             }
         }
+        .animation(nil, value: isSelectionMode)
     }
     
     // Style identique à iOS : checkmark rouge en haut à gauche
