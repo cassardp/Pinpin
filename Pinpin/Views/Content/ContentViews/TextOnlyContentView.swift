@@ -13,31 +13,27 @@ struct TextOnlyContentView: View {
     let isSelectionMode: Bool
     @State private var showingEditSheet = false
     
-    private var adaptive: AdaptiveContentProperties {
-        AdaptiveContentProperties(numberOfColumns: numberOfColumns)
-    }
-    
     var body: some View {
-        VStack(alignment: .leading, spacing: adaptive.spacing) {
+        VStack(alignment: .leading, spacing: AppConstants.contentSpacing(for: numberOfColumns)) {
             // Titre principal
             Text(item.bestTitle)
-                .font(adaptive.font)
+                .font(AppConstants.contentTitleFont(for: numberOfColumns))
                 .foregroundColor(postItColors.textColor)
                 .multilineTextAlignment(.leading)
-                .lineLimit(adaptive.lineLimit)
+                .lineLimit(AppConstants.contentTitleLineLimit(for: numberOfColumns))
             
             // Description si disponible et différente du titre
             if let description = item.itemDescription, 
                !description.isEmpty,
                description != item.title {
                 Text(description)
-                    .font(adaptive.descriptionFont)
+                    .font(AppConstants.contentDescriptionFont(for: numberOfColumns))
                     .foregroundColor(postItColors.textColor.opacity(0.8))
                     .multilineTextAlignment(.leading)
-                    .lineLimit(adaptive.descriptionLineLimit)
+                    .lineLimit(AppConstants.contentDescriptionLineLimit(for: numberOfColumns))
             }
         }
-        .padding(adaptive.padding)
+        .padding(AppConstants.contentPadding(for: numberOfColumns))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)

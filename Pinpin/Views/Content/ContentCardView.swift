@@ -24,7 +24,7 @@ struct ContentCardView: View {
             case .square:
                 SquareContentView(item: item)
             case .standard:
-                StandardContentView(item: item)
+                StandardContentView(item: item, numberOfColumns: numberOfColumns)
             }
         }
     }
@@ -63,7 +63,7 @@ struct ContentCardView: View {
                           url.contains("itunes.apple.com/book") || 
                           url.contains("itunes.apple.com/audiobook")
         
-        if isAppleMusic || isAppleBooks {
+        if isAppleMusic || isAppleBooks || url.contains("apps.apple.com") {
             return .square
         }
         

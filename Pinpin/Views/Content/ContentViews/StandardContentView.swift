@@ -9,12 +9,14 @@ import SwiftUI
 
 struct StandardContentView: View {
     let item: ContentItem
+    let numberOfColumns: Int
     
     // Cache du résultat hasImage pour éviter les recalculs
     private let cachedHasImage: Bool
     
-    init(item: ContentItem) {
+    init(item: ContentItem, numberOfColumns: Int) {
         self.item = item
+        self.numberOfColumns = numberOfColumns
         // Calculer une seule fois à l'initialisation
         self.cachedHasImage = Self.checkHasImage(item: item)
     }
@@ -27,12 +29,13 @@ struct StandardContentView: View {
                     .aspectRatio(contentMode: .fit)
             } else {
                 // Pas d'image, afficher le titre
+                // Note: Ceci est un fallback, normalement géré par TextOnlyContentView
                 Text(item.title)
-                    .font(.body)
+                    .font(AppConstants.contentTitleFont(for: numberOfColumns))
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.leading)
-                    .lineLimit(8)
-                    .padding(16)
+                    .lineLimit(AppConstants.contentTitleLineLimit(for: numberOfColumns))
+                    .padding(AppConstants.contentPadding(for: numberOfColumns))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 12)

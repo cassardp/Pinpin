@@ -110,7 +110,11 @@ final class CategoryManager {
             return
         }
         
-        let newCategory = Category(name: newName)
+        // Calculer le prochain ordre de tri
+        let maxSortOrder = allCategories.map { $0.sortOrder }.max() ?? -1
+        let newSortOrder = maxSortOrder + 1
+        
+        let newCategory = Category(name: newName, sortOrder: newSortOrder)
         modelContext.insert(newCategory)
         try? modelContext.save()
         selectedContentType.wrappedValue = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide

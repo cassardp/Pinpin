@@ -79,6 +79,14 @@ struct MainView: View {
             } message: {
                 Text("Are you sure you want to delete this item? This action cannot be undone.")
             }
+            .onAppear {
+                // S'assurer que le nombre de colonnes est valide (fix pour legacy config)
+                if numberOfColumns < AppConstants.minColumns {
+                    numberOfColumns = AppConstants.minColumns
+                } else if numberOfColumns > AppConstants.maxColumns {
+                    numberOfColumns = AppConstants.maxColumns
+                }
+            }
     }
     
     // MARK: - Main Drawer View
@@ -270,7 +278,8 @@ private extension MainView {
             if let misc = allCategories.first(where: { $0.name == "Misc" }) {
                 textEditTargetCategory = misc
             } else {
-                let misc = Category(name: "Misc")
+                let maxSortOrder = allCategories.map { $0.sortOrder }.max() ?? -1
+                let misc = Category(name: "Misc", sortOrder: maxSortOrder + 1)
                 modelContext.insert(misc)
                 try? modelContext.save()
                 textEditTargetCategory = misc

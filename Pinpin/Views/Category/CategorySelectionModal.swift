@@ -113,7 +113,8 @@ struct CategorySelectionModal: View {
                 onSave: {
                     let trimmedName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmedName.isEmpty {
-                        let newCategory = Category(name: trimmedName)
+                        let maxSortOrder = allCategories.map { $0.sortOrder }.max() ?? -1
+                        let newCategory = Category(name: trimmedName, sortOrder: maxSortOrder + 1)
                         modelContext.insert(newCategory)
                         try? modelContext.save()
                         onCategorySelected(trimmedName)

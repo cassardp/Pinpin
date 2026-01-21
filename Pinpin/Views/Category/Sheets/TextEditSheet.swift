@@ -27,22 +27,23 @@ struct TextEditSheet: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Zone d'édition principale
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 24) {
                         // Titre uniquement
                         TextField("Enter text", text: $editedTitle, axis: .vertical)
                             .textFieldStyle(.plain)
-                            .font(.body)
+                            .font(.title2)
                             .focused($isTextFieldFocused)
-                            .padding(20)
-                        
-                        Spacer(minLength: 100)
                     }
+                    .padding(32)
                 }
             }
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -60,6 +61,9 @@ struct TextEditSheet: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 500, minHeight: 400)
+        #endif
         .onAppear {
             // Auto-focus sur le champ titre
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

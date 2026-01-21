@@ -16,27 +16,23 @@ struct SquareContentView: View {
                 .fill(Color.gray.opacity(0.2))
                 .aspectRatio(1.0, contentMode: .fit)
                 .overlay(
-                    Group {
-                        if isAppleMusicContent {
-                            // Crop 20% pour Apple Music (garde l'image carrée)
-                            SmartAsyncImage(item: item)
-                                .aspectRatio(contentMode: .fill)
-                                .scaleEffect(1.50) // Zoom pour compenser le crop de 20%
-                                .clipped()
-                        } else {
-                            SmartAsyncImage(item: item)
-                                .aspectRatio(contentMode: .fill)
-                                .clipped()
-                        }
-                    }
+                    SmartAsyncImage(item: item)
+                        .aspectRatio(contentMode: isAppStoreContent ? .fill : .fill)
+                        .scaleEffect(isZoomedContent ? 1.50 : 1)
+                        .clipped()
                 )
         }
     }
     
     // MARK: - Computed Properties
     
-    private var isAppleMusicContent: Bool {
+    private var isZoomedContent: Bool {
         guard let url = item.url else { return false }
         return url.contains("music.apple.com")
+    }
+    
+    private var isAppStoreContent: Bool {
+        guard let url = item.url else { return false }
+        return url.contains("apps.apple.com")
     }
 }

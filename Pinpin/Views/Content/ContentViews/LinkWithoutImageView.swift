@@ -11,15 +11,11 @@ struct LinkWithoutImageView: View {
     let item: ContentItem
     let numberOfColumns: Int
     
-    private var adaptive: AdaptiveContentProperties {
-        AdaptiveContentProperties(numberOfColumns: numberOfColumns)
-    }
-    
     var body: some View {
-        VStack(spacing: adaptive.spacing) {
+        VStack(spacing: AppConstants.contentSpacing(for: numberOfColumns)) {
             // Icône globe centrée
             Image(systemName: "globe")
-                .font(adaptive.font)
+                .font(AppConstants.contentTitleFont(for: numberOfColumns))
                 #if os(macOS)
                 .foregroundColor(Color(nsColor: .controlBackgroundColor))
                 #else
@@ -28,7 +24,7 @@ struct LinkWithoutImageView: View {
                             
             // Titre nettoyé
             Text(cleanedTitle)
-                .font(adaptive.font)
+                .font(AppConstants.contentTitleFont(for: numberOfColumns))
                 #if os(macOS)
                 .foregroundColor(Color(nsColor: .controlBackgroundColor))
                 #else
@@ -37,7 +33,7 @@ struct LinkWithoutImageView: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
         }
-        .padding(adaptive.padding)
+        .padding(AppConstants.contentPadding(for: numberOfColumns))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         #if os(macOS)
         .background(Color(nsColor: .controlBackgroundColor))
