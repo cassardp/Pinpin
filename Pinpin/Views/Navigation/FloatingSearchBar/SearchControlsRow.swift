@@ -15,6 +15,7 @@ struct SearchControlsRow: View {
     var availableCategories: [String]
     var currentCategory: String?
     var searchTransitionNS: Namespace.ID
+    var isEditingCategories: Bool
     
     // MARK: - Actions
     let onSelectAll: () -> Void
@@ -30,6 +31,7 @@ struct SearchControlsRow: View {
     
     private enum NotificationName {
         static let createCategory = Notification.Name("FilterMenuViewRequestCreateCategory")
+        static let toggleEditCategories = Notification.Name("FilterMenuViewRequestToggleEditCategories")
     }
     
     var body: some View {
@@ -49,18 +51,28 @@ struct SearchControlsRow: View {
                     )
 
                 } else if isMenuOpen {
-                    // Quand le menu catégorie est ouvert: bouton "Add Category"
-                    CircularButton(
-                        icon: "plus",
-                        action: {
-                            onHaptic()
-                            NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
-                        }
-                    )
+                    // Quand le menu catégorie est ouvert: boutons "Add Category" + "Edit"
+                    HStack(spacing: 12) {
+                        CircularButton(
+                            icon: "plus",
+                            action: {
+                                onHaptic()
+                                NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
+                            }
+                        )
+                        
+                        CircularButton(
+                            icon: isEditingCategories ? "checkmark" : "pencil",
+                            action: {
+                                onHaptic()
+                                NotificationCenter.default.post(name: NotificationName.toggleEditCategories, object: nil)
+                            }
+                        )
+                    }
                 } else {
                     // Quand le menu est fermé: bouton "Add Note"
                     CircularButton(
-                        icon: "textformat",
+                        icon: "document",
                         action: {
                             onHaptic()
                             onCreateNote()
@@ -70,7 +82,7 @@ struct SearchControlsRow: View {
             }
             .opacity(isMenuOpen || isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))
             
-            // Si le menu est ouvert, pousser le bouton gauche à gauche et masquer le reste
+            // Si le menu est ouvert, pousser les boutons à gauche
             if isMenuOpen {
                 Spacer()
             }

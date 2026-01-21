@@ -8,6 +8,7 @@ struct CategoryListRow: View {
     let onRename: (() -> Void)?
     let onDelete: (() -> Void)?
     let canDelete: Bool
+    let isEditing: Bool
     @State private var hapticTrigger: Int = 0
     
     init(
@@ -17,7 +18,8 @@ struct CategoryListRow: View {
         action: @escaping () -> Void,
         onRename: (() -> Void)? = nil,
         onDelete: (() -> Void)? = nil,
-        canDelete: Bool = true
+        canDelete: Bool = true,
+        isEditing: Bool = false
     ) {
         self.isSelected = isSelected
         self.title = title
@@ -26,12 +28,27 @@ struct CategoryListRow: View {
         self.onRename = onRename
         self.onDelete = onDelete
         self.canDelete = canDelete
+        self.isEditing = isEditing
     }
     
     var body: some View {
         HStack(spacing: 12) {
+            // Bouton de suppression en mode édition (à gauche)
+            if isEditing && canDelete {
+                Button {
+                    hapticTrigger += 1
+                    onDelete?()
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.title2)
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(.plain)
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+            
             HStack(spacing: 8) {
-                if isSelected {
+                if isSelected && !isEditing {
                     Circle()
                         .fill(isEmpty ? Color.secondary : Color.primary)
                         .frame(width: 8, height: 8)
@@ -54,24 +71,13 @@ struct CategoryListRow: View {
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .onTapGesture {
             hapticTrigger += 1
-            withAnimation(.easeInOut) {
-                action()
-            }
-        }
-        .contextMenu {
-            if let onRename {
-                Button {
-                    onRename()
-                } label: {
-                    Label("Rename", systemImage: "pencil")
-                }
-            }
-            
-            if let onDelete, canDelete {
-                Button(role: .destructive) {
-                    onDelete()
-                } label: {
-                    Label("Delete", systemImage: "trash")
+            if isEditing {
+                // En mode édition, tap pour renommer
+                onRename?()
+            } else {
+                // En mode normal, tap pour sélectionner
+                withAnimation(.easeInOut) {
+                    action()
                 }
             }
         }

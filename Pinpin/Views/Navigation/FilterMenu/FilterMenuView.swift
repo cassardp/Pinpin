@@ -21,6 +21,11 @@ struct FilterMenuView: View {
     var isMenuDragging: Bool
     @FocusState private var isTextFieldFocused: Bool
     
+    /// Signature représentant l'ordre actuel des catégories (pour détecter les changements de tri)
+    private var categorySortOrderSignature: String {
+        allCategories.map { "\($0.id.uuidString):\($0.sortOrder)" }.joined(separator: ",")
+    }
+    
     // Manager pour toute la logique métier
     @State private var manager: CategoryManager?
     
@@ -30,8 +35,10 @@ struct FilterMenuView: View {
             .sensoryFeedback(.impact(weight: .light), trigger: manager?.hapticTrigger ?? 0)
             .onAppear(perform: setupManager)
             .onChange(of: allCategories.count, updateManagerForCategories)
+            .onChange(of: categorySortOrderSignature, updateManagerForCategories)
             .onChange(of: contentItems.count, updateManagerForItems)
             .onReceive(createCategoryPublisher, perform: handleCreateCategoryNotification)
+            .onReceive(toggleEditCategoriesPublisher, perform: handleToggleEditCategoriesNotification)
             .sheet(isPresented: renameSheetBinding, content: renameSheet)
             .alert("Delete Category?", isPresented: deleteAlertBinding, presenting: manager?.categoryToDelete, actions: deleteAlertActions, message: deleteAlertMessage)
     }
@@ -76,6 +83,10 @@ struct FilterMenuView: View {
         NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCreateCategory"))
     }
     
+    private var toggleEditCategoriesPublisher: NotificationCenter.Publisher {
+        NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestToggleEditCategories"))
+    }
+    
     // MARK: - Handlers
     private func setupManager() {
         if manager == nil {
@@ -97,16 +108,24 @@ struct FilterMenuView: View {
     }
     
     private func updateManager() {
+        let wasEditing = manager?.isEditingCategories ?? false
         manager = CategoryManager(
             modelContext: modelContext,
             allCategories: allCategories,
             contentItems: contentItems,
             selectedContentType: $selectedContentType
         )
+        manager?.isEditingCategories = wasEditing
     }
     
     private func handleCreateCategoryNotification(_ notification: Notification) {
         manager?.prepareCreateCategory()
+    }
+    
+    private func handleToggleEditCategoriesNotification(_ notification: Notification) {
+        withAnimation(.spring(duration: 0.3)) {
+            manager?.isEditingCategories.toggle()
+        }
     }
     
     private func renameSheet() -> some View {

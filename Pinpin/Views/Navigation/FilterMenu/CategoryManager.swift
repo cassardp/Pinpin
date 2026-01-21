@@ -12,6 +12,7 @@ final class CategoryManager {
     var categoryToDelete: Category?
     var isShowingDeleteAlert = false
     var hapticTrigger: Int = 0
+    var isEditingCategories = false
     
     private let modelContext: ModelContext
     private let allCategories: [Category]

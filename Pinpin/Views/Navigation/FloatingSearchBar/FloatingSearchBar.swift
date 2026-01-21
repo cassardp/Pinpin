@@ -17,6 +17,7 @@ struct FloatingSearchBar: View {
     var bottomPadding: CGFloat = 12
     var availableCategories: [String] = []
     var currentCategory: String?
+    var isEditingCategories: Bool = false
 
     // MARK: - Actions
     let onSelectAll: () -> Void
@@ -88,6 +89,7 @@ struct FloatingSearchBar: View {
                     availableCategories: availableCategories,
                     currentCategory: currentCategory,
                     searchTransitionNS: searchTransitionNS,
+                    isEditingCategories: isEditingCategories,
                     onSelectAll: onSelectAll,
                     onMoveToCategory: onMoveToCategory,
                     onRestoreBar: onRestoreBar,

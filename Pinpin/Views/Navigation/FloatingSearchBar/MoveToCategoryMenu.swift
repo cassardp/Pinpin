@@ -11,16 +11,9 @@ struct MoveToCategoryMenu: View {
     let onMoveToCategory: (String) -> Void
     let onHaptic: () -> Void
     
-    // MARK: - Computed Properties
-    private var sortedCategories: [String] {
-        let misc = availableCategories.filter { $0.lowercased() == "misc" }
-        let others = availableCategories.filter { $0.lowercased() != "misc" }.reversed()
-        return misc + Array(others)
-    }
-    
     var body: some View {
         Menu {
-            ForEach(sortedCategories, id: \.self) { category in
+            ForEach(availableCategories.reversed(), id: \.self) { category in
                 Button {
                     onHaptic()
                     onMoveToCategory(category)

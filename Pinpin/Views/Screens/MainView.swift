@@ -33,6 +33,9 @@ struct MainView: View {
     
     // Navigation pour ItemDetailView
     @State private var selectedItem: ContentItem?
+    
+    // État d'édition des catégories (synchronisé avec CategoryManager via notification)
+    @State private var isEditingCategories: Bool = false
 
     // Propriétés calculées pour l'espacement et le corner radius
     private var dynamicSpacing: CGFloat {
@@ -85,6 +88,19 @@ struct MainView: View {
                     numberOfColumns = AppConstants.minColumns
                 } else if numberOfColumns > AppConstants.maxColumns {
                     numberOfColumns = AppConstants.maxColumns
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestToggleEditCategories"))) { _ in
+                withAnimation(.spring(duration: 0.3)) {
+                    isEditingCategories.toggle()
+                }
+            }
+            .onChange(of: isMenuOpen) { _, isOpen in
+                // Quitter le mode édition quand on ferme le menu
+                if !isOpen && isEditingCategories {
+                    withAnimation(.spring(duration: 0.3)) {
+                        isEditingCategories = false
+                    }
                 }
             }
     }
@@ -186,8 +202,9 @@ struct MainView: View {
                 selectedContentType: viewModel.selectedContentType,
                 totalPinsCount: filteredItems.count,
                 bottomPadding: 0,
-                availableCategories: Array(Set(allCategories.map { $0.name })),
+                availableCategories: allCategories.map { $0.name },
                 currentCategory: viewModel.selectedContentType,
+                isEditingCategories: isEditingCategories,
                 onSelectAll: {
                     viewModel.selectAll(from: filteredItems)
                 },

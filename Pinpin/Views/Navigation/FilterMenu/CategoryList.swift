@@ -15,7 +15,7 @@ struct CategoryList: View {
         ZStack {
             ScrollViewReader { proxy in
                 List {
-                    // Option "Tout"
+                    // Option "Tout" (non déplaçable, pas de mode édition)
                     CategoryListRow(
                         isSelected: selectedContentType == nil,
                         title: "All",
@@ -24,6 +24,7 @@ struct CategoryList: View {
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .moveDisabled(true)
                     
                     // Types dynamiques avec réorganisation native
                     ForEach(manager.availableCategories, id: \.id) { category in
@@ -40,20 +41,22 @@ struct CategoryList: View {
                             onDelete: {
                                 manager.prepareDelete(for: category)
                             },
-                            canDelete: category.name != "Misc"
+                            canDelete: category.name != "Misc",
+                            isEditing: manager.isEditingCategories
                         )
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                     }
-                    .onMove(perform: manager.moveCategories)
+                    .onMove(perform: manager.isEditingCategories ? manager.moveCategories : nil)
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
-                .scrollDisabled(isMenuDragging) // Désactiver le scroll pendant le swipe
+                .scrollDisabled(isMenuDragging)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentMargins(.top, showCategoryTitles ? 72 : 30) // 82 avec titres (30 base + 52 titre), 30 sans titres
+                .contentMargins(.top, showCategoryTitles ? 72 : 30)
                 .contentMargins(.bottom, 220)
+                .environment(\.editMode, .constant(manager.isEditingCategories ? .active : .inactive))
             }
             
             // Dégradé de fondu en bas pour masquer les catégories sous le bouton
