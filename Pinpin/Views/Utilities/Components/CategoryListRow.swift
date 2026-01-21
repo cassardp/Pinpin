@@ -4,9 +4,8 @@ struct CategoryListRow: View {
     let isSelected: Bool
     let title: String
     let isEmpty: Bool
-    let isEditing: Bool
     let action: () -> Void
-    let onEdit: (() -> Void)?
+    let onRename: (() -> Void)?
     let onDelete: (() -> Void)?
     let canDelete: Bool
     @State private var hapticTrigger: Int = 0
@@ -15,18 +14,16 @@ struct CategoryListRow: View {
         isSelected: Bool,
         title: String,
         isEmpty: Bool,
-        isEditing: Bool = false,
         action: @escaping () -> Void,
-        onEdit: (() -> Void)? = nil,
+        onRename: (() -> Void)? = nil,
         onDelete: (() -> Void)? = nil,
         canDelete: Bool = true
     ) {
         self.isSelected = isSelected
         self.title = title
         self.isEmpty = isEmpty
-        self.isEditing = isEditing
         self.action = action
-        self.onEdit = onEdit
+        self.onRename = onRename
         self.onDelete = onDelete
         self.canDelete = canDelete
     }
@@ -50,20 +47,6 @@ struct CategoryListRow: View {
             .padding(.vertical, -6)
             
             Spacer()
-            
-            if isEditing {
-                HStack(spacing: 16) {
-                    if let onDelete, canDelete {
-                        Button(action: onDelete) {
-                            Image(systemName: "trash")
-                                .font(.title3)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.red)
-                    }
-                }
-                .transition(.opacity)
-            }
         }
         .padding(.leading, 16)
         .padding(.trailing, 16)
@@ -72,10 +55,23 @@ struct CategoryListRow: View {
         .onTapGesture {
             hapticTrigger += 1
             withAnimation(.easeInOut) {
-                if isEditing, let onEdit {
-                    onEdit()
-                } else {
-                    action()
+                action()
+            }
+        }
+        .contextMenu {
+            if let onRename {
+                Button {
+                    onRename()
+                } label: {
+                    Label("Rename", systemImage: "pencil")
+                }
+            }
+            
+            if let onDelete, canDelete {
+                Button(role: .destructive) {
+                    onDelete()
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
             }
         }

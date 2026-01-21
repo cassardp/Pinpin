@@ -59,6 +59,7 @@ struct PinpinApp: App {
             MainView()
                 .modelContainer(sharedModelContainer)
                 .font(.system(.body, design: .rounded))
+                .preferredColorScheme(.light)
         }
     }
 }

@@ -17,6 +17,7 @@ struct MacToolbarOverlay: View {
     // Actions
     let onMoveToCategory: (String) -> Void
     let onDeleteSelected: () -> Void
+    let onAddNote: () -> Void
     
     // Search
     @Binding var searchQuery: String
@@ -26,6 +27,25 @@ struct MacToolbarOverlay: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // Bouton Add Note - seulement en mode normal
+            if !selectionManager.isSelectionMode {
+                Button {
+                    onAddNote()
+                } label: {
+                    Image(systemName: "textformat")
+                        .font(.system(size: 15, weight: .medium))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.borderless)
+                .frame(width: 44, height: 44)
+                .background(.regularMaterial, in: Circle())
+                .overlay {
+                    Circle()
+                        .strokeBorder(.quaternary.opacity(0.5), lineWidth: 0.5)
+                }
+                .help("Add Note")
+            }
+            
             // Barre de recherche avec Liquid Glass - seulement en mode normal
             if !selectionManager.isSelectionMode {
                 HStack(spacing: 12) {

@@ -23,8 +23,6 @@ struct MacMainView: View {
     @State private var selectedCategory: String = MacMainView.allPinsValue
     @State private var numberOfColumns: Int = 4
 
-    @State private var showSettings: Bool = false
-    @State private var showAbout: Bool = false
     @State private var showAddNote: Bool = false
     @State private var hoveredItemId: UUID? = nil
     
@@ -91,12 +89,6 @@ struct MacMainView: View {
 
     var body: some View {
         mainView
-            .sheet(isPresented: $showSettings) {
-                MacSettingsView()
-            }
-            .sheet(isPresented: $showAbout) {
-                InfoSheet()
-            }
             .sheet(isPresented: $showAddNote) {
                 addNoteSheet
             }
@@ -226,11 +218,7 @@ struct MacMainView: View {
             // MARK: - Bottom Menu
             HStack {
                 MacSidebarMenu(
-                    onAddNote: handleAddNote,
-                    onAddCategory: prepareCreateCategory,
-                    onEditCategories: handleEditCategories,
-                    onSettings: handleSettings,
-                    onAbout: handleAbout
+                    onAddCategory: prepareCreateCategory
                 )
                 Spacer()
             }
@@ -283,7 +271,7 @@ struct MacMainView: View {
                             }
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, columnVisibilityState == .detailOnly ? 64 : 16)
+                        .padding(.top, columnVisibilityState == .detailOnly ? 54 : 16)
                         .padding(.bottom, 80) // Space for stats
                         
                         // Stats at bottom of list
@@ -307,6 +295,7 @@ struct MacMainView: View {
                 allItemIds: allItemIds,
                 onMoveToCategory: moveSelectedItemsToCategory,
                 onDeleteSelected: handleDeleteSelected,
+                onAddNote: handleAddNote,
                 searchQuery: $searchQueryState
             )
         }
@@ -403,13 +392,7 @@ struct MacMainView: View {
         showAddNote = true
     }
     
-    private func handleSettings() {
-        showSettings = true
-    }
-    
-    private func handleAbout() {
-        showAbout = true
-    }
+
     
     private func handleEditCategories() {
         // TODO: Implémenter le réordonnancement des catégories

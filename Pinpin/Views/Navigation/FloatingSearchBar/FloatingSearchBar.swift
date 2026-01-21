@@ -7,8 +7,6 @@ struct FloatingSearchBar: View {
     @Binding var showSearchBar: Bool
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
-    @Binding var showSettings: Bool
-    @Binding var showInfo: Bool
     @Binding var isMenuOpen: Bool
     
     // MARK: - Properties
@@ -33,7 +31,6 @@ struct FloatingSearchBar: View {
     @State private var isAnimatingSearchOpen: Bool = false
     @State private var showDeleteConfirmation: Bool = false
     @State private var hapticTrigger: Int = 0
-    @State private var isCategoriesEditing: Bool = false
     @State private var showCapsules: Bool = false
     @State private var showCloseButton: Bool = false
     
@@ -42,9 +39,7 @@ struct FloatingSearchBar: View {
     private let searchTransitionAnimation = Animation.smooth(duration: 0.35)
     
     private enum NotificationName {
-        static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
         static let createCategory = Notification.Name("FilterMenuViewRequestCreateCategory")
-        static let closeEditing = Notification.Name("FilterMenuViewRequestCloseEditing")
     }
 
     var body: some View {
@@ -86,11 +81,8 @@ struct FloatingSearchBar: View {
                     searchQuery: $searchQuery,
                     isSelectionMode: $isSelectionMode,
                     selectedItems: $selectedItems,
-                    showSettings: $showSettings,
-                    showInfo: $showInfo,
                     showDeleteConfirmation: $showDeleteConfirmation,
                     isMenuOpen: $isMenuOpen,
-                    isCategoriesEditing: $isCategoriesEditing,
                     isAnimatingSearchOpen: $isAnimatingSearchOpen,
                     scrollProgress: scrollProgress,
                     availableCategories: availableCategories,
@@ -137,17 +129,8 @@ struct FloatingSearchBar: View {
         } message: {
             Text(deleteConfirmationMessage)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NotificationName.editCategories)) { _ in
-            isCategoriesEditing = true
-        }
         .onReceive(NotificationCenter.default.publisher(for: NotificationName.createCategory)) { _ in
-            isCategoriesEditing = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NotificationName.closeEditing)) { _ in
-            isCategoriesEditing = false
-        }
-        .onChange(of: isMenuOpen) { _, open in
-            if !open { isCategoriesEditing = false }
+            // Notification reçue quand on crée une catégorie
         }
     }
     

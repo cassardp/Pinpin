@@ -16,12 +16,9 @@ struct FilterMenuView: View {
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
 
-    private let userPreferences = UserPreferences.shared
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
     var isMenuDragging: Bool
-    var onOpenAbout: () -> Void
-    var onOpenSettings: () -> Void
     @FocusState private var isTextFieldFocused: Bool
     
     // Manager pour toute la logique métier
@@ -32,13 +29,9 @@ struct FilterMenuView: View {
             .ignoresSafeArea(edges: .bottom)
             .sensoryFeedback(.impact(weight: .light), trigger: manager?.hapticTrigger ?? 0)
             .onAppear(perform: setupManager)
-            .onChange(of: isMenuOpen, handleMenuOpenChange)
             .onChange(of: allCategories.count, updateManagerForCategories)
             .onChange(of: contentItems.count, updateManagerForItems)
-            .onDisappear(perform: handleDisappear)
-            .onReceive(editCategoriesPublisher, perform: handleEditCategoriesNotification)
             .onReceive(createCategoryPublisher, perform: handleCreateCategoryNotification)
-            .onReceive(closeEditingPublisher, perform: handleCloseEditingNotification)
             .sheet(isPresented: renameSheetBinding, content: renameSheet)
             .alert("Delete Category?", isPresented: deleteAlertBinding, presenting: manager?.categoryToDelete, actions: deleteAlertActions, message: deleteAlertMessage)
     }
@@ -56,7 +49,7 @@ struct FilterMenuView: View {
                     manager: manager,
                     contentItems: contentItems,
                     isMenuDragging: isMenuDragging,
-                    showCategoryTitles: userPreferences.showCategoryTitles,
+                    showCategoryTitles: false,
                     selectedContentType: $selectedContentType
                 )
             }
@@ -79,16 +72,8 @@ struct FilterMenuView: View {
     }
     
     // MARK: - Publishers
-    private var editCategoriesPublisher: NotificationCenter.Publisher {
-        NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestEditCategories"))
-    }
-    
     private var createCategoryPublisher: NotificationCenter.Publisher {
         NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCreateCategory"))
-    }
-    
-    private var closeEditingPublisher: NotificationCenter.Publisher {
-        NotificationCenter.default.publisher(for: Notification.Name("FilterMenuViewRequestCloseEditing"))
     }
     
     // MARK: - Handlers
@@ -101,11 +86,6 @@ struct FilterMenuView: View {
                 selectedContentType: $selectedContentType
             )
         }
-    }
-    
-    private func handleMenuOpenChange(_ oldValue: Bool, _ isOpen: Bool) {
-        guard !isOpen else { return }
-        manager?.resetEditingState()
     }
     
     private func updateManagerForCategories() {
@@ -125,27 +105,8 @@ struct FilterMenuView: View {
         )
     }
     
-    private func handleDisappear() {
-        manager?.resetEditingState()
-    }
-    
-    private func handleEditCategoriesNotification(_ notification: Notification) {
-        if let manager, !manager.isEditing {
-            manager.toggleEditing()
-        }
-    }
-    
     private func handleCreateCategoryNotification(_ notification: Notification) {
-        if let manager {
-            if !manager.isEditing {
-                manager.toggleEditing()
-            }
-            manager.prepareCreateCategory()
-        }
-    }
-    
-    private func handleCloseEditingNotification(_ notification: Notification) {
-        manager?.resetEditingState()
+        manager?.prepareCreateCategory()
     }
     
     private func renameSheet() -> some View {
@@ -180,22 +141,4 @@ struct FilterMenuView: View {
 }
 
 
-// MARK: - Preview
-#Preview {
-    let schema = Schema([ContentItem.self, Category.self])
-    let configuration = ModelConfiguration(
-        schema: schema,
-        groupContainer: .identifier(AppConstants.groupID),
-        cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
-    )
-    let container = try! ModelContainer(for: schema, configurations: [configuration])
-    
-    FilterMenuView(
-        selectedContentType: .constant(nil),
-        isMenuOpen: .constant(false),
-        isMenuDragging: false,
-        onOpenAbout: {},
-        onOpenSettings: {}
-    )
-    .modelContainer(container)
-}
+

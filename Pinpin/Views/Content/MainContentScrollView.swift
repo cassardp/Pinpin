@@ -4,12 +4,9 @@ struct MainContentScrollView: View {
     @Binding var selectedContentType: String?
     @Binding var searchQuery: String
     @Binding var isMenuOpen: Bool
-    @Binding var isSettingsOpen: Bool
     @Binding var numberOfColumns: Int
     @Binding var scrollProgress: CGFloat
     @Binding var hapticTrigger: Int
-    
-    private let userPreferences = UserPreferences.shared
     
     let filteredItems: [ContentItem]
     let dynamicSpacing: CGFloat
@@ -43,7 +40,7 @@ struct MainContentScrollView: View {
         .scrollPosition($scrollPosition)
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
-        .scrollDisabled(isMenuOpen || isSettingsOpen)
+        .scrollDisabled(isMenuOpen)
         .onChange(of: selectedContentType) {
             onCategoryChange()
         }

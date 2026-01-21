@@ -6,11 +6,8 @@ struct SearchControlsRow: View {
     @Binding var searchQuery: String
     @Binding var isSelectionMode: Bool
     @Binding var selectedItems: Set<UUID>
-    @Binding var showSettings: Bool
-    @Binding var showInfo: Bool
     @Binding var showDeleteConfirmation: Bool
     @Binding var isMenuOpen: Bool
-    @Binding var isCategoriesEditing: Bool
     @Binding var isAnimatingSearchOpen: Bool
     
     // MARK: - Properties
@@ -32,9 +29,7 @@ struct SearchControlsRow: View {
     private let searchTransitionAnimation = Animation.smooth(duration: 0.35)
     
     private enum NotificationName {
-        static let editCategories = Notification.Name("FilterMenuViewRequestEditCategories")
         static let createCategory = Notification.Name("FilterMenuViewRequestCreateCategory")
-        static let closeEditing = Notification.Name("FilterMenuViewRequestCloseEditing")
     }
     
     var body: some View {
@@ -52,63 +47,25 @@ struct SearchControlsRow: View {
                             }
                         }
                     )
-                } else if isCategoriesEditing {
+
+                } else if isMenuOpen {
+                    // Quand le menu catégorie est ouvert: bouton "Add Category"
                     CircularButton(
-                        icon: "xmark",
+                        icon: "plus",
                         action: {
                             onHaptic()
-                            NotificationCenter.default.post(name: NotificationName.closeEditing, object: nil)
+                            NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
                         }
                     )
                 } else {
-                    Menu {
-                        // Options visibles uniquement quand le menu est ouvert
-                        if isMenuOpen {
-                            Button {
-                                onHaptic()
-                                NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
-                            } label: {
-                                Label("Add Category", systemImage: "plus")
-                            }
-                            Button {
-                                onHaptic()
-                                NotificationCenter.default.post(name: NotificationName.editCategories, object: nil)
-                            } label: {
-                                Label("Edit Categories", systemImage: "arrow.up.arrow.down")
-                            }
-                        } else {
-                            // Option "Add Note" visible uniquement quand le menu est fermé
-                            Button {
-                                onHaptic()
-                                onCreateNote()
-                            } label: {
-                                Label("Add Note", systemImage: "plus")
-                            }
+                    // Quand le menu est fermé: bouton "Add Note"
+                    CircularButton(
+                        icon: "textformat",
+                        action: {
+                            onHaptic()
+                            onCreateNote()
                         }
-                        
-                        Divider()
-                        
-                        ControlGroup {
-                            Button {
-                                onHaptic()
-                                showSettings = true
-                            } label: {
-                                Label("Settings", systemImage: "gearshape.fill")
-                            }
-                            
-                            Button {
-                                onHaptic()
-                                showInfo = true
-                            } label: {
-                                Label("About", systemImage: "info.circle.fill")
-                            }
-                            Spacer()
-                        }
-                    } label: {
-                        CircularButtonContent(icon: "ellipsis")
-                    }
-                    .menuStyle(.button)
-                    .menuOrder(.fixed)
+                    )
                 }
             }
             .opacity(isMenuOpen || isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))

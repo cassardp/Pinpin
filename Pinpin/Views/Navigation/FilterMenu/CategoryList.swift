@@ -20,7 +20,6 @@ struct CategoryList: View {
                         isSelected: selectedContentType == nil,
                         title: "All",
                         isEmpty: contentItems.isEmpty,
-                        isEditing: false,
                         action: { selectedContentType = nil }
                     )
                     .listRowBackground(Color.clear)
@@ -32,11 +31,10 @@ struct CategoryList: View {
                             isSelected: selectedContentType == category.name,
                             title: category.name.capitalized,
                             isEmpty: manager.countForType(category.name) == 0,
-                            isEditing: manager.isEditing,
                             action: {
                                 selectedContentType = (selectedContentType == category.name) ? nil : category.name
                             },
-                            onEdit: {
+                            onRename: {
                                 manager.prepareRename(for: category)
                             },
                             onDelete: {
@@ -56,7 +54,6 @@ struct CategoryList: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentMargins(.top, showCategoryTitles ? 72 : 30) // 82 avec titres (30 base + 52 titre), 30 sans titres
                 .contentMargins(.bottom, 220)
-                .animation(.easeInOut, value: manager.isEditing)
             }
             
             // Dégradé de fondu en bas pour masquer les catégories sous le bouton

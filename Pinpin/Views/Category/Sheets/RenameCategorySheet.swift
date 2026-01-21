@@ -21,7 +21,7 @@ struct RenameCategorySheet: View {
                 VStack(spacing: 40) {
                     TextField("Category Name", text: $name)
                         .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
                         .textFieldStyle(PlainTextFieldStyle())
                         .padding(.horizontal, 40)

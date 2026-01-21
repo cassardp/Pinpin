@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ContentItemCard: View {
     let item: ContentItem
-    private let userPreferences = UserPreferences.shared
     let cornerRadius: CGFloat
     let numberOfColumns: Int
     let isSelectionMode: Bool
@@ -29,30 +28,10 @@ struct ContentItemCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 }
             
-            // URL en overlay dans le coin bas gauche
-            if userPreferences.showURLs, let url = item.url, !url.isEmpty {
-                Text(shortenURL(url))
-                    .font(.caption2)
-                    .foregroundColor(.primary.opacity(0.7))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 4))
-                    .padding(8)
-                    .onTapGesture {
-                        UIPasteboard.general.string = url
-                        hapticTrigger += 1
-                    }
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .move(edge: .bottom)),
-                        removal: .opacity.combined(with: .scale(scale: 0.8))
-                    ))
-            }
+            // URL overlay désactivé
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .animation(.smooth(duration: 0.4), value: cornerRadius)
-        .animation(.smooth(duration: 0.5), value: userPreferences.showURLs)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5)

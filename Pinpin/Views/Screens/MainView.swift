@@ -8,7 +8,6 @@ import SwiftData
 
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
-    private let userPreferences = UserPreferences.shared
     @State private var viewModel = MainViewModel()
     @Namespace private var heroNamespace
 
@@ -19,9 +18,6 @@ struct MainView: View {
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
     @State private var isMenuDragging = false
-    @State private var isSettingsOpen = false
-    @State private var settingsDetent: PresentationDetent = .medium
-    @State private var isInfoOpen = false
     @State private var showFloatingBar: Bool = true
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = AppConstants.defaultColumns
     @State private var hapticTrigger: Int = 0
@@ -44,7 +40,7 @@ struct MainView: View {
     }
 
     private var dynamicCornerRadius: CGFloat {
-        AppConstants.cornerRadius(for: numberOfColumns, disabled: userPreferences.disableCornerRadius)
+        AppConstants.cornerRadius(for: numberOfColumns, disabled: false)
     }
     
 
@@ -71,14 +67,6 @@ struct MainView: View {
                     .presentationDragIndicator(.hidden)
             }
             .sensoryFeedback(.selection, trigger: hapticTrigger)
-            .sheet(isPresented: $isSettingsOpen) {
-                settingsSheet
-            }
-            .sheet(isPresented: $isInfoOpen) {
-                InfoSheet()
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.hidden)
-            }
             .sheet(isPresented: $showTextEditSheet) {
                 TextEditSheet(item: textEditItem, targetCategory: textEditTargetCategory)
                     .onDisappear {
@@ -108,9 +96,7 @@ struct MainView: View {
                 FilterMenuView(
                     selectedContentType: $viewModel.selectedContentType,
                     isMenuOpen: $isMenuOpen,
-                    isMenuDragging: isMenuDragging,
-                    onOpenAbout: { },
-                    onOpenSettings: { isSettingsOpen = true }
+                    isMenuDragging: isMenuDragging
                 )
             }
         }
@@ -125,7 +111,6 @@ struct MainView: View {
                 selectedContentType: $viewModel.selectedContentType,
                 searchQuery: $viewModel.searchQuery,
                 isMenuOpen: $isMenuOpen,
-                isSettingsOpen: $isSettingsOpen,
                 numberOfColumns: $numberOfColumns,
                 scrollProgress: $viewModel.scrollProgress,
                 hapticTrigger: $hapticTrigger,
@@ -176,12 +161,7 @@ struct MainView: View {
         }
     }
     
-    // MARK: - Settings Sheet
-    private var settingsSheet: some View {
-        SettingsView()
-            .presentationDetents([.medium, .large], selection: $settingsDetent)
-            .presentationDragIndicator(.hidden)
-    }
+
     
     // MARK: - Floating Search Bar
     @ViewBuilder
@@ -192,8 +172,6 @@ struct MainView: View {
                 showSearchBar: $viewModel.showSearchBar,
                 isSelectionMode: $viewModel.isSelectionMode,
                 selectedItems: $viewModel.selectedItems,
-                showSettings: $isSettingsOpen,
-                showInfo: $isInfoOpen,
                 isMenuOpen: $isMenuOpen,
                 menuSwipeProgress: menuSwipeProgress,
                 scrollProgress: viewModel.scrollProgress,

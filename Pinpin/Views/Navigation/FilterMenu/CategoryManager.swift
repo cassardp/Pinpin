@@ -5,7 +5,6 @@ import SwiftData
 @Observable
 final class CategoryManager {
     // MARK: - Properties
-    var isEditing = false
     var categoryToRename: Category?
     var renameText: String = ""
     var isShowingRenameSheet = false
@@ -60,20 +59,7 @@ final class CategoryManager {
         return contentItems.filter { $0.safeCategoryName == type }.count
     }
     
-    // MARK: - Editing Actions
-    func toggleEditing() {
-        hapticTrigger += 1
-        withAnimation(.easeInOut) {
-            isEditing.toggle()
-        }
-    }
-    
-    func resetEditingState() {
-        guard isEditing else { return }
-        isEditing = false
-        // Notifier la FloatingSearchBar pour désactiver l'état d'édition
-        NotificationCenter.default.post(name: Notification.Name("FilterMenuViewRequestCloseEditing"), object: nil)
-    }
+
     
     // MARK: - Rename Actions
     func prepareRename(for category: Category) {
@@ -128,7 +114,6 @@ final class CategoryManager {
         modelContext.insert(newCategory)
         try? modelContext.save()
         selectedContentType.wrappedValue = nil // Retourner sur "All" au lieu de sélectionner la catégorie vide
-        resetEditingState() // Désactiver le mode édition après création
         resetRenameState()
     }
     

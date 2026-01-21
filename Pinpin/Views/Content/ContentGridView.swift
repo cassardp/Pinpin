@@ -17,22 +17,10 @@ struct ContentGridView: View {
     let onItemTap: (ContentItem) -> Void
     let heroNamespace: Namespace.ID
 
-    private let userPreferences = UserPreferences.shared
-
     var body: some View {
         VStack(spacing: 0) {
-            // Header avec le nom de la catégorie
-            if showTitle && userPreferences.showCategoryTitles {
-                Text(selectedContentType ?? "All")
-                    .font(.system(size: 24, design: .serif))
-                    .italic()
-                    .fontWeight(.thin)
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.bottom, 32)
-                    .padding(.top, 20)
-            }
+            // Header avec le nom de la catégorie (désactivé)
+            // Les titres de catégorie ne sont plus affichés
 
             PinterestLayoutWrapper(numberOfColumns: numberOfColumns, itemSpacing: dynamicSpacing) {
                 ForEach(items.indices, id: \.self) { index in
