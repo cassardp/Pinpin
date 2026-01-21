@@ -16,6 +16,7 @@ class ShareViewController: UIViewController, ObservableObject {
     
     private var sharedContent: SharedContentData?
     @Published var isProcessingContent = false
+    @Published var isSaved = false
     private var ocrMetadata: [String: String] = [:]
     private var isSaving = false // Protection contre les doubles clics
     
@@ -39,22 +40,15 @@ class ShareViewController: UIViewController, ObservableObject {
         
         view.backgroundColor = UIColor.systemBackground
         
-        // Afficher l'interface immédiatement avec un contenu temporaire
-        showCategorySelectionImmediately()
+        // Afficher l'interface de sauvegarde simplifiée
+        showSavingUI()
         
         // Traiter le contenu partagé en arrière-plan
         processSharedContentInBackground()
     }
     
-    private func showCategorySelectionImmediately() {
-        // Créer un contenu temporaire pour afficher l'interface immédiatement
-        let temporaryContent = SharedContentData(
-            title: "Loading...",
-            url: nil,
-            description: "Processing shared content..."
-        )
-        
-        showCategorySelection(for: temporaryContent)
+    private func showSavingUI() {
+        embedSavingView()
     }
     
     private func processSharedContentInBackground() {
@@ -171,24 +165,7 @@ class ShareViewController: UIViewController, ObservableObject {
         }
     }
     
-    // MARK: - Category Selection Modal
-    
-    private func showCategorySelection(for contentData: SharedContentData) {
-        self.sharedContent = contentData
-        
-        let categoryModal = CategorySelectionModalWrapper(
-            contentData: contentData,
-            isProcessing: .constant(isProcessingContent),
-            onCategorySelected: { [weak self] category in
-                self?.saveContent(contentData, to: category)
-            },
-            onCancel: { [weak self] in
-                self?.completeRequest()
-            }
-        )
-        embedCategorySelectionView(categoryModal)
-    }
-    
+    // MARK: - Post-Processing Updates
     private func updateContentAfterProcessing(title: String, url: String?, description: String?, imageData: Data?) {
         let finalContentData = SharedContentData(
             title: title,
@@ -199,9 +176,12 @@ class ShareViewController: UIViewController, ObservableObject {
         )
         
         DispatchQueue.main.async { [weak self] in
-            self?.sharedContent = finalContentData
-            self?.isProcessingContent = false
-            // L'interface est déjà affichée, pas besoin de la recréer
+            guard let self = self else { return }
+            self.sharedContent = finalContentData
+            self.isProcessingContent = false
+            
+            // Auto-savegarde dans Misc une fois le traitement terminé
+            self.saveContent(finalContentData, to: AppConstants.defaultCategoryName)
         }
     }
     
@@ -246,7 +226,10 @@ class ShareViewController: UIViewController, ObservableObject {
                 
                 if let existingItem = try context.fetch(duplicateDescriptor).first {
                     print("[ShareExtension] ⚠️ Item identique créé il y a \(Int(Date().timeIntervalSince(existingItem.createdAt)))s, skip pour éviter doublon accidentel")
-                    self.completeRequest()
+                    self.isSaved = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        self.completeRequest()
+                    }
                     return
                 }
 
@@ -277,12 +260,19 @@ class ShareViewController: UIViewController, ObservableObject {
                 // Sauvegarder
                 try context.save()
                 print("[ShareExtension] ✅ Item sauvegardé dans SwiftData")
+                
+                // Update UI state
+                self.isSaved = true
+                
             } catch {
                 print("[ShareExtension] ❌ Erreur sauvegarde: \(error)")
             }
 
-            self.isSaving = false
-            self.completeRequest()
+            // Fermer après un délai pour laisser voir le succès
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.isSaving = false
+                self.completeRequest()
+            }
         }
     }
     
@@ -426,8 +416,9 @@ private extension ShareViewController {
         return false
     }
     
-    func embedCategorySelectionView(_ view: CategorySelectionModalWrapper) {
-        let hostingController = UIHostingController(rootView: view.modelContainer(modelContainer))
+    func embedSavingView() {
+        let hostingController = UIHostingController(rootView: SavingViewWrapper(controller: self))
+        
         addChild(hostingController)
         self.view.addSubview(hostingController.view)
         
@@ -442,6 +433,7 @@ private extension ShareViewController {
         hostingController.didMove(toParent: self)
     }
     
+
     func beginSecurityScopedAccessIfNeeded(for url: URL) -> Bool {
         guard url.isFileURL else { return false }
         return url.startAccessingSecurityScopedResource()
@@ -450,5 +442,45 @@ private extension ShareViewController {
     func endSecurityScopedAccessIfNeeded(for url: URL, started: Bool) {
         guard started else { return }
         url.stopAccessingSecurityScopedResource()
+    }
+}
+
+// MARK: - Saving Views
+private struct SavingViewWrapper: View {
+    @ObservedObject var controller: ShareViewController
+    
+    var body: some View {
+        SavingView(isProcessing: $controller.isProcessingContent, isSaved: controller.isSaved)
+    }
+}
+
+private struct SavingView: View {
+    @Binding var isProcessing: Bool
+    var isSaved: Bool
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            if isSaved {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.green)
+                    .transition(.scale.combined(with: .opacity))
+                
+                Text("Saved to Pinpin")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+            } else {
+                ProgressView()
+                    .scaleEffect(1.2)
+                
+                Text("Saving...")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(UIColor.systemBackground))
+        .ignoresSafeArea()
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSaved)
     }
 }
