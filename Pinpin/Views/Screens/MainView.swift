@@ -6,6 +6,13 @@
 import SwiftUI
 import SwiftData
 
+// Structure pour passer les données au TextEditSheet via .sheet(item:)
+struct TextEditContext: Identifiable {
+    let id = UUID()
+    let item: ContentItem?
+    let targetCategory: Category?
+}
+
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = MainViewModel()
@@ -26,10 +33,8 @@ struct MainView: View {
     @State private var showDeleteConfirmation: Bool = false
     @State private var itemToDelete: ContentItem?
 
-    // TextEditSheet state
-    @State private var showTextEditSheet: Bool = false
-    @State private var textEditItem: ContentItem?
-    @State private var textEditTargetCategory: Category?
+    // TextEditSheet state - utilise une struct pour garantir le passage correct des données
+    @State private var textEditContext: TextEditContext?
     
     // Navigation pour ItemDetailView
     @State private var selectedItem: ContentItem?
@@ -70,12 +75,8 @@ struct MainView: View {
                     .presentationDragIndicator(.hidden)
             }
             .sensoryFeedback(.selection, trigger: hapticTrigger)
-            .sheet(isPresented: $showTextEditSheet) {
-                TextEditSheet(item: textEditItem, targetCategory: textEditTargetCategory)
-                    .onDisappear {
-                        textEditItem = nil
-                        textEditTargetCategory = nil
-                    }
+            .sheet(item: $textEditContext) { context in
+                TextEditSheet(item: context.item, targetCategory: context.targetCategory)
             }
             .alert("Confirm Deletion", isPresented: $showDeleteConfirmation) {
                 deleteConfirmationButtons
@@ -279,31 +280,38 @@ private extension MainView {
             item.category = targetCategory
         }
         try? modelContext.save()
+        
+        // Invalider le cache pour forcer le rafraîchissement de la vue
+        viewModel.invalidateCache()
 
         viewModel.selectedItems.removeAll()
         viewModel.isSelectionMode = false
     }
 
     func createNewTextNote() {
-        textEditItem = nil
-        
         // Déterminer la catégorie cible
-        if let selectedType = viewModel.selectedContentType {
-            textEditTargetCategory = allCategories.first { $0.name == selectedType }
+        let targetCategory: Category?
+        
+        if let selectedType = viewModel.selectedContentType,
+           let category = allCategories.first(where: { $0.name == selectedType }) {
+            // On est dans une catégorie spécifique → utiliser cette catégorie
+            targetCategory = category
         } else {
-            // Trouver ou créer "Misc"
+            // On est sur "All" ou catégorie non trouvée → utiliser Misc
             if let misc = allCategories.first(where: { $0.name == "Misc" }) {
-                textEditTargetCategory = misc
+                targetCategory = misc
             } else {
+                // Créer Misc si elle n'existe pas
                 let maxSortOrder = allCategories.map { $0.sortOrder }.max() ?? -1
                 let misc = Category(name: "Misc", sortOrder: maxSortOrder + 1)
                 modelContext.insert(misc)
                 try? modelContext.save()
-                textEditTargetCategory = misc
+                targetCategory = misc
             }
         }
         
-        showTextEditSheet = true
+        // Créer le contexte et ouvrir le sheet
+        textEditContext = TextEditContext(item: nil, targetCategory: targetCategory)
     }
     
     func deleteSelectedItems(from items: [ContentItem]) {

@@ -100,7 +100,3 @@ struct StorageStatsView: View {
         loadStorageStats()
     }
 }
-
-#Preview {
-    StorageStatsView(selectedContentType: nil, filteredItems: [])
-}

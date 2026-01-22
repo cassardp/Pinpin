@@ -50,7 +50,7 @@ struct SearchBarView: View {
                 HStack(spacing: 16) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.primary.opacity(0.4))
+                        .foregroundColor(.primary)
                         .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
                     
                     ZStack(alignment: .leading) {

@@ -72,7 +72,7 @@ struct SearchControlsRow: View {
                 } else {
                     // Quand le menu est fermé: bouton "Add Note"
                     CircularButton(
-                        icon: "textformat",
+                        icon: "text.alignleft",
                         action: {
                             onHaptic()
                             onCreateNote()
@@ -109,7 +109,7 @@ struct SearchControlsRow: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: scrollProgress > 0.5 ? 20 : 18, weight: .medium))
-                                    .foregroundColor(scrollProgress > 0.5 ? .primary.opacity(0.4) : .primary.opacity(0.4))
+                                    .foregroundColor(scrollProgress > 0.5 ? .primary : .primary.opacity(0.4))
                                     .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
                                 
                                 if scrollProgress < 0.5 {

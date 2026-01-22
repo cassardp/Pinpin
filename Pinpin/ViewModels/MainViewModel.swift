@@ -144,6 +144,17 @@ final class MainViewModel {
         selectedContentType = nil
     }
     
+    // MARK: - Cache Management
+    
+    /// Invalide le cache pour forcer un rafraîchissement des items filtrés
+    /// Appelé après un déplacement d'items vers une autre catégorie
+    func invalidateCache() {
+        lastAllItemsIDs = []
+        lastSearchQuery = ""
+        lastSelectedType = nil
+        cachedFilteredItems = []
+    }
+    
     // MARK: - Share
     
     func shareCurrentCategory(items: [ContentItem]) -> String {
