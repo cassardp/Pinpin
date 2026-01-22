@@ -252,7 +252,6 @@ struct SearchBarView: View {
                 .padding(.horizontal, 18)
                 .glassEffect()
                 .glassEffectID("searchBackground", in: searchTransitionNS)
-                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 
                 // Bouton xmark pour fermer le clavier
                 if showCloseButton {
@@ -290,7 +289,6 @@ extension View {
                 self.glassEffect()
             }
         }
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
 }
 

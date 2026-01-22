@@ -130,7 +130,6 @@ struct SearchControlsRow: View {
                             ))
                             .glassEffect()
                             .glassEffectID("searchBackground", in: searchTransitionNS)
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         } else {
                             HStack(spacing: 8) {
                                 Image(systemName: "magnifyingglass")
@@ -170,7 +169,6 @@ struct SearchControlsRow: View {
                             .glassEffect(.regular.tint(.black))
                             .colorScheme(.dark)
                             .glassEffectID("searchBackground", in: searchTransitionNS)
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                     }
                     .animation(unifiedAnimation, value: searchQuery)
