@@ -43,7 +43,7 @@ struct MacContentCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .shadow(
                 color: isHovered ? Color.black.opacity(0.2) : Color.black.opacity(0.08),
-                radius: isHovered ? 16 : 6,
+                radius: isHovered ? 16 : 16,
                 y: isHovered ? 8 : 2
             )
             .scaleEffect(isHovered ? 1.02 : 1.0)

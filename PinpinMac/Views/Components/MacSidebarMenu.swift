@@ -39,10 +39,10 @@ struct MacSidebarMenu: View {
                 }
             } label: {
                 Image(systemName: isEditingCategories ? "checkmark" : "pencil")
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
-                    .background(.regularMaterial)
+                    .background(.regularMaterial, in: Circle())
                     .overlay {
                         Circle()
                             .strokeBorder(.quaternary.opacity(0.5), lineWidth: 0.5)

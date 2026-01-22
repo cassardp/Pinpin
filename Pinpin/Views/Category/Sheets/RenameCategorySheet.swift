@@ -38,8 +38,8 @@ struct RenameCategorySheet: View {
                         }
                 }
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 120)
-                .padding(.bottom, 60)
+                .padding(.top, 100)
+                .padding(.bottom, 100)
                 
                 Spacer()
             }

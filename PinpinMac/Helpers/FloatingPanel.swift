@@ -30,6 +30,11 @@ class FloatingPanel: NSPanel {
         self.hidesOnDeactivate = false
         self.becomesKeyOnlyIfNeeded = false
         
+        // Masquer les boutons standard (rouge, jaune, vert)
+        self.standardWindowButton(.closeButton)?.isHidden = true
+        self.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        self.standardWindowButton(.zoomButton)?.isHidden = true
+        
         self.contentView = hostingView
         
         // Observer pour fermer quand on perd le focus

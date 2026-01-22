@@ -31,7 +31,7 @@ struct MacCategoryRow: View {
                     onDelete?()
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .foregroundColor(.red)
                 }
                 .buttonStyle(.plain)
