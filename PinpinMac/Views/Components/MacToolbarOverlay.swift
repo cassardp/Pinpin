@@ -26,7 +26,7 @@ struct MacToolbarOverlay: View {
     @State private var showDeleteConfirmation: Bool = false
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 8) {
             // Bouton Add Note - seulement en mode normal
             if !selectionManager.isSelectionMode {
                 Button {

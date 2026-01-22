@@ -27,7 +27,6 @@ struct SearchControlsRow: View {
     
     // MARK: - Constants
     private let unifiedAnimation = Animation.smooth(duration: 0.36)
-    private let searchTransitionAnimation = Animation.smooth(duration: 0.35)
     
     private enum NotificationName {
         static let createCategory = Notification.Name("FilterMenuViewRequestCreateCategory")
@@ -129,21 +128,9 @@ struct SearchControlsRow: View {
                                 insertion: .opacity.combined(with: .scale(scale: 0.98)),
                                 removal: .opacity.combined(with: .scale(scale: 0.98))
                             ))
-                            .background(
-                                Group {
-                                    if scrollProgress > 0.5 {
-                                        Circle()
-                                            .fill(.regularMaterial)
-                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 28)
-                                            .fill(.regularMaterial)
-                                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                                            .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-                                    }
-                                }
-                            )
+                            .glassEffect()
+                            .glassEffectID("searchBackground", in: searchTransitionNS)
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         } else {
                             HStack(spacing: 8) {
                                 Image(systemName: "magnifyingglass")
@@ -180,12 +167,9 @@ struct SearchControlsRow: View {
                                 insertion: .opacity.combined(with: .scale(scale: 0.98)),
                                 removal: .opacity.combined(with: .scale(scale: 0.98))
                             ))
-                            .background(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .fill(.ultraThickMaterial)
-                                    .colorScheme(.dark)
-                                    .matchedGeometryEffect(id: "searchBackground", in: searchTransitionNS)
-                            )
+                            .glassEffect()
+                            .glassEffectID("searchBackground", in: searchTransitionNS)
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                     }
                     .animation(unifiedAnimation, value: searchQuery)
@@ -210,6 +194,7 @@ struct SearchControlsRow: View {
 }
 
 // MARK: - Supporting Views
+
 private struct CircularButton: View {
     let icon: String
     let action: () -> Void
@@ -221,7 +206,7 @@ private struct CircularButton: View {
     }
 }
 
-struct CircularButtonContent: View {
+private struct CircularButtonContent: View {
     let icon: String
     
     var body: some View {
@@ -229,10 +214,104 @@ struct CircularButtonContent: View {
             .font(.system(size: 18, weight: .medium))
             .foregroundColor(.primary)
             .frame(width: 48, height: 48)
-            .background(
-                Circle()
-                    .fill(.regularMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-            )
+            .floatingButtonBackground()
+    }
+}
+
+// MARK: - SelectionActionsButton
+private struct SelectionActionsButton: View {
+    @Binding var isSelectionMode: Bool
+    @Binding var selectedItems: Set<UUID>
+    @Binding var showDeleteConfirmation: Bool
+    
+    var scrollProgress: CGFloat
+    let onSelectAll: () -> Void
+    let onHaptic: () -> Void
+    
+    var body: some View {
+        Button(action: {
+            onHaptic()
+            
+            if isSelectionMode {
+                if selectedItems.isEmpty {
+                    onSelectAll()
+                } else {
+                    showDeleteConfirmation = true
+                }
+            } else {
+                withAnimation(.smooth(duration: 0.3)) {
+                    isSelectionMode = true
+                }
+            }
+        }) {
+            Group {
+                if isSelectionMode {
+                    if selectedItems.isEmpty {
+                        Text("All")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.primary)
+                    } else {
+                        HStack(spacing: 4) {
+                            Text("\(selectedItems.count)")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.white)
+                            Image(systemName: "trash")
+                                .font(.system(size: 19))
+                                .foregroundColor(.white)
+                        }
+                    }
+                } else {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+            }
+            .frame(height: 48)
+            .frame(minWidth: 48)
+            .padding(.horizontal, isSelectionMode ? 8 : 0)
+            .floatingButtonBackground(isHighlighted: isSelectionMode && !selectedItems.isEmpty)
+        }
+        .opacity(isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))
+    }
+}
+
+// MARK: - MoveToCategoryMenu
+private struct MoveToCategoryMenu: View {
+    var selectedItems: Set<UUID>
+    var availableCategories: [String]
+    var currentCategory: String?
+    
+    let onMoveToCategory: (String) -> Void
+    let onHaptic: () -> Void
+    
+    var body: some View {
+        Menu {
+            ForEach(availableCategories.reversed(), id: \.self) { category in
+                Button {
+                    onHaptic()
+                    onMoveToCategory(category)
+                } label: {
+                    Label(category.capitalized, systemImage: "folder")
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text("\(selectedItems.count)")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                Image(systemName: "folder")
+                    .font(.system(size: 19))
+                    .foregroundColor(.primary)
+            }
+            .frame(height: 48)
+            .frame(minWidth: 48)
+            .padding(.horizontal, 8)
+            .floatingButtonBackground()
+        }
+        .menuStyle(.button)
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+            removal: .opacity.combined(with: .scale(scale: 0.98))
+        ))
     }
 }

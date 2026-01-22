@@ -46,7 +46,6 @@ struct MacContentCard: View {
                 radius: isHovered ? 16 : 16,
                 y: isHovered ? 8 : 2
             )
-            .scaleEffect(isHovered ? 1.02 : 1.0)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovered)
             .onTapGesture {
                 if isSelectionMode {
