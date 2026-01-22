@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct MacMainView: View {
     @Environment(\.modelContext) private var modelContext
@@ -34,6 +35,8 @@ struct MacMainView: View {
     @State private var showDeleteSelectedAlert: Bool = false
     @State private var renameCategoryName: String = ""
     @State private var isCreatingCategory: Bool = false
+    @State private var isEditingCategories: Bool = false
+    @State private var draggingItem: Category? = nil
     
     // Selection Manager
     @State private var selectionManager = MacSelectionManager()
@@ -171,61 +174,84 @@ struct MacMainView: View {
     
     // MARK: - Sidebar
     
+    private var sidebarList: some View {
+        List {
+            // Option "All" (non déplaçable, pas de mode édition)
+            MacCategoryRow(
+                title: "All",
+                isSelected: isAllPinsSelected,
+                isEmpty: allContentItems.isEmpty
+            ) {
+                withAnimation(.easeInOut(duration: 0.28)) {
+                    selectedCategory = Self.allPinsValue
+                }
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
+            
+            // Catégories avec réordonnancement custom (Drag & Drop)
+            ForEach(visibleCategories, id: \.name) { category in
+                MacCategoryRow(
+                    title: category.name,
+                    isSelected: selectedCategory == category.name,
+                    isEmpty: countForCategory(category.name) == 0,
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            selectedCategory = category.name
+                        }
+                    },
+                    onRename: {
+                        renameCategoryName = category.name
+                        categoryToRename = category
+                        showRenameCategory = true
+                    },
+                    onDelete: {
+                        categoryToDelete = category
+                        showDeleteCategoryAlert = true
+                    },
+                    canDelete: category.name != "Misc",
+                    isEditing: isEditingCategories
+                )
+                .tag(category.name) // Gardé par précaution ou pour d'autres usages
+                .onDrag {
+                    guard isEditingCategories else { return NSItemProvider() }
+                    self.draggingItem = category
+                    return NSItemProvider(object: category.name as NSString)
+                }
+                .onDrop(of: [UTType.text], delegate: CategoryDropDelegate(
+                    item: category,
+                    visibleCategories: visibleCategories,
+                    draggingItem: $draggingItem,
+                    onMove: { from, to in
+                        withAnimation {
+                             moveCategories(from: from, to: to)
+                        }
+                    }
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
+            }
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .padding(.horizontal, 24)
+    }
+
     private var sidebarView: some View {
         VStack(spacing: 0) {
             Spacer()
             
-            List {
-                // Option "All"
-                MacCategoryRow(
-                    title: "All",
-                    isSelected: isAllPinsSelected,
-                    isEmpty: allContentItems.isEmpty
-                ) {
-                    withAnimation(.easeInOut(duration: 0.28)) {
-                        selectedCategory = Self.allPinsValue
-                    }
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-                
-                // Catégories
-                ForEach(visibleCategories) { category in
-                    MacCategoryRow(
-                        title: category.name,
-                        isSelected: selectedCategory == category.name,
-                        isEmpty: countForCategory(category.name) == 0,
-                        action: {
-                            withAnimation(.easeInOut(duration: 0.28)) {
-                                selectedCategory = category.name
-                            }
-                        },
-                        onRename: {
-                            renameCategoryName = category.name
-                            categoryToRename = category
-                            showRenameCategory = true
-                        },
-                        onDelete: {
-                            categoryToDelete = category
-                            showDeleteCategoryAlert = true
-                        }
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .padding(.horizontal, 24)
+            sidebarList
             
             Spacer()
             
             // MARK: - Bottom Menu
             HStack {
                 MacSidebarMenu(
-                    onAddCategory: prepareCreateCategory
+                    onAddCategory: prepareCreateCategory,
+                    isEditingCategories: $isEditingCategories
                 )
                 Spacer()
             }
@@ -485,6 +511,28 @@ struct MacMainView: View {
         }
         
         categoryToDelete = nil
+    }
+    
+    // MARK: - Category Reordering
+    
+    private func moveCategories(from source: IndexSet, to destination: Int) {
+        // Créer une copie mutable des catégories visibles
+        var reorderedCategories = visibleCategories
+        reorderedCategories.move(fromOffsets: source, toOffset: destination)
+        
+        // Mettre à jour le sortOrder de toutes les catégories
+        for (newIndex, category) in reorderedCategories.enumerated() {
+            category.sortOrder = Int32(newIndex)
+        }
+        
+        // Les catégories non visibles gardent leur ordre après les visibles
+        let visibleIds = Set(reorderedCategories.map { $0.id })
+        let hiddenCategories = allCategories.filter { !visibleIds.contains($0.id) }
+        for (offset, category) in hiddenCategories.enumerated() {
+            category.sortOrder = Int32(reorderedCategories.count + offset)
+        }
+        
+        try? modelContext.save()
     }
     
     // MARK: - Selection Management
