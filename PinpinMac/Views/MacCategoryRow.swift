@@ -19,9 +19,7 @@ struct MacCategoryRow: View {
     
     @State private var isHovered = false
     
-    private var hasContextMenu: Bool {
-        onRename != nil || onDelete != nil
-    }
+
     
     var body: some View {
         HStack(spacing: 12) {
@@ -77,27 +75,7 @@ struct MacCategoryRow: View {
                 }
             }
         }
-        .if(hasContextMenu && !isEditing) { view in
-            view.contextMenu {
-                if let onRename = onRename {
-                    Button {
-                        onRename()
-                    } label: {
-                        Label("Rename", systemImage: "pencil")
-                    }
-                }
-                
-                if let onDelete = onDelete, canDelete {
-                    Divider()
-                    
-                    Button(role: .destructive) {
-                        onDelete()
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-            }
-        }
+
     }
 }
 
