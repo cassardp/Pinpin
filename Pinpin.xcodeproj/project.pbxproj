@@ -87,6 +87,7 @@
 				Views/Content/ContentViews/TikTokContentView.swift,
 				Views/Utilities/Components/SmartAsyncImage.swift,
 				Views/Utilities/Components/StorageStatsView.swift,
+				Views/Utilities/PredefinedSearchView.swift,
 			);
 			target = 4E3972A82E8BBDBC001357EA /* PinpinMac */;
 		};

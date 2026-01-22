@@ -40,8 +40,9 @@ struct CategoryListRow: View {
                     onDelete?()
                 } label: {
                     Image(systemName: "trash")
-                        .font(.title2)
+                        .font(.system(size: 18))
                         .foregroundColor(.red)
+                        .padding(.trailing, 4)
                 }
                 .buttonStyle(.plain)
                 .transition(.move(edge: .leading).combined(with: .opacity))

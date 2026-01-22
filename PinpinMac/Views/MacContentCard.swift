@@ -65,6 +65,8 @@ struct MacContentCard: View {
                     .transition(.identity)
             }
         }
+        .contentShape(Rectangle())
+        .clipped()
         .animation(nil, value: isSelectionMode)
     }
     
