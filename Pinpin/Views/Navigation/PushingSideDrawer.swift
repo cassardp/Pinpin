@@ -14,6 +14,7 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
     @Binding var isDragging: Bool // Exposer l'état de dragging
     var width: CGFloat = 320
     var isSwipeDisabled: Bool = false // Nouveau paramètre pour désactiver le swipe
+    var isEditingMode: Bool = false // Paramètre pour le mode édition
     @ViewBuilder var content: () -> Content
     @ViewBuilder var drawer: () -> Drawer
 
@@ -74,6 +75,17 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                     .onChanged { value in
                         // Ne pas traiter le swipe si désactivé
                         guard !isSwipeDisabled else { return }
+                        
+                        // En mode édition, si le drag commence sur la poignée de réorganisation (à droite du drawer), on ignore
+                        if isEditingMode && isOpen {
+                            // Zone de la poignée : les 50 derniers points de la largeur du drawer
+                            // Le startLocation est relatif à la ZStack qui fait toute la largeur de l'écran (via GeometryReader)
+                            // Mais le drawer a une largeur fixe 'width'.
+                            // Si le drawer est ouvert, il est de 0 à width.
+                            if value.startLocation.x > width - 50 && value.startLocation.x <= width {
+                                return
+                            }
+                        }
                         
                         let dx = value.translation.width
                         let dy = value.translation.height

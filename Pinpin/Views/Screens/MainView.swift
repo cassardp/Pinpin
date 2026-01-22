@@ -114,13 +114,15 @@ struct MainView: View {
                 swipeProgress: $menuSwipeProgress,
                 isDragging: $isMenuDragging,
                 width: geometry.size.width * 0.8,
-                isSwipeDisabled: viewModel.showSearchBar
+                isSwipeDisabled: viewModel.showSearchBar,
+                isEditingMode: isEditingCategories
             ) {
                 mainContentView
             } drawer: {
                 FilterMenuView(
                     selectedContentType: $viewModel.selectedContentType,
                     isMenuOpen: $isMenuOpen,
+                    isEditingCategories: $isEditingCategories,
                     isMenuDragging: isMenuDragging
                 )
             }

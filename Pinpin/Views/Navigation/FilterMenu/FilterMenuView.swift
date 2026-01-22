@@ -18,6 +18,7 @@ struct FilterMenuView: View {
 
     @Binding var selectedContentType: String?
     @Binding var isMenuOpen: Bool
+    @Binding var isEditingCategories: Bool
     var isMenuDragging: Bool
     @FocusState private var isTextFieldFocused: Bool
     
@@ -37,6 +38,9 @@ struct FilterMenuView: View {
             .onChange(of: allCategories.count, updateManagerForCategories)
             .onChange(of: categorySortOrderSignature, updateManagerForCategories)
             .onChange(of: contentItems.count, updateManagerForItems)
+            .onChange(of: isEditingCategories) { _, newValue in
+                manager?.isEditingCategories = newValue
+            }
             .onReceive(createCategoryPublisher, perform: handleCreateCategoryNotification)
             .onReceive(toggleEditCategoriesPublisher, perform: handleToggleEditCategoriesNotification)
             .sheet(isPresented: renameSheetBinding, content: renameSheet)
@@ -108,14 +112,13 @@ struct FilterMenuView: View {
     }
     
     private func updateManager() {
-        let wasEditing = manager?.isEditingCategories ?? false
         manager = CategoryManager(
             modelContext: modelContext,
             allCategories: allCategories,
             contentItems: contentItems,
             selectedContentType: $selectedContentType
         )
-        manager?.isEditingCategories = wasEditing
+        manager?.isEditingCategories = isEditingCategories
     }
     
     private func handleCreateCategoryNotification(_ notification: Notification) {
@@ -123,9 +126,7 @@ struct FilterMenuView: View {
     }
     
     private func handleToggleEditCategoriesNotification(_ notification: Notification) {
-        withAnimation(.spring(duration: 0.3)) {
-            manager?.isEditingCategories.toggle()
-        }
+        // MainView manages the state, we just need to react via binding
     }
     
     private func renameSheet() -> some View {

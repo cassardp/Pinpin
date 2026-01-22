@@ -167,7 +167,8 @@ struct SearchControlsRow: View {
                                 insertion: .opacity.combined(with: .scale(scale: 0.98)),
                                 removal: .opacity.combined(with: .scale(scale: 0.98))
                             ))
-                            .glassEffect()
+                            .glassEffect(.regular.tint(.black))
+                            .colorScheme(.dark)
                             .glassEffectID("searchBackground", in: searchTransitionNS)
                             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
