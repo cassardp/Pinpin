@@ -28,6 +28,7 @@ struct MacMainView: View {
     
     // Category editing state
     @State private var categoryToRename: Category? = nil
+    @State private var showRenameCategory: Bool = false
     @State private var categoryToDelete: Category? = nil
     @State private var showDeleteCategoryAlert: Bool = false
     @State private var showDeleteSelectedAlert: Bool = false
@@ -89,11 +90,11 @@ struct MacMainView: View {
 
     var body: some View {
         mainView
-            .sheet(isPresented: $showAddNote) {
+            .floatingPanel(isPresented: $showAddNote) {
                 addNoteSheet
             }
-            .sheet(item: $categoryToRename) { category in
-                renameCategorySheet(for: category)
+            .floatingPanel(isPresented: $showRenameCategory) {
+                renameCategorySheetContent
             }
             .alert("Delete Category", isPresented: $showDeleteCategoryAlert, presenting: categoryToDelete) { category in
                 deleteCategoryAlert(for: category)
@@ -123,22 +124,27 @@ struct MacMainView: View {
         )
     }
     
-    private func renameCategorySheet(for category: Category) -> some View {
-        RenameCategorySheet(
-            name: $renameCategoryName,
-            onCancel: {
-                categoryToRename = nil
-                renameCategoryName = ""
-                isCreatingCategory = false
-            },
-            onSave: {
-                if isCreatingCategory {
-                    createCategory()
-                } else {
-                    renameCategory(category)
+    @ViewBuilder
+    private var renameCategorySheetContent: some View {
+        if let category = categoryToRename {
+            RenameCategorySheet(
+                name: $renameCategoryName,
+                onCancel: {
+                    showRenameCategory = false
+                    categoryToRename = nil
+                    renameCategoryName = ""
+                    isCreatingCategory = false
+                },
+                onSave: {
+                    if isCreatingCategory {
+                        createCategory()
+                    } else {
+                        renameCategory(category)
+                    }
+                    showRenameCategory = false
                 }
-            }
-        )
+            )
+        }
     }
     
     @ViewBuilder
@@ -198,6 +204,7 @@ struct MacMainView: View {
                         onRename: {
                             renameCategoryName = category.name
                             categoryToRename = category
+                            showRenameCategory = true
                         },
                         onDelete: {
                             categoryToDelete = category
@@ -428,6 +435,7 @@ struct MacMainView: View {
         renameCategoryName = ""
         isCreatingCategory = true
         categoryToRename = Category(name: "New Category", sortOrder: Int32(allCategories.count))
+        showRenameCategory = true
     }
     
     private func createCategory() {

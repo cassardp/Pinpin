@@ -32,7 +32,7 @@ struct MacToolbarOverlay: View {
                 Button {
                     onAddNote()
                 } label: {
-                    Image(systemName: "textformat")
+                    Image(systemName: "text.alignleft")
                         .font(.system(size: 15, weight: .medium))
                         .frame(width: 44, height: 44)
                 }
