@@ -42,7 +42,7 @@ struct PredefinedSearchView: View {
                             .padding(.vertical, 8)
                             .background(
                                 Capsule()
-                                    .fill(.ultraThickMaterial)
+                                    .glassEffect(.regular.tint(.black))
                                     .colorScheme(.dark)
                             )
                     }

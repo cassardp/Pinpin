@@ -43,6 +43,7 @@ struct CategoryListRow: View {
                         .font(.system(size: 18))
                         .foregroundColor(.red)
                         .padding(.trailing, 4)
+                        .padding(.leading, 0)
                 }
                 .buttonStyle(.plain)
                 .transition(.move(edge: .leading).combined(with: .opacity))
@@ -66,8 +67,8 @@ struct CategoryListRow: View {
             
             Spacer()
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 16)
+        .padding(.leading, 12)
+        .padding(.trailing, 12)
         .contentShape(Rectangle())
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
         .onTapGesture {

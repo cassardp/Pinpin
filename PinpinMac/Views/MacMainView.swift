@@ -236,27 +236,47 @@ struct MacMainView: View {
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
-        .padding(.horizontal, 24)
+        .scrollIndicators(.hidden)
+        .padding(.horizontal, 12)
     }
 
     private var sidebarView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            
+        ZStack(alignment: .bottom) {
+            // Liste des catégories
             sidebarList
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 80)
+                }
             
-            Spacer()
-            
-            // MARK: - Bottom Menu
-            HStack {
-                MacSidebarMenu(
-                    onAddCategory: prepareCreateCategory,
-                    isEditingCategories: $isEditingCategories
-                )
+            // Menu du bas avec dégradé
+            VStack(spacing: 0) {
                 Spacer()
+                
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: .clear, location: 0.0),
+                        .init(color: Color(nsColor: .windowBackgroundColor).opacity(0.5), location: 0.2),
+                        .init(color: Color(nsColor: .windowBackgroundColor).opacity(0.8), location: 0.4),
+                        .init(color: Color(nsColor: .windowBackgroundColor).opacity(0.95), location: 0.6),
+                        .init(color: Color(nsColor: .windowBackgroundColor), location: 0.7),
+                        .init(color: Color(nsColor: .windowBackgroundColor), location: 1.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 120)
+                .overlay(alignment: .bottom) {
+                    HStack {
+                        MacSidebarMenu(
+                            onAddCategory: prepareCreateCategory,
+                            isEditingCategories: $isEditingCategories
+                        )
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 16)
+                }
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
         }
         .frame(minWidth: 200, maxWidth: 280)
         .frame(maxHeight: .infinity)

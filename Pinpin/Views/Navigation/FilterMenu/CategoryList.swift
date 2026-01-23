@@ -7,7 +7,6 @@ struct CategoryList: View {
     let manager: CategoryManager
     let contentItems: [ContentItem]
     let isMenuDragging: Bool
-    let showCategoryTitles: Bool
     
     @Binding var selectedContentType: String?
     
@@ -54,7 +53,7 @@ struct CategoryList: View {
                 .scrollIndicators(.hidden)
                 .scrollDisabled(isMenuDragging)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentMargins(.top, showCategoryTitles ? 72 : 30)
+                .contentMargins(.top, 30)
                 .contentMargins(.bottom, 220)
                 .environment(\.editMode, .constant(manager.isEditingCategories ? .active : .inactive))
             }

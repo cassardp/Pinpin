@@ -60,7 +60,6 @@ struct FilterMenuView: View {
                     manager: manager,
                     contentItems: contentItems,
                     isMenuDragging: isMenuDragging,
-                    showCategoryTitles: false,
                     selectedContentType: $selectedContentType
                 )
             }
