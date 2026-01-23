@@ -29,7 +29,14 @@ class ShareViewController: UIViewController, ObservableObject {
             cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
         )
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            
+            // Lancer la maintenance de la base de données au démarrage de l'extension
+            Task { @MainActor in
+                DatabaseMaintenanceService.shared.performStartupMaintenance(context: container.mainContext)
+            }
+            
+            return container
         } catch {
             fatalError("Impossible de créer ModelContainer dans l'extension: \(error)")
         }

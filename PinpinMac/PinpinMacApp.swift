@@ -36,6 +36,9 @@ struct PinpinMacApp: App {
                 if let items = try? context.fetch(descriptor) {
                     print("📊 Nombre d'items chargés (macOS): \(items.count)")
                 }
+                
+                // Lancer la maintenance de la base de données
+                DatabaseMaintenanceService.shared.performStartupMaintenance(context: context)
             }
             
             return container
