@@ -29,9 +29,13 @@ struct PinpinApp: App {
             let container = try ModelContainer(for: schema, configurations: [configuration])
             print("✅ ModelContainer créé avec succès")
 
-            // Log le nombre d'items au démarrage
+            // Maintenance et log au démarrage
             Task { @MainActor in
                 let context = container.mainContext
+                
+                // Dédoublonner les catégories au démarrage
+                DatabaseMaintenanceService.shared.performStartupMaintenance(context: context)
+                
                 let descriptor = FetchDescriptor<ContentItem>(sortBy: [SortDescriptor(\.createdAt)])
                 if let items = try? context.fetch(descriptor) {
                     print("📊 Nombre d'items chargés (iOS): \(items.count)")
