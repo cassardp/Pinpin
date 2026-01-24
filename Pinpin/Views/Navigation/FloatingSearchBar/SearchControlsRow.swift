@@ -211,7 +211,7 @@ private struct CircularButtonContent: View {
     var body: some View {
         Image(systemName: icon)
             .font(.system(size: 18, weight: .medium))
-            .foregroundColor(.primary)
+            .foregroundColor(.primary.opacity(0.8))
             .frame(width: 48, height: 48)
             .floatingButtonBackground()
     }
@@ -262,7 +262,7 @@ private struct SelectionActionsButton: View {
                 } else {
                     Image(systemName: "checkmark")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.primary.opacity(0.8))
                 }
             }
             .frame(height: 48)
@@ -300,7 +300,7 @@ private struct MoveToCategoryMenu: View {
                     .foregroundColor(.primary)
                 Image(systemName: "folder")
                     .font(.system(size: 19))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.primary.opacity(0.8))
             }
             .frame(height: 48)
             .frame(minWidth: 48)

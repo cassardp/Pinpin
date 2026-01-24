@@ -212,7 +212,7 @@ struct SearchBarView: View {
                 HStack(spacing: 16) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.primary.opacity(0.8))
                         .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
                     
                     ZStack(alignment: .leading) {
@@ -243,7 +243,7 @@ struct SearchBarView: View {
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .font(.system(size: 16))
-                                .foregroundColor(.primary)
+                                .foregroundColor(.primary.opacity(0.8))
                         }
                         .transition(.scale.combined(with: .opacity))
                     }
@@ -261,7 +261,7 @@ struct SearchBarView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.primary.opacity(0.8))
                             .frame(width: 48, height: 48)
                             .floatingButtonBackground()
                     }
