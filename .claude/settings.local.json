@@ -17,7 +17,13 @@
       "Bash(rm:*)",
       "Bash(rmdir:*)",
       "Read(//Users/patrice/Library/**)",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "Bash(xargs ls:*)",
+      "Bash(security find-identity:*)",
+      "Bash(sqlite3:*)",
+      "Bash(log show:*)",
+      "WebFetch(domain:www.hackingwithswift.com)",
+      "WebFetch(domain:www.createwithswift.com)"
     ],
     "deny": [],
     "ask": []

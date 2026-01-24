@@ -22,7 +22,16 @@ struct MacMainView: View {
     private var allCategories: [Category]
     
     @State private var selectedCategory: String = MacMainView.allPinsValue
-    @State private var numberOfColumns: Int = 4
+
+    // Colonnes adaptatives
+    @State private var contentWidth: CGFloat = 0
+    @State private var columnOffset: Int = 0  // Ajustement manuel via pinch
+
+    private var numberOfColumns: Int {
+        let baseColumns = AppConstants.optimalColumns(for: contentWidth)
+        let adjusted = baseColumns + columnOffset
+        return max(AppConstants.minColumns, min(AppConstants.maxColumns, adjusted))
+    }
 
     @State private var showAddNote: Bool = false
     @State private var hoveredItemId: UUID? = nil
@@ -81,7 +90,7 @@ struct MacMainView: View {
     
     @State private var searchQueryState: String = ""
     
-    @State private var columnVisibilityState: NavigationSplitViewVisibility = .automatic
+    @State private var columnVisibilityState: NavigationSplitViewVisibility = .detailOnly
     
     private var allItemIds: [UUID] {
         filteredItems.map { $0.id }
@@ -287,79 +296,87 @@ struct MacMainView: View {
     }
     
     // MARK: - Main Content
-    
+
     private var mainContentView: some View {
-        ZStack {
-            if filteredItems.isEmpty {
-                emptyStateView
-            } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
-                            ForEach(filteredItems) { item in
-                                MacContentCard(
-                                    item: item,
-                                    numberOfColumns: numberOfColumns,
-                                    isHovered: hoveredItemId == item.id,
-                                    isSelectionMode: selectionManager.isSelectionMode,
-                                    isSelected: selectionManager.isSelected(item.id),
-                                    onTap: { },
-                                    onToggleSelection: {
-                                        selectionManager.toggleSelection(for: item.id)
-                                    },
-                                    onOpenURL: { openURL(for: item) }
-                                )
-                                .onHover { isHovered in
-                                    if !selectionManager.isSelectionMode {
-                                        withAnimation(.easeInOut(duration: 0.15)) {
-                                            hoveredItemId = isHovered ? item.id : nil
+        GeometryReader { geometry in
+            ZStack {
+                if filteredItems.isEmpty {
+                    emptyStateView
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
+                                ForEach(filteredItems) { item in
+                                    MacContentCard(
+                                        item: item,
+                                        numberOfColumns: numberOfColumns,
+                                        isHovered: hoveredItemId == item.id,
+                                        isSelectionMode: selectionManager.isSelectionMode,
+                                        isSelected: selectionManager.isSelected(item.id),
+                                        onTap: { },
+                                        onToggleSelection: {
+                                            selectionManager.toggleSelection(for: item.id)
+                                        },
+                                        onOpenURL: { openURL(for: item) }
+                                    )
+                                    .onHover { isHovered in
+                                        if !selectionManager.isSelectionMode {
+                                            withAnimation(.easeInOut(duration: 0.15)) {
+                                                hoveredItemId = isHovered ? item.id : nil
+                                            }
+                                        }
+                                    }
+                                    .contextMenu {
+                                        if !selectionManager.isSelectionMode {
+                                            contextMenuContent(for: item)
                                         }
                                     }
                                 }
-                                .contextMenu {
-                                    if !selectionManager.isSelectionMode {
-                                        contextMenuContent(for: item)
-                                    }
-                                }
+                            }
+                            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: numberOfColumns)
+                            .padding(.horizontal, 16)
+                            .padding(.top, columnVisibilityState == .detailOnly ? 54 : 16)
+                            .padding(.bottom, 80) // Space for stats
+
+                            // Stats at bottom of list
+                            if !filteredItems.isEmpty {
+                                StorageStatsView(
+                                    selectedContentType: isAllPinsSelected ? nil : selectedCategory,
+                                    filteredItems: filteredItems
+                                )
+                                .padding(.vertical, 24)
+                                .padding(.bottom, 80) // Supplementaire pour l'overlay
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, columnVisibilityState == .detailOnly ? 54 : 16)
-                        .padding(.bottom, 80) // Space for stats
-                        
-                        // Stats at bottom of list
-                        if !filteredItems.isEmpty {
-                            StorageStatsView(
-                                selectedContentType: isAllPinsSelected ? nil : selectedCategory,
-                                filteredItems: filteredItems
-                            )
-                            .padding(.vertical, 24)
-                            .padding(.bottom, 80) // Supplementaire pour l'overlay
-                        }
                     }
+                    .ignoresSafeArea(edges: .top)
                 }
-                .ignoresSafeArea(edges: .top)
+            }
+            .overlay(alignment: .bottom) {
+                MacToolbarOverlay(
+                    selectionManager: selectionManager,
+                    categoryNames: categoryNames,
+                    allItemIds: allItemIds,
+                    onMoveToCategory: moveSelectedItemsToCategory,
+                    onDeleteSelected: handleDeleteSelected,
+                    onAddNote: handleAddNote,
+                    searchQuery: $searchQueryState
+                )
+            }
+            .gesture(magnifyGesture)
+            .onChange(of: geometry.size.width) { _, newWidth in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    contentWidth = newWidth
+                }
+            }
+            .onAppear {
+                contentWidth = geometry.size.width
             }
         }
-        .overlay(alignment: .bottom) {
-            MacToolbarOverlay(
-                selectionManager: selectionManager,
-                categoryNames: categoryNames,
-                allItemIds: allItemIds,
-                onMoveToCategory: moveSelectedItemsToCategory,
-                onDeleteSelected: handleDeleteSelected,
-                onAddNote: handleAddNote,
-                searchQuery: $searchQueryState
-            )
-        }
-        .background(.ultraThinMaterial)
-        .gesture(magnifyGesture)
     }
     
     // MARK: - Gestures
-    
-    @State private var pinchScale: CGFloat = 1.0
-    
+
     private var magnifyGesture: some Gesture {
         MagnifyGesture()
              .onChanged { value in
@@ -369,14 +386,14 @@ struct MacMainView: View {
                  let scale = value.magnification
                  withAnimation(.spring(response: 0.3)) {
                      if scale > 1.1 {
-                         // Zoom In -> Fewer columns
-                         if numberOfColumns > 3 {
-                             numberOfColumns -= 1
+                         // Zoom In -> Fewer columns (offset négatif)
+                         if numberOfColumns > AppConstants.minColumns {
+                             columnOffset -= 1
                          }
                      } else if scale < 0.9 {
-                         // Zoom Out -> More columns
-                         if numberOfColumns < 6 {
-                             numberOfColumns += 1
+                         // Zoom Out -> More columns (offset positif)
+                         if numberOfColumns < AppConstants.maxColumns {
+                             columnOffset += 1
                          }
                      }
                  }

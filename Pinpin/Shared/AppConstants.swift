@@ -35,18 +35,26 @@ enum AppConstants {
     static let hasCreatedDefaultCategoriesKey = "hasCreatedDefaultCategories"
     
     // MARK: - Layout
-    // MARK: - Layout
     #if os(macOS)
-    static let minColumns = 4
-    static let maxColumns = 6
-    static let defaultColumns = 5
+    static let minColumns = 3
+    static let maxColumns = 10
+    static let defaultColumns = 6
+    static let idealItemWidth: CGFloat = 160
     #else
     static let minColumns = 2
     static let maxColumns = 4
     static let defaultColumns = 3
     #endif
-    
-    // MARK: - Dynamic Spacing
+
+    #if os(macOS)
+    /// Calcule le nombre optimal de colonnes pour une largeur donnée
+    static func optimalColumns(for width: CGFloat, spacing: CGFloat = 16, horizontalPadding: CGFloat = 32) -> Int {
+        let availableWidth = width - horizontalPadding
+        let columns = Int((availableWidth + spacing) / (idealItemWidth + spacing))
+        return max(minColumns, min(maxColumns, columns))
+    }
+    #endif
+
     // MARK: - Dynamic Spacing
     static func spacing(for columns: Int) -> CGFloat {
         #if os(iOS)
@@ -58,14 +66,19 @@ enum AppConstants {
         }
         #else
         switch columns {
-        case 4: return 10
-        case 5: return 8
-        case 6: return 6
+        case 3: return 14
+        case 4: return 12
+        case 5: return 10
+        case 6: return 9
+        case 7: return 8
+        case 8: return 7
+        case 9: return 6
+        case 10: return 5
         default: return 10
         }
         #endif
     }
-    
+
     static func cornerRadius(for columns: Int, disabled: Bool = false) -> CGFloat {
         if disabled { return 0 }
         #if os(iOS)
@@ -78,14 +91,19 @@ enum AppConstants {
         }
         #else
         switch columns {
-        case 4: return 10
-        case 5: return 8
-        case 6: return 6
+        case 3: return 14
+        case 4: return 12
+        case 5: return 10
+        case 6: return 9
+        case 7: return 8
+        case 8: return 7
+        case 9: return 6
+        case 10: return 5
         default: return 10
         }
         #endif
     }
-    
+
     // MARK: - Default Categories
     static let defaultCategories: [String] = [
         "Home",
@@ -111,14 +129,19 @@ enum AppConstants {
         }
         #else
         switch columns {
+        case 3: return .system(size: 17)
         case 4: return .system(size: 15)
         case 5: return .system(size: 14)
         case 6: return .system(size: 13)
-        default: return .system(size: 15)
+        case 7: return .system(size: 12)
+        case 8: return .system(size: 11)
+        case 9: return .system(size: 11)
+        case 10: return .system(size: 10)
+        default: return .system(size: 14)
         }
         #endif
     }
-    
+
     static func contentDescriptionFont(for columns: Int) -> Font {
         #if os(iOS)
         switch columns {
@@ -129,14 +152,19 @@ enum AppConstants {
         }
         #else
         switch columns {
-        case 4: return .system(size: 12)
-        case 5: return .system(size: 11)
+        case 3: return .system(size: 14)
+        case 4: return .system(size: 13)
+        case 5: return .system(size: 12)
         case 6: return .system(size: 11)
+        case 7: return .system(size: 11)
+        case 8: return .system(size: 10)
+        case 9: return .system(size: 10)
+        case 10: return .system(size: 9)
         default: return .system(size: 12)
         }
         #endif
     }
-    
+
     static func contentTitleLineLimit(for columns: Int) -> Int {
         #if os(iOS)
         switch columns {
@@ -147,14 +175,19 @@ enum AppConstants {
         }
         #else
         switch columns {
+        case 3: return 10
         case 4: return 8
         case 5: return 6
         case 6: return 5
-        default: return 8
+        case 7: return 5
+        case 8: return 4
+        case 9: return 4
+        case 10: return 3
+        default: return 6
         }
         #endif
     }
-    
+
     static func contentDescriptionLineLimit(for columns: Int) -> Int {
         #if os(iOS)
         switch columns {
@@ -165,14 +198,19 @@ enum AppConstants {
         }
         #else
         switch columns {
+        case 3: return 10
         case 4: return 8
         case 5: return 6
         case 6: return 5
-        default: return 8
+        case 7: return 5
+        case 8: return 4
+        case 9: return 4
+        case 10: return 3
+        default: return 6
         }
         #endif
     }
-    
+
     static func contentSpacing(for columns: Int) -> CGFloat {
         #if os(iOS)
         switch columns {
@@ -183,14 +221,19 @@ enum AppConstants {
         }
         #else
         switch columns {
-        case 4: return 10
-        case 5: return 8
-        case 6: return 6
+        case 3: return 14
+        case 4: return 12
+        case 5: return 10
+        case 6: return 8
+        case 7: return 7
+        case 8: return 6
+        case 9: return 5
+        case 10: return 4
         default: return 10
         }
         #endif
     }
-    
+
     static func contentPadding(for columns: Int) -> CGFloat {
         #if os(iOS)
         switch columns {
@@ -201,14 +244,19 @@ enum AppConstants {
         }
         #else
         switch columns {
+        case 3: return 16
         case 4: return 14
         case 5: return 12
-        case 6: return 10
-        default: return 14
+        case 6: return 11
+        case 7: return 10
+        case 8: return 9
+        case 9: return 8
+        case 10: return 7
+        default: return 12
         }
         #endif
     }
-    
+
     static func contentIconSize(for columns: Int) -> CGFloat {
         #if os(iOS)
         switch columns {
@@ -219,14 +267,19 @@ enum AppConstants {
         }
         #else
         switch columns {
+        case 3: return 36
         case 4: return 32
         case 5: return 28
-        case 6: return 24
-        default: return 32
+        case 6: return 26
+        case 7: return 24
+        case 8: return 22
+        case 9: return 20
+        case 10: return 18
+        default: return 28
         }
         #endif
     }
-    
+
     static func contentIconContainerSize(for columns: Int) -> CGFloat {
         #if os(iOS)
         switch columns {
@@ -237,10 +290,15 @@ enum AppConstants {
         }
         #else
         switch columns {
+        case 3: return 90
         case 4: return 80
         case 5: return 70
-        case 6: return 60
-        default: return 80
+        case 6: return 65
+        case 7: return 60
+        case 8: return 55
+        case 9: return 50
+        case 10: return 45
+        default: return 70
         }
         #endif
     }
