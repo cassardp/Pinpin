@@ -23,7 +23,9 @@
       "Bash(sqlite3:*)",
       "Bash(log show:*)",
       "WebFetch(domain:www.hackingwithswift.com)",
-      "WebFetch(domain:www.createwithswift.com)"
+      "WebFetch(domain:www.createwithswift.com)",
+      "WebFetch(domain:swiftwithmajid.com)",
+      "WebFetch(domain:troz.net)"
     ],
     "deny": [],
     "ask": []

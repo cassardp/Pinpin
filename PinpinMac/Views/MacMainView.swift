@@ -299,79 +299,198 @@ struct MacMainView: View {
 
     private var mainContentView: some View {
         GeometryReader { geometry in
-            ZStack {
-                if filteredItems.isEmpty {
-                    emptyStateView
-                } else {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
-                                ForEach(filteredItems) { item in
-                                    MacContentCard(
-                                        item: item,
-                                        numberOfColumns: numberOfColumns,
-                                        isHovered: hoveredItemId == item.id,
-                                        isSelectionMode: selectionManager.isSelectionMode,
-                                        isSelected: selectionManager.isSelected(item.id),
-                                        onTap: { },
-                                        onToggleSelection: {
-                                            selectionManager.toggleSelection(for: item.id)
-                                        },
-                                        onOpenURL: { openURL(for: item) }
-                                    )
-                                    .onHover { isHovered in
-                                        if !selectionManager.isSelectionMode {
-                                            withAnimation(.easeInOut(duration: 0.15)) {
-                                                hoveredItemId = isHovered ? item.id : nil
-                                            }
-                                        }
-                                    }
-                                    .contextMenu {
-                                        if !selectionManager.isSelectionMode {
-                                            contextMenuContent(for: item)
-                                        }
-                                    }
-                                }
-                            }
-                            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: numberOfColumns)
-                            .padding(.horizontal, 16)
-                            .padding(.top, columnVisibilityState == .detailOnly ? 54 : 16)
-                            .padding(.bottom, 80) // Space for stats
+            contentGrid
+                .searchable(text: $searchQueryState, prompt: "Search...")
+                .toolbar { bottomToolbarContent }
+                .gesture(magnifyGesture)
+                .onChange(of: geometry.size.width) { _, newWidth in
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                        contentWidth = newWidth
+                    }
+                }
+                .onAppear {
+                    contentWidth = geometry.size.width
+                }
+        }
+    }
 
-                            // Stats at bottom of list
-                            if !filteredItems.isEmpty {
-                                StorageStatsView(
-                                    selectedContentType: isAllPinsSelected ? nil : selectedCategory,
-                                    filteredItems: filteredItems
-                                )
-                                .padding(.vertical, 24)
-                                .padding(.bottom, 80) // Supplementaire pour l'overlay
+    private var contentGrid: some View {
+        ZStack {
+            if filteredItems.isEmpty {
+                emptyStateView
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
+                            ForEach(filteredItems) { item in
+                                contentCard(for: item)
                             }
                         }
+                        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: numberOfColumns)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 80)
+
+                        if !filteredItems.isEmpty {
+                            StorageStatsView(
+                                selectedContentType: isAllPinsSelected ? nil : selectedCategory,
+                                filteredItems: filteredItems
+                            )
+                            .padding(.vertical, 24)
+                            .padding(.bottom, 80)
+                        }
                     }
-                    .ignoresSafeArea(edges: .top)
                 }
             }
-            .overlay(alignment: .bottom) {
-                MacToolbarOverlay(
-                    selectionManager: selectionManager,
-                    categoryNames: categoryNames,
-                    allItemIds: allItemIds,
-                    onMoveToCategory: moveSelectedItemsToCategory,
-                    onDeleteSelected: handleDeleteSelected,
-                    onAddNote: handleAddNote,
-                    searchQuery: $searchQueryState
-                )
-            }
-            .gesture(magnifyGesture)
-            .onChange(of: geometry.size.width) { _, newWidth in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    contentWidth = newWidth
+        }
+    }
+
+    private func contentCard(for item: ContentItem) -> some View {
+        MacContentCard(
+            item: item,
+            numberOfColumns: numberOfColumns,
+            isHovered: hoveredItemId == item.id,
+            isSelectionMode: selectionManager.isSelectionMode,
+            isSelected: selectionManager.isSelected(item.id),
+            onTap: { },
+            onToggleSelection: {
+                selectionManager.toggleSelection(for: item.id)
+            },
+            onOpenURL: { openURL(for: item) }
+        )
+        .onHover { isHovered in
+            if !selectionManager.isSelectionMode {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    hoveredItemId = isHovered ? item.id : nil
                 }
             }
-            .onAppear {
-                contentWidth = geometry.size.width
+        }
+        .contextMenu {
+            if !selectionManager.isSelectionMode {
+                contextMenuContent(for: item)
             }
+        }
+    }
+
+    // MARK: - Native Toolbar (macOS 26 Liquid Glass)
+
+    @ToolbarContentBuilder
+    private var bottomToolbarContent: some ToolbarContent {
+        if selectionManager.isSelectionMode {
+            selectionModeToolbar
+        } else {
+            normalModeToolbar
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var normalModeToolbar: some ToolbarContent {
+        // Push everything to the right
+        ToolbarSpacer(.flexible)
+
+        // Add Note
+        ToolbarItem {
+            Button {
+                handleAddNote()
+            } label: {
+                Label("Add Note", systemImage: "text.alignleft")
+            }
+        }
+
+        ToolbarSpacer(.fixed)
+
+        // Select
+        ToolbarItem {
+            Button {
+                selectionManager.toggleSelectionMode()
+            } label: {
+                Label("Select", systemImage: "checkmark")
+            }
+        }
+
+        ToolbarSpacer(.fixed)
+
+        // Columns control
+        ToolbarItem {
+            ControlGroup {
+                Button {
+                    if numberOfColumns > AppConstants.minColumns {
+                        withAnimation(.spring(response: 0.3)) {
+                            columnOffset -= 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: "minus")
+                }
+                .disabled(numberOfColumns <= AppConstants.minColumns)
+
+                Button {
+                    if numberOfColumns < AppConstants.maxColumns {
+                        withAnimation(.spring(response: 0.3)) {
+                            columnOffset += 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .disabled(numberOfColumns >= AppConstants.maxColumns)
+            }
+        }
+
+        // Search is handled by .searchable modifier (right side)
+    }
+
+    @ToolbarContentBuilder
+    private var selectionModeToolbar: some ToolbarContent {
+        // Leading: Cancel
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                selectionManager.toggleSelectionMode()
+            } label: {
+                Label("Cancel", systemImage: "xmark")
+            }
+        }
+
+        // Center: Selection count
+        ToolbarItem(placement: .principal) {
+            Text("\(selectionManager.selectedCount) selected")
+                .font(.headline)
+        }
+
+        if selectionManager.hasSelection {
+            selectionActionsToolbar
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    selectionManager.selectAll(items: allItemIds)
+                } label: {
+                    Label("Select All", systemImage: "checkmark.circle.fill")
+                }
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var selectionActionsToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            Menu {
+                ForEach(categoryNames, id: \.self) { categoryName in
+                    Button {
+                        moveSelectedItemsToCategory(categoryName)
+                    } label: {
+                        Label(categoryName, systemImage: "folder")
+                    }
+                }
+            } label: {
+                Label("Move", systemImage: "folder")
+            }
+
+            Button(role: .destructive) {
+                handleDeleteSelected()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .tint(.red)
         }
     }
     
