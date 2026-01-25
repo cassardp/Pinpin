@@ -51,16 +51,16 @@ struct MacNormalModeToolbar: ToolbarContent {
         ToolbarSpacer(.flexible)
 
         ToolbarItem {
-            Button(action: onSelect) {
-                Label("Select", systemImage: "checkmark")
+            Button(action: onAddNote) {
+                Label("Add Note", systemImage: "textformat")
             }
         }
 
         ToolbarSpacer(.fixed)
 
         ToolbarItem {
-            Button(action: onAddNote) {
-                Label("Add Note", systemImage: "text.alignleft")
+            Button(action: onSelect) {
+                Label("Select", systemImage: "checkmark")
             }
         }
 

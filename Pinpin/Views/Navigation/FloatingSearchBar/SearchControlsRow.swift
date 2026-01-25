@@ -35,20 +35,30 @@ struct SearchControlsRow: View {
     
     var body: some View {
         HStack {
-            // Gauche : Ellipsis menu / Cancel
+            // Gauche
             Group {
                 if isSelectionMode {
-                    CircularButton(
-                        icon: "xmark",
-                        action: {
-                            onHaptic()
-                            withAnimation(.smooth(duration: 0.3)) {
-                                isSelectionMode = false
-                                selectedItems.removeAll()
-                            }
-                        }
-                    )
+                    // Mode sélection : All/Trash + Move à gauche
+                    HStack(spacing: 12) {
+                        SelectionActionsButton(
+                            isSelectionMode: $isSelectionMode,
+                            selectedItems: $selectedItems,
+                            showDeleteConfirmation: $showDeleteConfirmation,
+                            scrollProgress: scrollProgress,
+                            onSelectAll: onSelectAll,
+                            onHaptic: onHaptic
+                        )
 
+                        if !selectedItems.isEmpty {
+                            MoveToCategoryMenu(
+                                selectedItems: selectedItems,
+                                availableCategories: availableCategories,
+                                currentCategory: currentCategory,
+                                onMoveToCategory: onMoveToCategory,
+                                onHaptic: onHaptic
+                            )
+                        }
+                    }
                 } else if isMenuOpen {
                     // Quand le menu catégorie est ouvert: boutons "Add Category" + "Edit"
                     HStack(spacing: 12) {
@@ -59,7 +69,7 @@ struct SearchControlsRow: View {
                                 NotificationCenter.default.post(name: NotificationName.createCategory, object: nil)
                             }
                         )
-                        
+
                         CircularButton(
                             icon: isEditingCategories ? "checkmark" : "pencil",
                             action: {
@@ -71,7 +81,7 @@ struct SearchControlsRow: View {
                 } else {
                     // Quand le menu est fermé: bouton "Add Note"
                     CircularButton(
-                        icon: "text.alignleft",
+                        icon: "textformat",
                         action: {
                             onHaptic()
                             onCreateNote()
@@ -80,104 +90,87 @@ struct SearchControlsRow: View {
                 }
             }
             .opacity(isMenuOpen || isSelectionMode ? 1 : (scrollProgress > 0.5 ? 0 : CGFloat(1 - (scrollProgress * 2))))
-            
-            // Si le menu est ouvert, pousser les boutons à gauche
-            if isMenuOpen {
+
+            // Spacer seulement en mode sélection ou menu ouvert
+            if isSelectionMode || isMenuOpen {
                 Spacer()
             }
-            
-            // Centre : Search ou Move (masqué quand le menu est ouvert)
-            if !isMenuOpen {
-                if isSelectionMode {
-                    Spacer()
-                    
-                    if !selectedItems.isEmpty {
-                        // Bouton Move en mode sélection avec items
-                        MoveToCategoryMenu(
-                            selectedItems: selectedItems,
-                            availableCategories: availableCategories,
-                            currentCategory: currentCategory,
-                            onMoveToCategory: onMoveToCategory,
-                            onHaptic: onHaptic
-                        )
-                    }
-                } else {
-                    // Bouton Search normal
-                    Button(action: onOpenSearch) {
-                        if searchQuery.isEmpty {
-                            HStack(spacing: 8) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: scrollProgress > 0.5 ? 20 : 18, weight: .medium))
-                                    .foregroundColor(.primary.opacity(0.8))
-                                    .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
-                                
-                                if scrollProgress < 0.5 {
-                                    Text("Search")
-                                        .font(.system(size: 17, weight: .regular))
-                                        .foregroundColor(.primary.opacity(0.4))
-                                        .opacity(CGFloat(1 - (scrollProgress * 2)))
-                                    Spacer()
-                                }
-                            }
-                            .frame(height: scrollProgress > 0.5 ? 54 : 48)
-                            .padding(.horizontal, scrollProgress > 0.5 ? 0 : CGFloat(24 - (24 * scrollProgress * 2)))
-                            .frame(maxWidth: scrollProgress > 0.5 ? 54 : .infinity)
-                            .scaleEffect(isAnimatingSearchOpen ? 0.95 : 1.0)
-                            .contentTransition(.opacity)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                                removal: .opacity.combined(with: .scale(scale: 0.98))
-                            ))
-                            .glassEffect()
-                            .glassEffectID("searchBackground", in: searchTransitionNS)
-                        } else {
-                            HStack(spacing: 8) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(.white)
-                                
-                                Text(searchQuery)
+
+            // Centre/Droite : Search (masqué quand le menu est ouvert ou en mode sélection)
+            if !isMenuOpen && !isSelectionMode {
+                // Bouton Search normal
+                Button(action: onOpenSearch) {
+                    if searchQuery.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: scrollProgress > 0.5 ? 20 : 18, weight: .medium))
+                                .foregroundColor(.primary.opacity(0.8))
+                                .matchedGeometryEffect(id: "searchIcon", in: searchTransitionNS)
+
+                            if scrollProgress < 0.5 {
+                                Text("Search")
                                     .font(.system(size: 17, weight: .regular))
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                
+                                    .foregroundColor(.primary.opacity(0.4))
+                                    .opacity(CGFloat(1 - (scrollProgress * 2)))
                                 Spacer()
-                                
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.white)
-                                    .onTapGesture {
-                                        onHaptic()
-                                        
-                                        // Restaurer la barre à sa taille normale
-                                        onRestoreBar()
-                                        
-                                        withAnimation(unifiedAnimation) {
-                                            searchQuery = ""
-                                        }
-                                    }
                             }
-                            .frame(height: 48)
-                            .padding(.horizontal, 22)
-                            .frame(maxWidth: .infinity)
-                            .contentTransition(.opacity)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                                removal: .opacity.combined(with: .scale(scale: 0.98))
-                            ))
-                            .glassEffect(.regular.tint(.black))
-                            .colorScheme(.dark)
-                            .glassEffectID("searchBackground", in: searchTransitionNS)
                         }
+                        .frame(height: scrollProgress > 0.5 ? 54 : 48)
+                        .padding(.horizontal, scrollProgress > 0.5 ? 0 : CGFloat(24 - (24 * scrollProgress * 2)))
+                        .frame(maxWidth: scrollProgress > 0.5 ? 54 : .infinity)
+                        .scaleEffect(isAnimatingSearchOpen ? 0.95 : 1.0)
+                        .contentTransition(.opacity)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity.combined(with: .scale(scale: 0.98))
+                        ))
+                        .glassEffect()
+                        .glassEffectID("searchBackground", in: searchTransitionNS)
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white)
+
+                            Text(searchQuery)
+                                .font(.system(size: 17, weight: .regular))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+
+                            Spacer()
+
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .onTapGesture {
+                                    onHaptic()
+
+                                    // Restaurer la barre à sa taille normale
+                                    onRestoreBar()
+
+                                    withAnimation(unifiedAnimation) {
+                                        searchQuery = ""
+                                    }
+                                }
+                        }
+                        .frame(height: 48)
+                        .padding(.horizontal, 22)
+                        .frame(maxWidth: .infinity)
+                        .contentTransition(.opacity)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity.combined(with: .scale(scale: 0.98))
+                        ))
+                        .glassEffect(.regular.tint(.black))
+                        .colorScheme(.dark)
+                        .glassEffectID("searchBackground", in: searchTransitionNS)
                     }
-                    .animation(unifiedAnimation, value: searchQuery)
-                    .frame(maxWidth: searchQuery.isEmpty && scrollProgress > 0.5 ? 54 : .infinity)
                 }
-            } // end if !isMenuOpen
-            
-            // Droite : Selection / Delete (masqué quand le menu est ouvert)
-            if !isMenuOpen {
+                .animation(unifiedAnimation, value: searchQuery)
+                .frame(maxWidth: searchQuery.isEmpty && scrollProgress > 0.5 ? 54 : .infinity)
+
+                // Bouton sélection à droite (mode normal)
                 SelectionActionsButton(
                     isSelectionMode: $isSelectionMode,
                     selectedItems: $selectedItems,
@@ -186,7 +179,21 @@ struct SearchControlsRow: View {
                     onSelectAll: onSelectAll,
                     onHaptic: onHaptic
                 )
-            } // end if !isMenuOpen
+            }
+
+            // Droite : Bouton fermer en mode sélection
+            if isSelectionMode {
+                CircularButton(
+                    icon: "xmark",
+                    action: {
+                        onHaptic()
+                        withAnimation(.smooth(duration: 0.3)) {
+                            isSelectionMode = false
+                            selectedItems.removeAll()
+                        }
+                    }
+                )
+            }
         }
         .padding(.horizontal, 28)
     }
