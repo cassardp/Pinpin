@@ -198,7 +198,7 @@ struct MacMainView: View {
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-            
+
             // Catégories avec réordonnancement custom (Drag & Drop)
             ForEach(visibleCategories, id: \.name) { category in
                 MacCategoryRow(
@@ -250,45 +250,36 @@ struct MacMainView: View {
     }
 
     private var sidebarView: some View {
-        ZStack(alignment: .bottom) {
-            // Liste des catégories
-            sidebarList
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 120)
-                }
-            
-            // Menu du bas avec dégradé
-            VStack(spacing: 0) {
-                Spacer()
-                
-                LinearGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: .clear, location: 0.0),
-                        .init(color: Color(nsColor: .windowBackgroundColor).opacity(0.5), location: 0.2),
-                        .init(color: Color(nsColor: .windowBackgroundColor).opacity(0.8), location: 0.4),
-                        .init(color: Color(nsColor: .windowBackgroundColor).opacity(0.95), location: 0.6),
-                        .init(color: Color(nsColor: .windowBackgroundColor), location: 0.7),
-                        .init(color: Color(nsColor: .windowBackgroundColor), location: 1.0)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 120)
-                .overlay(alignment: .bottom) {
-                    HStack {
-                        MacSidebarMenu(
-                            onAddCategory: prepareCreateCategory,
-                            isEditingCategories: $isEditingCategories
-                        )
-                        Spacer()
+        sidebarList
+            .toolbar {
+                if isSidebarVisible {
+                    ToolbarItem(placement: .primaryAction) {
+                        if isEditingCategories {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isEditingCategories = false
+                                }
+                            } label: {
+                                Label("Done", systemImage: "checkmark")
+                            }
+                        } else {
+                            Menu {
+                                Button("Add Category", systemImage: "plus") {
+                                    prepareCreateCategory()
+                                }
+                                Button("Edit Categories", systemImage: "pencil") {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        isEditingCategories = true
+                                    }
+                                }
+                            } label: {
+                                Label("Options", systemImage: "ellipsis")
+                            }
+                            .menuIndicator(.hidden)
+                        }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
                 }
             }
-        }
-        .frame(minWidth: 200, maxWidth: .infinity)
-        .frame(maxHeight: .infinity)
     }
     
     private func countForCategory(_ category: String) -> Int {
