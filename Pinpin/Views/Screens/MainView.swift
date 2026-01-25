@@ -65,11 +65,13 @@ struct MainView: View {
     }
 
     var body: some View {
-        mainDrawerView
-            .overlay(alignment: .bottom) {
-                floatingSearchBarView
-            }
-            .sheet(item: $selectedItem) { item in
+        GeometryReader { geometry in
+            mainDrawerContent(geometry: geometry)
+                .overlay(alignment: .bottom) {
+                    floatingSearchBarView(screenWidth: geometry.size.width)
+                }
+        }
+        .sheet(item: $selectedItem) { item in
                 ItemDetailView(item: item, namespace: heroNamespace)
                     .navigationTransition(.zoom(sourceID: item.id, in: heroNamespace))
                     .presentationDragIndicator(.hidden)
@@ -107,25 +109,28 @@ struct MainView: View {
     }
     
     // MARK: - Main Drawer View
-    private var mainDrawerView: some View {
-        GeometryReader { geometry in
-            PushingSideDrawer(
-                isOpen: $isMenuOpen,
-                swipeProgress: $menuSwipeProgress,
-                isDragging: $isMenuDragging,
-                width: geometry.size.width * 0.8,
-                isSwipeDisabled: viewModel.showSearchBar,
-                isEditingMode: isEditingCategories
-            ) {
-                mainContentView
-            } drawer: {
-                FilterMenuView(
-                    selectedContentType: $viewModel.selectedContentType,
-                    isMenuOpen: $isMenuOpen,
-                    isEditingCategories: $isEditingCategories,
-                    isMenuDragging: isMenuDragging
-                )
-            }
+    private func mainDrawerContent(geometry: GeometryProxy) -> some View {
+        let drawerWidth = AppConstants.drawerWidth(
+            for: geometry.size.width,
+            screenHeight: geometry.size.height
+        )
+
+        return PushingSideDrawer(
+            isOpen: $isMenuOpen,
+            swipeProgress: $menuSwipeProgress,
+            isDragging: $isMenuDragging,
+            width: drawerWidth,
+            isSwipeDisabled: viewModel.showSearchBar,
+            isEditingMode: isEditingCategories
+        ) {
+            mainContentView
+        } drawer: {
+            FilterMenuView(
+                selectedContentType: $viewModel.selectedContentType,
+                isMenuOpen: $isMenuOpen,
+                isEditingCategories: $isEditingCategories,
+                isMenuDragging: isMenuDragging
+            )
         }
     }
     
@@ -192,7 +197,7 @@ struct MainView: View {
     
     // MARK: - Floating Search Bar
     @ViewBuilder
-    private var floatingSearchBarView: some View {
+    private func floatingSearchBarView(screenWidth: CGFloat) -> some View {
         if showFloatingBar {
             FloatingSearchBar(
                 searchQuery: $viewModel.searchQuery,
@@ -208,6 +213,7 @@ struct MainView: View {
                 availableCategories: allCategories.map { $0.name },
                 currentCategory: viewModel.selectedContentType,
                 isEditingCategories: isEditingCategories,
+                screenWidth: screenWidth,
                 onSelectAll: {
                     viewModel.selectAll(from: filteredItems)
                 },

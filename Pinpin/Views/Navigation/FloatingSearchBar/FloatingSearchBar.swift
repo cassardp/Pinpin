@@ -20,6 +20,7 @@ struct FloatingSearchBar: View {
     var availableCategories: [String] = []
     var currentCategory: String?
     var isEditingCategories: Bool = false
+    var screenWidth: CGFloat = 0
 
     // MARK: - Actions
     let onSelectAll: () -> Void
@@ -44,8 +45,15 @@ struct FloatingSearchBar: View {
         static let createCategory = Notification.Name("FilterMenuViewRequestCreateCategory")
     }
 
+    // Calcul de la largeur max pour iPad (seulement quand menu fermé)
+    private var floatingMenuMaxWidth: CGFloat? {
+        // Ne pas limiter la largeur quand le menu est ouvert
+        guard !isMenuOpen, screenWidth > 0 else { return nil }
+        return AppConstants.floatingMenuMaxWidth(for: screenWidth)
+    }
+
     var body: some View {
-        // Seulement la barre de recherche/contrôles pour safeAreaInset
+        // Contenu avec largeur limitée sur iPad (sauf quand menu ouvert)
         ZStack {
             if showSearchBar {
                 SearchBarView(
@@ -101,26 +109,26 @@ struct FloatingSearchBar: View {
                 .transition(.scale(scale: 0.96).combined(with: .opacity))
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: floatingMenuMaxWidth ?? .infinity)
+        .frame(maxWidth: .infinity, alignment: .center) // Centrer le contenu limité
         .padding(.bottom, bottomPadding)
         .background(
-            VStack(spacing: 0) {
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0.0),
-                        .init(color: .black.opacity(0.02), location: 0.4),
-                        .init(color: .black.opacity(0.06), location: 0.6),
-                        .init(color: .black.opacity(0.12), location: 0.75),
-                        .init(color: .black.opacity(0.22), location: 0.9),
-                        .init(color: .black.opacity(0.35), location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            // Background gradient toujours en pleine largeur, ne bloque pas les interactions
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: .black.opacity(0.02), location: 0.4),
+                    .init(color: .black.opacity(0.06), location: 0.6),
+                    .init(color: .black.opacity(0.12), location: 0.75),
+                    .init(color: .black.opacity(0.22), location: 0.9),
+                    .init(color: .black.opacity(0.35), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
             .frame(maxWidth: .infinity)
             .ignoresSafeArea()
+            .allowsHitTesting(false)
         )
         .animation(searchAnimation, value: showSearchBar)
         .animation(searchAnimation, value: isAnimatingSearchOpen)
