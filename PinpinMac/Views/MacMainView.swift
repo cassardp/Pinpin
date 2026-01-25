@@ -7,25 +7,31 @@
 
 import SwiftUI
 import SwiftData
-import UniformTypeIdentifiers
 
 struct MacMainView: View {
     @Environment(\.modelContext) private var modelContext
-    
-    // Constante pour "All Pins"
-    private static let allPinsValue = "___ALL_PINS___"
-    
+
     @Query(sort: \ContentItem.createdAt, order: .reverse)
     private var allContentItems: [ContentItem]
-    
+
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
-    
-    @State private var selectedCategory: String = MacMainView.allPinsValue
 
-    // Colonnes adaptatives
+    // Managers
+    @State private var categoryManager = CategoryManager()
+    @State private var selectionManager = MacSelectionManager()
+
+    // Column layout
     @State private var contentWidth: CGFloat = 0
-    @State private var columnOffset: Int = 0  // Ajustement manuel via pinch
+    @State private var columnOffset: Int = 0
+
+    // UI State
+    @State private var showAddNote: Bool = false
+    @State private var showDeleteSelectedAlert: Bool = false
+    @State private var searchQuery: String = ""
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+
+    // MARK: - Computed
 
     private var numberOfColumns: Int {
         let baseColumns = AppConstants.optimalColumns(for: contentWidth)
@@ -33,142 +39,179 @@ struct MacMainView: View {
         return max(AppConstants.minColumns, min(AppConstants.maxColumns, adjusted))
     }
 
-    @State private var showAddNote: Bool = false
-    @State private var hoveredItemId: UUID? = nil
-    
-    // Category editing state
-    @State private var categoryToRename: Category? = nil
-    @State private var showRenameCategory: Bool = false
-    @State private var categoryToDelete: Category? = nil
-    @State private var showDeleteCategoryAlert: Bool = false
-    @State private var showDeleteSelectedAlert: Bool = false
-    @State private var renameCategoryName: String = ""
-    @State private var isCreatingCategory: Bool = false
-    @State private var isEditingCategories: Bool = false
-    @State private var draggingItem: Category? = nil
-    
-    // Selection Manager
-    @State private var selectionManager = MacSelectionManager()
-    
-    private var isAllPinsSelected: Bool {
-        selectedCategory == Self.allPinsValue
-    }
-    
     private var filteredItems: [ContentItem] {
         var items = allContentItems
-        
-        // Filtrer par catégorie (sauf si "All Pins" est sélectionné)
-        if !isAllPinsSelected {
-            items = items.filter { $0.safeCategoryName == selectedCategory }
+
+        // Filter by category
+        if !categoryManager.isAllPinsSelected {
+            items = items.filter { $0.safeCategoryName == categoryManager.selectedCategory }
         }
-        
-        // Filtrer par recherche
-        if !searchQueryState.isEmpty {
+
+        // Filter by search
+        if !searchQuery.isEmpty {
             items = items.filter { item in
-                item.title.localizedCaseInsensitiveContains(searchQueryState) ||
-                (item.itemDescription?.localizedCaseInsensitiveContains(searchQueryState) ?? false) ||
-                (item.url?.localizedCaseInsensitiveContains(searchQueryState) ?? false)
+                item.title.localizedCaseInsensitiveContains(searchQuery) ||
+                (item.itemDescription?.localizedCaseInsensitiveContains(searchQuery) ?? false) ||
+                (item.url?.localizedCaseInsensitiveContains(searchQuery) ?? false)
             }
         }
-        
+
         return items
     }
-    
+
+    private var visibleCategories: [Category] {
+        categoryManager.visibleCategories(from: allCategories) { name in
+            allContentItems.filter { $0.safeCategoryName == name }.count
+        }
+    }
+
     private var categoryNames: [String] {
         visibleCategories.map { $0.name }
     }
-    
-    // Catégories visibles (masque "Misc" si elle est vide)
-    private var visibleCategories: [Category] {
-        return allCategories.filter { category in
-            if category.name == "Misc" {
-                return countForCategory(category.name) > 0
-            }
-            return true
-        }
-    }
-    
-    @State private var searchQueryState: String = ""
-    
-    @State private var columnVisibilityState: NavigationSplitViewVisibility = .detailOnly
-    
+
     private var allItemIds: [UUID] {
         filteredItems.map { $0.id }
     }
-    
-    private var isSidebarVisible: Bool {
-        columnVisibilityState != .detailOnly
-    }
+
+    // MARK: - Body
 
     var body: some View {
-        mainView
-            .floatingPanel(isPresented: $showAddNote) {
-                addNoteSheet
-            }
-            .floatingPanel(isPresented: $showRenameCategory) {
-                renameCategorySheetContent
-            }
-            .alert("Delete Category", isPresented: $showDeleteCategoryAlert, presenting: categoryToDelete) { category in
-                deleteCategoryAlert(for: category)
-            } message: { category in
-                Text("Are you sure you want to delete \"\(category.name)\"? The pins in this category will not be deleted.")
-            }
-            .alert("Delete Selected Items", isPresented: $showDeleteSelectedAlert) {
-                deleteSelectedAlert
-            } message: {
-                deleteSelectedMessage
-            }
-    }
-    
-    private var mainView: some View {
-        NavigationSplitView(columnVisibility: $columnVisibilityState) {
-            sidebarView
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            MacSidebarView(
+                categoryManager: categoryManager,
+                isSidebarVisible: columnVisibility != .detailOnly
+            )
         } detail: {
-            mainContentView
+            contentView
         }
         .navigationSplitViewStyle(.balanced)
+        .floatingPanel(isPresented: $showAddNote) {
+            addNoteSheet
+        }
+        .floatingPanel(isPresented: $categoryManager.showRenameSheet) {
+            renameCategorySheet
+        }
+        .alert("Delete Category", isPresented: $categoryManager.showDeleteAlert, presenting: categoryManager.categoryToDelete) { category in
+            deleteCategoryAlert(for: category)
+        } message: { category in
+            Text("Are you sure you want to delete \"\(category.name)\"? The pins in this category will not be deleted.")
+        }
+        .alert("Delete Selected Items", isPresented: $showDeleteSelectedAlert) {
+            deleteSelectedAlert
+        } message: {
+            Text("Are you sure you want to delete \(selectionManager.selectedCount) item\(selectionManager.selectedCount > 1 ? "s" : "")?")
+        }
     }
-    
+
+    // MARK: - Content View
+
+    private var contentView: some View {
+        GeometryReader { geometry in
+            MacContentGridView(
+                filteredItems: filteredItems,
+                numberOfColumns: numberOfColumns,
+                selectedCategory: categoryManager.isAllPinsSelected ? nil : categoryManager.selectedCategory,
+                categoryNames: categoryNames,
+                selectionManager: selectionManager,
+                onMoveToCategory: moveToCategory,
+                onDeleteItem: deleteItem
+            )
+            .searchable(text: $searchQuery, prompt: "Search...")
+            .toolbar { toolbarContent }
+            .gesture(magnifyGesture)
+            .onChange(of: geometry.size.width) { _, newWidth in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    contentWidth = newWidth
+                }
+            }
+            .onAppear {
+                contentWidth = geometry.size.width
+            }
+        }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        if selectionManager.isSelectionMode {
+            MacSelectionModeToolbar(
+                numberOfColumns: numberOfColumns,
+                hasSelection: selectionManager.hasSelection,
+                selectedCount: selectionManager.selectedCount,
+                categoryNames: categoryNames,
+                onColumnDecrease: decreaseColumns,
+                onColumnIncrease: increaseColumns,
+                onSelectAll: { selectionManager.selectAll(items: allItemIds) },
+                onMoveToCategory: moveSelectedToCategory,
+                onDelete: { showDeleteSelectedAlert = true },
+                onClose: { selectionManager.toggleSelectionMode() }
+            )
+        } else {
+            MacNormalModeToolbar(
+                numberOfColumns: numberOfColumns,
+                onColumnDecrease: decreaseColumns,
+                onColumnIncrease: increaseColumns,
+                onSelect: { selectionManager.toggleSelectionMode() },
+                onAddNote: { showAddNote = true }
+            )
+        }
+    }
+
+    // MARK: - Gestures
+
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture()
+            .onEnded { value in
+                let scale = value.magnification
+                withAnimation(.spring(response: 0.3)) {
+                    if scale > 1.1 && numberOfColumns > AppConstants.minColumns {
+                        columnOffset -= 1
+                    } else if scale < 0.9 && numberOfColumns < AppConstants.maxColumns {
+                        columnOffset += 1
+                    }
+                }
+            }
+    }
+
+    // MARK: - Sheets & Alerts
+
     private var addNoteSheet: some View {
         TextEditSheet(
             item: nil,
-            targetCategory: allCategories.first(where: { $0.name == selectedCategory })
+            targetCategory: allCategories.first(where: { $0.name == categoryManager.selectedCategory })
         )
     }
-    
+
     @ViewBuilder
-    private var renameCategorySheetContent: some View {
-        if let category = categoryToRename {
+    private var renameCategorySheet: some View {
+        if let category = categoryManager.categoryToRename {
             RenameCategorySheet(
-                name: $renameCategoryName,
+                name: $categoryManager.renameCategoryName,
                 onCancel: {
-                    showRenameCategory = false
-                    categoryToRename = nil
-                    renameCategoryName = ""
-                    isCreatingCategory = false
+                    categoryManager.cancelRename()
                 },
                 onSave: {
-                    if isCreatingCategory {
-                        createCategory()
+                    if categoryManager.isCreatingCategory {
+                        categoryManager.confirmCreate(in: modelContext, totalCount: allCategories.count)
                     } else {
-                        renameCategory(category)
+                        categoryManager.confirmRename(category, in: modelContext)
                     }
-                    showRenameCategory = false
                 }
             )
         }
     }
-    
+
     @ViewBuilder
     private func deleteCategoryAlert(for category: Category) -> some View {
         Button("Cancel", role: .cancel) {
-            categoryToDelete = nil
+            categoryManager.cancelDelete()
         }
         Button("Delete", role: .destructive) {
-            deleteCategory(category)
+            categoryManager.confirmDelete(in: modelContext)
         }
     }
-    
+
     @ViewBuilder
     private var deleteSelectedAlert: some View {
         Button("Cancel", role: .cancel) { }
@@ -176,579 +219,49 @@ struct MacMainView: View {
             deleteSelectedItems()
         }
     }
-    
-    private var deleteSelectedMessage: some View {
-        Text("Are you sure you want to delete \(selectionManager.selectedCount) item\(selectionManager.selectedCount > 1 ? "s" : "")?")
-    }
-    
-    // MARK: - Sidebar
-    
-    private var sidebarList: some View {
-        List {
-            // Option "All" (non déplaçable, pas de mode édition)
-            MacCategoryRow(
-                title: "All",
-                isSelected: isAllPinsSelected,
-                isEmpty: allContentItems.isEmpty
-            ) {
-                withAnimation(.easeInOut(duration: 0.28)) {
-                    selectedCategory = Self.allPinsValue
-                }
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
 
-            // Catégories avec réordonnancement custom (Drag & Drop)
-            ForEach(visibleCategories, id: \.name) { category in
-                MacCategoryRow(
-                    title: category.name,
-                    isSelected: selectedCategory == category.name,
-                    isEmpty: countForCategory(category.name) == 0,
-                    action: {
-                        withAnimation(.easeInOut(duration: 0.28)) {
-                            selectedCategory = category.name
-                        }
-                    },
-                    onRename: {
-                        renameCategoryName = category.name
-                        categoryToRename = category
-                        showRenameCategory = true
-                    },
-                    onDelete: {
-                        categoryToDelete = category
-                        showDeleteCategoryAlert = true
-                    },
-                    canDelete: category.name != "Misc",
-                    isEditing: isEditingCategories
-                )
-                .tag(category.name) // Gardé par précaution ou pour d'autres usages
-                .onDrag {
-                    guard isEditingCategories else { return NSItemProvider() }
-                    self.draggingItem = category
-                    return NSItemProvider(object: category.name as NSString)
-                }
-                .onDrop(of: [UTType.text], delegate: CategoryDropDelegate(
-                    item: category,
-                    visibleCategories: visibleCategories,
-                    draggingItem: $draggingItem,
-                    onMove: { from, to in
-                        withAnimation {
-                             moveCategories(from: from, to: to)
-                        }
-                    }
-                ))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-            }
-        }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .scrollIndicators(.hidden)
-        .padding(.horizontal, 12)
-    }
-
-    private var sidebarView: some View {
-        sidebarList
-            .toolbar {
-                if isSidebarVisible {
-                    ToolbarItem(placement: .primaryAction) {
-                        if isEditingCategories {
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    isEditingCategories = false
-                                }
-                            } label: {
-                                Label("Done", systemImage: "checkmark")
-                            }
-                        } else {
-                            Menu {
-                                Button("Add Category", systemImage: "plus") {
-                                    prepareCreateCategory()
-                                }
-                                Button("Edit Categories", systemImage: "pencil") {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        isEditingCategories = true
-                                    }
-                                }
-                            } label: {
-                                Label("Options", systemImage: "ellipsis")
-                            }
-                            .menuIndicator(.hidden)
-                        }
-                    }
-                }
-            }
-    }
-    
-    private func countForCategory(_ category: String) -> Int {
-        allContentItems.filter { $0.safeCategoryName == category }.count
-    }
-    
-    // MARK: - Main Content
-
-    private var mainContentView: some View {
-        GeometryReader { geometry in
-            contentGrid
-                .searchable(text: $searchQueryState, prompt: "Search...")
-                .toolbar { bottomToolbarContent }
-                .gesture(magnifyGesture)
-                .onChange(of: geometry.size.width) { _, newWidth in
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                        contentWidth = newWidth
-                    }
-                }
-                .onAppear {
-                    contentWidth = geometry.size.width
-                }
-        }
-    }
-
-    private var contentGrid: some View {
-        ZStack {
-            if filteredItems.isEmpty {
-                emptyStateView
-            } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
-                            ForEach(filteredItems) { item in
-                                contentCard(for: item)
-                            }
-                        }
-                        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: numberOfColumns)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 80)
-
-                        if !filteredItems.isEmpty {
-                            StorageStatsView(
-                                selectedContentType: isAllPinsSelected ? nil : selectedCategory,
-                                filteredItems: filteredItems
-                            )
-                            .padding(.vertical, 24)
-                            .padding(.bottom, 80)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func contentCard(for item: ContentItem) -> some View {
-        MacContentCard(
-            item: item,
-            numberOfColumns: numberOfColumns,
-            isHovered: hoveredItemId == item.id,
-            isSelectionMode: selectionManager.isSelectionMode,
-            isSelected: selectionManager.isSelected(item.id),
-            onTap: { },
-            onToggleSelection: {
-                selectionManager.toggleSelection(for: item.id)
-            },
-            onOpenURL: { openURL(for: item) }
-        )
-        .onHover { isHovered in
-            if !selectionManager.isSelectionMode {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    hoveredItemId = isHovered ? item.id : nil
-                }
-            }
-        }
-        .contextMenu {
-            if !selectionManager.isSelectionMode {
-                contextMenuContent(for: item)
-            }
-        }
-    }
-
-    // MARK: - Native Toolbar (macOS 26 Liquid Glass)
-
-    @ToolbarContentBuilder
-    private var bottomToolbarContent: some ToolbarContent {
-        if selectionManager.isSelectionMode {
-            selectionModeToolbar
-        } else {
-            normalModeToolbar
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var normalModeToolbar: some ToolbarContent {
-        // Columns control (left side with navigation style for separator)
-        ToolbarItem {
-            ControlGroup {
-                Button {
-                    if numberOfColumns > AppConstants.minColumns {
-                        withAnimation(.spring(response: 0.3)) {
-                            columnOffset -= 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "minus")
-                }
-                .disabled(numberOfColumns <= AppConstants.minColumns)
-
-                Button {
-                    if numberOfColumns < AppConstants.maxColumns {
-                        withAnimation(.spring(response: 0.3)) {
-                            columnOffset += 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .disabled(numberOfColumns >= AppConstants.maxColumns)
-            }
-            .controlGroupStyle(.navigation)
-        }
-
-        // Push remaining items to the right
-        ToolbarSpacer(.flexible)
-
-        // Select
-        ToolbarItem {
-            Button {
-                selectionManager.toggleSelectionMode()
-            } label: {
-                Label("Select", systemImage: "checkmark")
-            }
-        }
-
-        ToolbarSpacer(.fixed)
-
-        // Add Note
-        ToolbarItem {
-            Button {
-                handleAddNote()
-            } label: {
-                Label("Add Note", systemImage: "text.alignleft")
-            }
-        }
-
-        // Push to center (balance with left spacer)
-        ToolbarSpacer(.flexible)
-
-        // Search is handled by .searchable modifier (right side)
-    }
-
-    @ToolbarContentBuilder
-    private var selectionModeToolbar: some ToolbarContent {
-        // Columns control (same as normal mode)
-        ToolbarItem {
-            ControlGroup {
-                Button {
-                    if numberOfColumns > AppConstants.minColumns {
-                        withAnimation(.spring(response: 0.3)) {
-                            columnOffset -= 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "minus")
-                }
-                .disabled(numberOfColumns <= AppConstants.minColumns)
-
-                Button {
-                    if numberOfColumns < AppConstants.maxColumns {
-                        withAnimation(.spring(response: 0.3)) {
-                            columnOffset += 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .disabled(numberOfColumns >= AppConstants.maxColumns)
-            }
-            .controlGroupStyle(.navigation)
-        }
-
-        ToolbarSpacer(.flexible)
-
-        if selectionManager.hasSelection {
-            // Move with count
-            ToolbarItem {
-                Menu {
-                    ForEach(categoryNames, id: \.self) { categoryName in
-                        Button {
-                            moveSelectedItemsToCategory(categoryName)
-                        } label: {
-                            Label(categoryName, systemImage: "folder")
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "folder")
-                        Text("\(selectionManager.selectedCount)")
-                    }
-                }
-                .menuIndicator(.hidden)
-            }
-
-            ToolbarSpacer(.fixed)
-
-            // Delete with count
-            ToolbarItem {
-                Button {
-                    handleDeleteSelected()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "trash")
-                        Text("\(selectionManager.selectedCount)")
-                    }
-                    .foregroundStyle(.red)
-                }
-            }
-
-            ToolbarSpacer(.fixed)
-
-            // Close (X) - at the end of the group
-            ToolbarItem {
-                Button {
-                    selectionManager.toggleSelectionMode()
-                } label: {
-                    Label("Close", systemImage: "xmark")
-                }
-            }
-        } else {
-            // Select All
-            ToolbarItem {
-                Button {
-                    selectionManager.selectAll(items: allItemIds)
-                } label: {
-                    Text("Select All")
-                }
-            }
-
-            ToolbarSpacer(.fixed)
-
-            // Close (X)
-            ToolbarItem {
-                Button {
-                    selectionManager.toggleSelectionMode()
-                } label: {
-                    Label("Close", systemImage: "xmark")
-                }
-            }
-        }
-
-        ToolbarSpacer(.flexible)
-
-        // Search is handled by .searchable modifier (right side)
-    }
-    
-    // MARK: - Gestures
-
-    private var magnifyGesture: some Gesture {
-        MagnifyGesture()
-             .onChanged { value in
-                 // Optional: Interactive scale effect
-             }
-             .onEnded { value in
-                 let scale = value.magnification
-                 withAnimation(.spring(response: 0.3)) {
-                     if scale > 1.1 {
-                         // Zoom In -> Fewer columns (offset négatif)
-                         if numberOfColumns > AppConstants.minColumns {
-                             columnOffset -= 1
-                         }
-                     } else if scale < 0.9 {
-                         // Zoom Out -> More columns (offset positif)
-                         if numberOfColumns < AppConstants.maxColumns {
-                             columnOffset += 1
-                         }
-                     }
-                 }
-             }
-    }
-    
-    // MARK: - Empty State
-    
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Text("NOTHING YET • START SHARING TO PINPIN!")
-                .font(.system(size: 12))
-                .foregroundColor(.gray.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-    
-    // MARK: - Context Menu
-    
-    @ViewBuilder
-    private func contextMenuContent(for item: ContentItem) -> some View {
-        // 1. Share
-        if let urlString = item.url, 
-           let url = URL(string: urlString), 
-           !urlString.isEmpty, 
-           !urlString.hasPrefix("file://"), 
-           !urlString.hasPrefix("images/"), 
-           !urlString.contains("supabase.co") {
-            
-            ShareLink(item: url) {
-                Label("Share", systemImage: "square.and.arrow.up")
-            }
-        }
-        
-        // 2. Category (Move to...)
-        Menu {
-            ForEach(categoryNames, id: \.self) { categoryName in
-                if categoryName != item.safeCategoryName {
-                    Button(categoryName) {
-                        moveToCategory(item: item, categoryName: categoryName)
-                    }
-                }
-            }
-        } label: {
-            Label(item.safeCategoryName.capitalized, systemImage: "folder")
-        }
-
-        // 3. Search Similar
-        MacSimilarSearchMenu(item: item)
-        
-        Divider()
-        
-        // 4. Delete
-        Button(role: .destructive) {
-            deleteItem(item)
-        } label: {
-            Label("Delete", systemImage: "trash")
-                .foregroundStyle(.red)
-        }
-    }
-    
     // MARK: - Actions
-    
-    private func handleAddNote() {
-        showAddNote = true
-    }
-    
 
-    
-    private func handleEditCategories() {
-        // TODO: Implémenter le réordonnancement des catégories
-        // Pour l'instant, cette action est un placeholder
+    private func decreaseColumns() {
+        guard numberOfColumns > AppConstants.minColumns else { return }
+        withAnimation(.spring(response: 0.3)) {
+            columnOffset -= 1
+        }
     }
-    
-    private func handleDeleteSelected() {
-        showDeleteSelectedAlert = true
+
+    private func increaseColumns() {
+        guard numberOfColumns < AppConstants.maxColumns else { return }
+        withAnimation(.spring(response: 0.3)) {
+            columnOffset += 1
+        }
     }
-    
-    private func openURL(for item: ContentItem) {
-        guard let urlString = item.url,
-              let url = URL(string: urlString) else { return }
-        NSWorkspace.shared.open(url)
-    }
-    
+
     private func moveToCategory(item: ContentItem, categoryName: String) {
         guard let category = allCategories.first(where: { $0.name == categoryName }) else { return }
         item.category = category
         try? modelContext.save()
     }
-    
+
     private func deleteItem(_ item: ContentItem) {
         withAnimation {
             modelContext.delete(item)
             try? modelContext.save()
         }
     }
-    
-    // MARK: - Category Management
-    
-    private func prepareCreateCategory() {
-        renameCategoryName = ""
-        isCreatingCategory = true
-        categoryToRename = Category(name: "New Category", sortOrder: Int32(allCategories.count))
-        showRenameCategory = true
-    }
-    
-    private func createCategory() {
-        let trimmedName = renameCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
-        
-        let newCategory = Category(
-            name: trimmedName,
-            sortOrder: Int32(allCategories.count)
-        )
-        
-        modelContext.insert(newCategory)
-        try? modelContext.save()
-        
-        categoryToRename = nil
-        renameCategoryName = ""
-        isCreatingCategory = false
-    }
-    
-    private func renameCategory(_ category: Category) {
-        let trimmedName = renameCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
-        
-        // Update selected category if it was renamed
-        if selectedCategory == category.name {
-            selectedCategory = trimmedName
-        }
-        
-        category.name = trimmedName
-        category.updatedAt = Date()
-        try? modelContext.save()
-        
-        categoryToRename = nil
-        renameCategoryName = ""
-        isCreatingCategory = false
-    }
-    
-    private func deleteCategory(_ category: Category) {
-        // If the deleted category was selected, switch to All Pins
-        if selectedCategory == category.name {
-            selectedCategory = Self.allPinsValue
-        }
-        
-        withAnimation {
-            modelContext.delete(category)
-            try? modelContext.save()
-        }
-        
-        categoryToDelete = nil
-    }
-    
-    // MARK: - Category Reordering
-    
-    private func moveCategories(from source: IndexSet, to destination: Int) {
-        // Créer une copie mutable des catégories visibles
-        var reorderedCategories = visibleCategories
-        reorderedCategories.move(fromOffsets: source, toOffset: destination)
-        
-        // Mettre à jour le sortOrder de toutes les catégories
-        for (newIndex, category) in reorderedCategories.enumerated() {
-            category.sortOrder = Int32(newIndex)
-        }
-        
-        // Les catégories non visibles gardent leur ordre après les visibles
-        let visibleIds = Set(reorderedCategories.map { $0.id })
-        let hiddenCategories = allCategories.filter { !visibleIds.contains($0.id) }
-        for (offset, category) in hiddenCategories.enumerated() {
-            category.sortOrder = Int32(reorderedCategories.count + offset)
-        }
-        
-        try? modelContext.save()
-    }
-    
-    // MARK: - Selection Management
-    
-    private func moveSelectedItemsToCategory(_ categoryName: String) {
+
+    private func moveSelectedToCategory(_ categoryName: String) {
         guard let targetCategory = allCategories.first(where: { $0.name == categoryName }) else { return }
-        
+
         for itemId in selectionManager.selectedItems {
             if let item = allContentItems.first(where: { $0.id == itemId }) {
                 item.category = targetCategory
             }
         }
-        
+
         try? modelContext.save()
         selectionManager.deselectAll()
     }
-    
+
     private func deleteSelectedItems() {
         withAnimation {
             for itemId in selectionManager.selectedItems {
@@ -761,4 +274,3 @@ struct MacMainView: View {
         }
     }
 }
-

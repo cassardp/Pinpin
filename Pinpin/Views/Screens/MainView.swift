@@ -237,7 +237,7 @@ struct MainView: View {
         }
         Button("Delete", role: .destructive) {
             if let item = itemToDelete {
-                withAnimation(.bouncy(duration: 0.5)) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     modelContext.delete(item)
                     try? modelContext.save()
                     storageStatsRefreshTrigger += 1
@@ -318,12 +318,14 @@ private extension MainView {
     
     func deleteSelectedItems(from items: [ContentItem]) {
         let itemsToDelete = items.filter { viewModel.selectedItems.contains($0.safeId) }
-        for item in itemsToDelete {
-            modelContext.delete(item)
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            for item in itemsToDelete {
+                modelContext.delete(item)
+            }
+            try? modelContext.save()
+            viewModel.selectedItems.removeAll()
+            viewModel.isSelectionMode = false
         }
-        try? modelContext.save()
-        viewModel.selectedItems.removeAll()
-        viewModel.isSelectionMode = false
     }
 }
 

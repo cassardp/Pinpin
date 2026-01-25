@@ -61,24 +61,31 @@ struct MacContentCard: View {
             // Checkbox overlay en haut à gauche (style iOS)
             if isSelectionMode {
                 checkboxOverlay
-                    .transition(.identity)
+                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
             }
         }
         .contentShape(Rectangle())
         .clipped()
-        .animation(nil, value: isSelectionMode)
     }
-    
+
     // Style identique à iOS : checkmark rouge en haut à gauche
     private var checkboxOverlay: some View {
-        Button(action: onToggleSelection) {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                onToggleSelection()
+            }
+        }) {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .foregroundColor(isSelected ? .red : .gray)
-                .font(.system(size: 20))
-                .background(Color.white.opacity(0.8))
+                .font(.system(size: 22))
+                .scaleEffect(isSelected ? 1.0 : 0.9)
+                .background(Color.white.opacity(0.9))
                 .clipShape(Circle())
+                .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
         .buttonStyle(.plain)
         .padding(8)
+        .contentTransition(.symbolEffect(.replace))
     }
 }
