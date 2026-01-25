@@ -385,32 +385,7 @@ struct MacMainView: View {
 
     @ToolbarContentBuilder
     private var normalModeToolbar: some ToolbarContent {
-        // Push everything to the right
-        ToolbarSpacer(.flexible)
-
-        // Add Note
-        ToolbarItem {
-            Button {
-                handleAddNote()
-            } label: {
-                Label("Add Note", systemImage: "text.alignleft")
-            }
-        }
-
-        ToolbarSpacer(.fixed)
-
-        // Select
-        ToolbarItem {
-            Button {
-                selectionManager.toggleSelectionMode()
-            } label: {
-                Label("Select", systemImage: "checkmark")
-            }
-        }
-
-        ToolbarSpacer(.fixed)
-
-        // Columns control
+        // Columns control (left side with navigation style for separator)
         ToolbarItem {
             ControlGroup {
                 Button {
@@ -435,63 +410,140 @@ struct MacMainView: View {
                 }
                 .disabled(numberOfColumns >= AppConstants.maxColumns)
             }
+            .controlGroupStyle(.navigation)
         }
+
+        // Push remaining items to the right
+        ToolbarSpacer(.flexible)
+
+        // Select
+        ToolbarItem {
+            Button {
+                selectionManager.toggleSelectionMode()
+            } label: {
+                Label("Select", systemImage: "checkmark")
+            }
+        }
+
+        ToolbarSpacer(.fixed)
+
+        // Add Note
+        ToolbarItem {
+            Button {
+                handleAddNote()
+            } label: {
+                Label("Add Note", systemImage: "text.alignleft")
+            }
+        }
+
+        // Push to center (balance with left spacer)
+        ToolbarSpacer(.flexible)
 
         // Search is handled by .searchable modifier (right side)
     }
 
     @ToolbarContentBuilder
     private var selectionModeToolbar: some ToolbarContent {
-        // Leading: Cancel
-        ToolbarItem(placement: .cancellationAction) {
-            Button {
-                selectionManager.toggleSelectionMode()
-            } label: {
-                Label("Cancel", systemImage: "xmark")
+        // Columns control (same as normal mode)
+        ToolbarItem {
+            ControlGroup {
+                Button {
+                    if numberOfColumns > AppConstants.minColumns {
+                        withAnimation(.spring(response: 0.3)) {
+                            columnOffset -= 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: "minus")
+                }
+                .disabled(numberOfColumns <= AppConstants.minColumns)
+
+                Button {
+                    if numberOfColumns < AppConstants.maxColumns {
+                        withAnimation(.spring(response: 0.3)) {
+                            columnOffset += 1
+                        }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .disabled(numberOfColumns >= AppConstants.maxColumns)
             }
+            .controlGroupStyle(.navigation)
         }
 
-        // Center: Selection count
-        ToolbarItem(placement: .principal) {
-            Text("\(selectionManager.selectedCount) selected")
-                .font(.headline)
-        }
+        ToolbarSpacer(.flexible)
 
         if selectionManager.hasSelection {
-            selectionActionsToolbar
+            // Move with count
+            ToolbarItem {
+                Menu {
+                    ForEach(categoryNames, id: \.self) { categoryName in
+                        Button {
+                            moveSelectedItemsToCategory(categoryName)
+                        } label: {
+                            Label(categoryName, systemImage: "folder")
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "folder")
+                        Text("\(selectionManager.selectedCount)")
+                    }
+                }
+                .menuIndicator(.hidden)
+            }
+
+            ToolbarSpacer(.fixed)
+
+            // Delete with count
+            ToolbarItem {
+                Button {
+                    handleDeleteSelected()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "trash")
+                        Text("\(selectionManager.selectedCount)")
+                    }
+                    .foregroundStyle(.red)
+                }
+            }
+
+            ToolbarSpacer(.fixed)
+
+            // Close (X) - at the end of the group
+            ToolbarItem {
+                Button {
+                    selectionManager.toggleSelectionMode()
+                } label: {
+                    Label("Close", systemImage: "xmark")
+                }
+            }
         } else {
-            ToolbarItem(placement: .primaryAction) {
+            // Select All
+            ToolbarItem {
                 Button {
                     selectionManager.selectAll(items: allItemIds)
                 } label: {
-                    Label("Select All", systemImage: "checkmark.circle.fill")
+                    Text("Select All")
+                }
+            }
+
+            ToolbarSpacer(.fixed)
+
+            // Close (X)
+            ToolbarItem {
+                Button {
+                    selectionManager.toggleSelectionMode()
+                } label: {
+                    Label("Close", systemImage: "xmark")
                 }
             }
         }
-    }
 
-    @ToolbarContentBuilder
-    private var selectionActionsToolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            Menu {
-                ForEach(categoryNames, id: \.self) { categoryName in
-                    Button {
-                        moveSelectedItemsToCategory(categoryName)
-                    } label: {
-                        Label(categoryName, systemImage: "folder")
-                    }
-                }
-            } label: {
-                Label("Move", systemImage: "folder")
-            }
+        ToolbarSpacer(.flexible)
 
-            Button(role: .destructive) {
-                handleDeleteSelected()
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            .tint(.red)
-        }
+        // Search is handled by .searchable modifier (right side)
     }
     
     // MARK: - Gestures
