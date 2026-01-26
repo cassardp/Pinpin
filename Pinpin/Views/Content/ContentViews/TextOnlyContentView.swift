@@ -12,7 +12,8 @@ struct TextOnlyContentView: View {
     let numberOfColumns: Int
     let isSelectionMode: Bool
     @State private var showingEditSheet = false
-    
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(alignment: .leading, spacing: AppConstants.contentSpacing(for: numberOfColumns)) {
             // Titre principal (pas de description affichée pour les notes)
@@ -43,16 +44,20 @@ struct TextOnlyContentView: View {
     }
     
     // MARK: - Post-it Colors
-    
-    /// Couleurs Post-it jaune-orange chaud
+
+    /// Couleurs Post-it adaptatives (clair/sombre)
     private var postItColors: (backgroundColor: Color, textColor: Color) {
-        // Jaune-orange chaud style bento : #FFE5B4 (ton pêche/vanille)
-        let bgColor = Color(red: 1.0, green: 0.898, blue: 0.706)
-        
-        // Calculer une variante foncée pour le texte
-        let textColor = darkenColor(bgColor, factor: 0.4)
-        
-        return (bgColor, textColor)
+        if colorScheme == .dark {
+            // Dark mode : brun doré chaud
+            let bgColor = Color(red: 0.35, green: 0.28, blue: 0.15)
+            let textColor = Color(red: 1.0, green: 0.92, blue: 0.75)
+            return (bgColor, textColor)
+        } else {
+            // Light mode : pêche/vanille #FFE5B4
+            let bgColor = Color(red: 1.0, green: 0.898, blue: 0.706)
+            let textColor = darkenColor(bgColor, factor: 0.4)
+            return (bgColor, textColor)
+        }
     }
     
     /// Assombrit une couleur en réduisant ses composantes RGB

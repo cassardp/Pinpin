@@ -92,7 +92,7 @@ struct MacContentCard: View {
                 .foregroundColor(isSelected ? .red : .gray)
                 .font(.system(size: 22))
                 .scaleEffect(isSelected ? 1.0 : 0.9)
-                .background(Color.white.opacity(0.9))
+                .background(Color.systemBackground.opacity(0.9))
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)

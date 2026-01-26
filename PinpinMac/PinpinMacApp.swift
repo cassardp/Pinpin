@@ -61,7 +61,6 @@ struct PinpinMacApp: App {
         WindowGroup {
             MacMainView()
                 .modelContainer(sharedModelContainer)
-                .preferredColorScheme(.light)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 800)
