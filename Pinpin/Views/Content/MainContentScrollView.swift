@@ -23,8 +23,6 @@ struct MainContentScrollView: View {
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
-    let onItemTap: (ContentItem) -> Void
-    let heroNamespace: Namespace.ID
     
     // MARK: - Scroll & Pinch State
     @State private var scrollPosition = ScrollPosition(idType: String.self)
@@ -90,9 +88,7 @@ struct MainContentScrollView: View {
             showTitle: true,
             onToggleSelection: onToggleSelection,
             onDeleteItem: onDeleteItem,
-            onStorageStatsRefresh: onStorageStatsRefresh,
-            onItemTap: onItemTap,
-            heroNamespace: heroNamespace
+            onStorageStatsRefresh: onStorageStatsRefresh
         )
     }
     

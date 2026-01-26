@@ -16,11 +16,10 @@ struct TextEditContext: Identifiable {
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = MainViewModel()
-    @Namespace private var heroNamespace
 
     @Query(sort: \Category.sortOrder, order: .forward)
     private var allCategories: [Category]
-    
+
     @State private var storageStatsRefreshTrigger = 0
     @State private var isMenuOpen = false
     @State private var menuSwipeProgress: CGFloat = 0
@@ -35,10 +34,7 @@ struct MainView: View {
 
     // TextEditSheet state - utilise une struct pour garantir le passage correct des données
     @State private var textEditContext: TextEditContext?
-    
-    // Navigation pour ItemDetailView
-    @State private var selectedItem: ContentItem?
-    
+
     // État d'édition des catégories (synchronisé avec CategoryManager via notification)
     @State private var isEditingCategories: Bool = false
 
@@ -71,12 +67,7 @@ struct MainView: View {
                     floatingSearchBarView(screenWidth: geometry.size.width)
                 }
         }
-        .sheet(item: $selectedItem) { item in
-                ItemDetailView(item: item, namespace: heroNamespace)
-                    .navigationTransition(.zoom(sourceID: item.id, in: heroNamespace))
-                    .presentationDragIndicator(.hidden)
-            }
-            .sensoryFeedback(.selection, trigger: hapticTrigger)
+        .sensoryFeedback(.selection, trigger: hapticTrigger)
             .sheet(item: $textEditContext) { context in
                 TextEditSheet(item: context.item, targetCategory: context.targetCategory)
             }
@@ -166,11 +157,7 @@ struct MainView: View {
                 },
                 onStorageStatsRefresh: {
                     storageStatsRefreshTrigger += 1
-                },
-                onItemTap: { item in
-                    selectedItem = item
-                },
-                heroNamespace: heroNamespace
+                }
             )
 
             if viewModel.showSearchBar {

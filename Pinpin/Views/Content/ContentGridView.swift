@@ -14,8 +14,6 @@ struct ContentGridView: View {
     let onToggleSelection: (UUID) -> Void
     let onDeleteItem: (ContentItem) -> Void
     let onStorageStatsRefresh: () -> Void
-    let onItemTap: (ContentItem) -> Void
-    let heroNamespace: Namespace.ID
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,9 +45,7 @@ struct ContentGridView: View {
             cornerRadius: dynamicCornerRadius,
             numberOfColumns: numberOfColumns,
             isSelectionMode: isSelectionMode,
-            onSelectionTap: { onToggleSelection(item.safeId) },
-            onItemTap: { onItemTap(item) },
-            heroNamespace: heroNamespace
+            onSelectionTap: { onToggleSelection(item.safeId) }
         )
         .allowsHitTesting(!isPinching)
         .onDrag { NSItemProvider(object: item.safeId.uuidString as NSString) }

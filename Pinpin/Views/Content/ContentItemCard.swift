@@ -13,46 +13,42 @@ struct ContentItemCard: View {
     let numberOfColumns: Int
     let isSelectionMode: Bool
     let onSelectionTap: (() -> Void)?
-    let onItemTap: (() -> Void)?
-    let heroNamespace: Namespace.ID
-    
+
     @State private var hapticTrigger = 0
+    @State private var isPressed = false
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Vue unifiée pour toutes les catégories
             unifiedContentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .matchedTransitionSource(id: item.id, in: heroNamespace) { source in
-                    source
-                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-                }
-            
-            // URL overlay désactivé
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isPressed)
         .animation(.smooth(duration: 0.4), value: cornerRadius)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.5)
-                .onEnded { _ in
-                    // Le long press est géré par le contextMenu dans MainView
-                    // On ne fait rien ici, juste bloquer le tap
-                }
-        )
         .onTapGesture {
             if isSelectionMode {
-                // En mode sélection : appeler le callback de sélection
                 onSelectionTap?()
-            } else if isLinkWithoutImage, let urlString = item.url {
-                // Lien sans image : ouvrir directement l'URL
-                handleContentTap(urlString: urlString)
             } else {
-                // Mode normal : ouvrir la vue détail avec transition hero
-                onItemTap?()
+                // Effet visuel au tap
+                hapticTrigger += 1
+                withAnimation(.easeOut(duration: 0.1)) {
+                    isPressed = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        isPressed = false
+                    }
+                }
+                // Ouvrir l'URL après l'animation
+                if let urlString = item.url, !urlString.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        handleContentTap(urlString: urlString)
+                    }
+                }
             }
         }
-        // S'assurer que la zone de toucher ne dépasse pas les limites visuelles avec les coins arrondis
         .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
     
