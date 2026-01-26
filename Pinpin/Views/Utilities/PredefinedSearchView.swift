@@ -50,7 +50,9 @@ struct PredefinedSearchView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .containerRelativeFrame(.horizontal, alignment: AppConstants.isIPad ? .center : .leading)
+            .if(AppConstants.isIPad) { view in
+                view.containerRelativeFrame(.horizontal, alignment: .center)
+            }
         }
         .padding(.bottom, 8)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
