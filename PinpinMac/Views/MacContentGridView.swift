@@ -18,6 +18,7 @@ struct MacContentGridView: View {
 
     var onMoveToCategory: (ContentItem, String) -> Void
     var onDeleteItem: (ContentItem) -> Void
+    var onEditItem: (ContentItem) -> Void
 
     @State private var hoveredItemId: UUID? = nil
 
@@ -75,7 +76,8 @@ struct MacContentGridView: View {
             onToggleSelection: {
                 selectionManager.toggleSelection(for: item.id)
             },
-            onOpenURL: { openURL(for: item) }
+            onOpenURL: { openURL(for: item) },
+            onEditItem: { onEditItem(item) }
         )
         .onHover { isHovered in
             if !selectionManager.isSelectionMode {

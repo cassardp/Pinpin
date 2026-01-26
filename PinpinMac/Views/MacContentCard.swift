@@ -16,21 +16,32 @@ struct MacContentCard: View {
     let onTap: () -> Void
     let onToggleSelection: () -> Void
     let onOpenURL: () -> Void
+    let onEditItem: () -> Void
     
     private var hasExternalLink: Bool {
         guard let urlString = item.url, !urlString.isEmpty else { return false }
-        
+
         // Exclure les liens internes Supabase (images uploadées)
         if urlString.contains("supabase.co") && urlString.contains("/storage/v1/object") {
             return false
         }
-        
+
         // Exclure les liens locaux
         if urlString.hasPrefix("file://") {
             return false
         }
-        
+
         return true
+    }
+
+    /// Détermine si c'est un item texte uniquement (note)
+    private var isTextOnlyItem: Bool {
+        item.imageData == nil && !hasValidThumbnail && !hasExternalLink
+    }
+
+    private var hasValidThumbnail: Bool {
+        guard let url = item.thumbnailUrl, !url.isEmpty else { return false }
+        return url.hasPrefix("http://") || url.hasPrefix("https://")
     }
     
     var body: some View {
@@ -52,6 +63,8 @@ struct MacContentCard: View {
                     onToggleSelection()
                 } else if hasExternalLink {
                     onOpenURL()
+                } else if isTextOnlyItem {
+                    onEditItem()
                 }
             }
             .if(!isSelectionMode && hasExternalLink) { view in

@@ -27,6 +27,8 @@ struct MacMainView: View {
 
     // UI State
     @State private var showAddNote: Bool = false
+    @State private var showEditNote: Bool = false
+    @State private var itemToEdit: ContentItem?
     @State private var showDeleteSelectedAlert: Bool = false
     @State private var searchQuery: String = ""
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
@@ -88,6 +90,9 @@ struct MacMainView: View {
         .floatingPanel(isPresented: $showAddNote) {
             addNoteSheet
         }
+        .floatingPanel(isPresented: $showEditNote) {
+            editNoteSheet
+        }
         .floatingPanel(isPresented: $categoryManager.showRenameSheet) {
             renameCategorySheet
         }
@@ -114,7 +119,8 @@ struct MacMainView: View {
                 categoryNames: categoryNames,
                 selectionManager: selectionManager,
                 onMoveToCategory: moveToCategory,
-                onDeleteItem: deleteItem
+                onDeleteItem: deleteItem,
+                onEditItem: editItem
             )
             .searchable(text: $searchQuery, prompt: "Search...")
             .toolbar { toolbarContent }
@@ -184,6 +190,13 @@ struct MacMainView: View {
     }
 
     @ViewBuilder
+    private var editNoteSheet: some View {
+        if let item = itemToEdit {
+            TextEditSheet(item: item)
+        }
+    }
+
+    @ViewBuilder
     private var renameCategorySheet: some View {
         if let category = categoryManager.categoryToRename {
             RenameCategorySheet(
@@ -247,6 +260,11 @@ struct MacMainView: View {
             modelContext.delete(item)
             try? modelContext.save()
         }
+    }
+
+    private func editItem(_ item: ContentItem) {
+        itemToEdit = item
+        showEditNote = true
     }
 
     private func moveSelectedToCategory(_ categoryName: String) {

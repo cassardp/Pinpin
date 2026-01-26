@@ -29,10 +29,8 @@ struct TextEditSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Zone d'édition principale
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Titre uniquement
                         TextField("Enter text", text: $editedTitle, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.title2)
@@ -50,7 +48,7 @@ struct TextEditSheet: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveChanges()
@@ -65,7 +63,6 @@ struct TextEditSheet: View {
         .frame(minWidth: 500, minHeight: 400)
         #endif
         .onAppear {
-            // Auto-focus sur le champ titre
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isTextFieldFocused = true
             }

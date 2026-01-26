@@ -15,23 +15,12 @@ struct TextOnlyContentView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppConstants.contentSpacing(for: numberOfColumns)) {
-            // Titre principal
+            // Titre principal (pas de description affichée pour les notes)
             Text(item.bestTitle)
                 .font(AppConstants.contentTitleFont(for: numberOfColumns))
                 .foregroundColor(postItColors.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(AppConstants.contentTitleLineLimit(for: numberOfColumns))
-            
-            // Description si disponible et différente du titre
-            if let description = item.itemDescription, 
-               !description.isEmpty,
-               description != item.title {
-                Text(description)
-                    .font(AppConstants.contentDescriptionFont(for: numberOfColumns))
-                    .foregroundColor(postItColors.textColor.opacity(0.8))
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(AppConstants.contentDescriptionLineLimit(for: numberOfColumns))
-            }
         }
         .padding(AppConstants.contentPadding(for: numberOfColumns))
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -40,6 +29,7 @@ struct TextOnlyContentView: View {
                 .fill(postItColors.backgroundColor)
         )
         .contentShape(Rectangle())
+        #if os(iOS)
         .if(!isSelectionMode) { view in
             view
                 .onTapGesture {
@@ -49,6 +39,7 @@ struct TextOnlyContentView: View {
                     TextEditSheet(item: item)
                 }
         }
+        #endif
     }
     
     // MARK: - Post-it Colors
