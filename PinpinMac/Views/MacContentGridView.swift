@@ -37,7 +37,7 @@ struct MacContentGridView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(spacing: 0) {
-                MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: 16) {
+                MacPinterestLayout(numberOfColumns: numberOfColumns, itemSpacing: AppConstants.spacing(for: numberOfColumns)) {
                     ForEach(filteredItems) { item in
                         contentCard(for: item)
                             .transition(

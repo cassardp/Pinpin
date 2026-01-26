@@ -91,17 +91,17 @@ enum AppConstants {
     static func spacing(for columns: Int) -> CGFloat {
         #if os(iOS)
         if isIPad {
-            // iPad utilise les mêmes valeurs que macOS
+            // iPad utilise les mêmes valeurs que macOS (harmonisées)
             switch columns {
-            case 3: return 14
-            case 4: return 12
-            case 5: return 10
-            case 6: return 9
-            case 7: return 8
-            case 8: return 7
-            case 9: return 6
-            case 10: return 5
-            default: return 10
+            case 3: return 16
+            case 4: return 14
+            case 5: return 12
+            case 6: return 11
+            case 7: return 10
+            case 8: return 9
+            case 9: return 8
+            case 10: return 7
+            default: return 12
             }
         } else {
             switch columns {
@@ -113,15 +113,15 @@ enum AppConstants {
         }
         #else
         switch columns {
-        case 3: return 14
-        case 4: return 12
-        case 5: return 10
-        case 6: return 9
-        case 7: return 8
-        case 8: return 7
-        case 9: return 6
-        case 10: return 5
-        default: return 10
+        case 3: return 16
+        case 4: return 14
+        case 5: return 12
+        case 6: return 11
+        case 7: return 10
+        case 8: return 9
+        case 9: return 8
+        case 10: return 7
+        default: return 12
         }
         #endif
     }
