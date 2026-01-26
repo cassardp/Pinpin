@@ -36,6 +36,13 @@ struct MacSidebarView: View {
 
     private var sidebarList: some View {
         List {
+            // Spacer pour aligner avec le top padding de la grille
+            Color.clear
+                .frame(height:8)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets())
+
             // "All" option (non-draggable)
             MacCategoryRow(
                 title: "All",
