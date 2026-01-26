@@ -25,7 +25,9 @@
       "WebFetch(domain:www.hackingwithswift.com)",
       "WebFetch(domain:www.createwithswift.com)",
       "WebFetch(domain:swiftwithmajid.com)",
-      "WebFetch(domain:troz.net)"
+      "WebFetch(domain:troz.net)",
+      "Bash(git clone:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
