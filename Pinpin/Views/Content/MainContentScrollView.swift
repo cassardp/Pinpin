@@ -69,8 +69,8 @@ struct MainContentScrollView: View {
                 storageStats
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
         .overlay(pinchShield)
     }
     

@@ -103,8 +103,7 @@ final class SimilarSearchService {
                 let safariVC = SFSafariViewController(url: url)
                 
                 if UIDevice.current.userInterfaceIdiom == .pad {
-                    safariVC.modalPresentationStyle = .formSheet
-                    safariVC.preferredContentSize = CGSize(width: 900, height: 1200)
+                    safariVC.modalPresentationStyle = .fullScreen
                 } else {
                     safariVC.modalPresentationStyle = .pageSheet
                 }

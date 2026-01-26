@@ -53,64 +53,80 @@ struct FloatingSearchBar: View {
     }
 
     var body: some View {
-        // Contenu avec largeur limitée sur iPad (sauf quand menu ouvert)
-        ZStack {
-            if showSearchBar {
-                SearchBarView(
+        VStack(spacing: 0) {
+            // Suggestions de recherche en pleine largeur (hors du container contraint)
+            if showSearchBar && showCapsules {
+                PredefinedSearchView(
                     searchQuery: $searchQuery,
-                    showSearchBar: $showSearchBar,
-                    isSearchFocused: $isSearchFocused,
                     selectedContentType: selectedContentType,
-                    showCapsules: showCapsules,
-                    showCloseButton: showCloseButton,
-                    searchTransitionNS: searchTransitionNS,
-                    onDismiss: dismissSearch,
-                    onHaptic: triggerHaptic
+                    onSearchSelected: dismissSearch
                 )
-                .transition(.identity)
-                .onAppear {
-                    // Petit délai pour garantir que le clavier s'affiche
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        isSearchFocused = true
-                    }
-                    // Apparition progressive des capsules et du bouton close avec timing optimisé
-                    withAnimation(searchAnimation.delay(0.08)) {
-                        showCapsules = true
-                    }
-                    withAnimation(searchAnimation.delay(0.12)) {
-                        showCloseButton = true
-                    }
-                    isAnimatingSearchOpen = false
-                }
-                .onDisappear {
-                    showCapsules = false
-                    showCloseButton = false
-                }
-            } else {
-                SearchControlsRow(
-                    searchQuery: $searchQuery,
-                    isSelectionMode: $isSelectionMode,
-                    selectedItems: $selectedItems,
-                    showDeleteConfirmation: $showDeleteConfirmation,
-                    isMenuOpen: $isMenuOpen,
-                    isAnimatingSearchOpen: $isAnimatingSearchOpen,
-                    scrollProgress: scrollProgress,
-                    availableCategories: availableCategories,
-                    currentCategory: currentCategory,
-                    searchTransitionNS: searchTransitionNS,
-                    isEditingCategories: isEditingCategories,
-                    onSelectAll: onSelectAll,
-                    onMoveToCategory: onMoveToCategory,
-                    onRestoreBar: onRestoreBar,
-                    onCreateNote: onCreateNote,
-                    onOpenSearch: openSearch,
-                    onHaptic: triggerHaptic
+                .transition(
+                    .asymmetric(
+                        insertion: .scale(scale: 0.92, anchor: .bottom).combined(with: .opacity).combined(with: .move(edge: .bottom)),
+                        removal: .scale(scale: 0.95, anchor: .bottom).combined(with: .opacity)
+                    )
                 )
-                .transition(.scale(scale: 0.96).combined(with: .opacity))
             }
+
+            // Contenu avec largeur limitée sur iPad (sauf quand menu ouvert)
+            ZStack {
+                if showSearchBar {
+                    SearchBarView(
+                        searchQuery: $searchQuery,
+                        showSearchBar: $showSearchBar,
+                        isSearchFocused: $isSearchFocused,
+                        selectedContentType: selectedContentType,
+                        showCloseButton: showCloseButton,
+                        searchTransitionNS: searchTransitionNS,
+                        onDismiss: dismissSearch,
+                        onHaptic: triggerHaptic
+                    )
+                    .transition(.identity)
+                    .onAppear {
+                        // Petit délai pour garantir que le clavier s'affiche
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            isSearchFocused = true
+                        }
+                        // Apparition progressive des capsules et du bouton close avec timing optimisé
+                        withAnimation(searchAnimation.delay(0.08)) {
+                            showCapsules = true
+                        }
+                        withAnimation(searchAnimation.delay(0.12)) {
+                            showCloseButton = true
+                        }
+                        isAnimatingSearchOpen = false
+                    }
+                    .onDisappear {
+                        showCapsules = false
+                        showCloseButton = false
+                    }
+                } else {
+                    SearchControlsRow(
+                        searchQuery: $searchQuery,
+                        isSelectionMode: $isSelectionMode,
+                        selectedItems: $selectedItems,
+                        showDeleteConfirmation: $showDeleteConfirmation,
+                        isMenuOpen: $isMenuOpen,
+                        isAnimatingSearchOpen: $isAnimatingSearchOpen,
+                        scrollProgress: scrollProgress,
+                        availableCategories: availableCategories,
+                        currentCategory: currentCategory,
+                        searchTransitionNS: searchTransitionNS,
+                        isEditingCategories: isEditingCategories,
+                        onSelectAll: onSelectAll,
+                        onMoveToCategory: onMoveToCategory,
+                        onRestoreBar: onRestoreBar,
+                        onCreateNote: onCreateNote,
+                        onOpenSearch: openSearch,
+                        onHaptic: triggerHaptic
+                    )
+                    .transition(.scale(scale: 0.96).combined(with: .opacity))
+                }
+            }
+            .frame(maxWidth: floatingMenuMaxWidth ?? .infinity)
+            .frame(maxWidth: .infinity, alignment: .center) // Centrer le contenu limité
         }
-        .frame(maxWidth: floatingMenuMaxWidth ?? .infinity)
-        .frame(maxWidth: .infinity, alignment: .center) // Centrer le contenu limité
         .padding(.bottom, bottomPadding)
         .background(
             // Background gradient toujours en pleine largeur, ne bloque pas les interactions
@@ -179,10 +195,9 @@ struct SearchBarView: View {
     @Binding var searchQuery: String
     @Binding var showSearchBar: Bool
     @FocusState.Binding var isSearchFocused: Bool
-    
+
     // MARK: - Properties
     var selectedContentType: String?
-    var showCapsules: Bool
     var showCloseButton: Bool
     var searchTransitionNS: Namespace.ID
     
@@ -200,21 +215,6 @@ struct SearchBarView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Capsules de recherche prédéfinies (sans padding horizontal)
-            if showCapsules {
-                PredefinedSearchView(
-                    searchQuery: $searchQuery,
-                    selectedContentType: selectedContentType,
-                    onSearchSelected: onDismiss
-                )
-                .transition(
-                    .asymmetric(
-                        insertion: .scale(scale: 0.92, anchor: .top).combined(with: .opacity).combined(with: .move(edge: .top)),
-                        removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
-                    )
-                )
-            }
-            
             // Barre de recherche principale (avec padding horizontal)
             HStack(spacing: 8) {
                 HStack(spacing: 16) {

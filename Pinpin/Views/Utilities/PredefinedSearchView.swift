@@ -49,7 +49,8 @@ struct PredefinedSearchView: View {
                     .buttonStyle(PredefinedSearchButtonStyle())
                 }
             }
-            .padding(.leading, 16)  // Alignement avec la barre de recherche
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, alignment: AppConstants.isIPad ? .center : .leading)
         }
         .padding(.bottom, 8)
         .sensoryFeedback(.impact(weight: .light), trigger: hapticTrigger)
