@@ -27,6 +27,7 @@ struct MainView: View {
     @State private var showFloatingBar: Bool = true
     @AppStorage("numberOfColumns") private var numberOfColumns: Int = AppConstants.defaultColumns
     @State private var hapticTrigger: Int = 0
+    @State private var isPinching: Bool = false
 
     // Confirmation de suppression individuelle
     @State private var showDeleteConfirmation: Bool = false
@@ -111,7 +112,7 @@ struct MainView: View {
             swipeProgress: $menuSwipeProgress,
             isDragging: $isMenuDragging,
             width: drawerWidth,
-            isSwipeDisabled: viewModel.showSearchBar,
+            isSwipeDisabled: viewModel.showSearchBar || isPinching,
             isEditingMode: isEditingCategories
         ) {
             mainContentView
@@ -137,6 +138,7 @@ struct MainView: View {
                 numberOfColumns: $numberOfColumns,
                 scrollProgress: $viewModel.scrollProgress,
                 hapticTrigger: $hapticTrigger,
+                isPinching: $isPinching,
                 filteredItems: filteredItems,
                 dynamicSpacing: dynamicSpacing,
                 dynamicCornerRadius: dynamicCornerRadius,

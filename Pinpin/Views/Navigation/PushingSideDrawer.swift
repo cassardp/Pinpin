@@ -22,10 +22,11 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
     @State private var internalIsDragging: Bool = false
     @State private var hapticTrigger: Int = 0
     
-    // Stricter horizontal swipe detection to avoid diagonal swipes
-    private let horizontalBiasRatio: CGFloat = 2.5         // |dx| must be >= ratio * |dy|
-    private let maxVerticalDeviation: CGFloat = 30.0       // vertical movement must stay under this (pts)
-    private let minHorizontalTrigger: CGFloat = 8.0        // need some horizontal intent before locking
+    // Stricter horizontal swipe detection to avoid diagonal swipes and pinch conflicts
+    private let horizontalBiasRatio: CGFloat = 4.0         // |dx| must be >= ratio * |dy| (très strict)
+    private let maxVerticalDeviation: CGFloat = 15.0       // vertical movement must stay under this (pts)
+    private let minHorizontalTrigger: CGFloat = 15.0       // need clear horizontal intent before locking
+    private let dragMinDistance: CGFloat = 22.0            // minimum distance before considering drag (laisse le temps au pinch)
 
     var body: some View {
         GeometryReader { geo in
@@ -89,12 +90,17 @@ struct PushingSideDrawer<Content: View, Drawer: View>: View {
                         
                         let dx = value.translation.width
                         let dy = value.translation.height
-                        
+                        let absDx = abs(dx)
+                        let absDy = abs(dy)
+
+                        // Attendre une distance minimale avant de considérer le geste
+                        // Cela laisse le temps au système de détecter un pinch ou un scroll vertical
+                        let totalDistance = hypot(dx, dy)
+                        guard totalDistance >= dragMinDistance || internalIsDragging else { return }
+
                         // Suivi avec verrou directionnel horizontal strict
-                        if dx != 0 || dy != 0 {
+                        if absDx > 0 || absDy > 0 {
                             // N'activer le drag horizontal que si l'intention est claire
-                            let absDx = abs(dx)
-                            let absDy = abs(dy)
                             let hasHorizontalIntent = absDx >= minHorizontalTrigger
                             let isMostlyHorizontal = absDx >= horizontalBiasRatio * absDy
                             let verticalUnderLimit = absDy <= maxVerticalDeviation

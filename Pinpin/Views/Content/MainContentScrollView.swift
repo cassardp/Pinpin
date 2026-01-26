@@ -7,7 +7,8 @@ struct MainContentScrollView: View {
     @Binding var numberOfColumns: Int
     @Binding var scrollProgress: CGFloat
     @Binding var hapticTrigger: Int
-    
+    @Binding var isPinching: Bool
+
     let filteredItems: [ContentItem]
     let dynamicSpacing: CGFloat
     let dynamicCornerRadius: CGFloat
@@ -26,7 +27,6 @@ struct MainContentScrollView: View {
     
     // MARK: - Scroll & Pinch State
     @State private var scrollPosition = ScrollPosition(idType: String.self)
-    @State private var isPinching: Bool = false
     @State private var pinchScale: CGFloat = 1.0
     
     var body: some View {
