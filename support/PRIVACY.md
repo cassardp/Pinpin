@@ -71,3 +71,7 @@ Questions about privacy? Contact us:
 ---
 
 *Your inspiration. Your collection. No tracking.*
+
+---
+
+[Home](README.md) | [Support](SUPPORT.md) | [Terms of Service](TERMS.md)

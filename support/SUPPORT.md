@@ -55,3 +55,7 @@ We typically respond within 48 hours.
 ---
 
 *Your inspiration. Your collection. No tracking.*
+
+---
+
+[Home](README.md) | [Privacy Policy](PRIVACY.md) | [Terms of Service](TERMS.md)

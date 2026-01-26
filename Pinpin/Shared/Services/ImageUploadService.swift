@@ -10,7 +10,7 @@ actor ImageUploadService {
     static let shared = ImageUploadService()
 
     private let litterboxURL = URL(string: "https://litterbox.catbox.moe/resources/internals/api.php")!
-    private let expirationTime = "24h" // Options: 1h, 12h, 24h, 72h
+    private let expirationTime = "1h" // Options: 1h, 12h, 24h, 72h
 
     private init() {}
 

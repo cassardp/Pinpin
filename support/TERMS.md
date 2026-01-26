@@ -57,3 +57,7 @@ Questions? Contact us:
 ---
 
 *Your inspiration. Your collection. No tracking.*
+
+---
+
+[Home](README.md) | [Support](SUPPORT.md) | [Privacy Policy](PRIVACY.md)

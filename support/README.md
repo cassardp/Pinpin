@@ -26,14 +26,10 @@ A local-first Pinterest alternative that respects your privacy. Save inspiration
 - iPadOS 18.4+
 - macOS 15+
 
-## Links
 
-- [Support](SUPPORT.md)
-- [Privacy Policy](PRIVACY.md)
-- [Terms of Service](TERMS.md)
-
----
 
 *Your inspiration. Your collection. No tracking.*
 
-Made by Misericode
+---
+
+[Support](SUPPORT.md) | [Privacy Policy](PRIVACY.md) | [Terms of Service](TERMS.md)
