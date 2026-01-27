@@ -27,7 +27,8 @@
       "WebFetch(domain:swiftwithmajid.com)",
       "WebFetch(domain:troz.net)",
       "Bash(git clone:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:juniperphoton.substack.com)"
     ],
     "deny": [],
     "ask": []
