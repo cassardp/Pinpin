@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "4E3972A82E8BBDBC001357EA"
-               BuildableName = "PinpinMac.app"
+               BuildableName = "Pinpin.app"
                BlueprintName = "PinpinMac"
                ReferencedContainer = "container:Pinpin.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4E3972A82E8BBDBC001357EA"
-            BuildableName = "PinpinMac.app"
+            BuildableName = "Pinpin.app"
             BlueprintName = "PinpinMac"
             ReferencedContainer = "container:Pinpin.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4E3972A82E8BBDBC001357EA"
-            BuildableName = "PinpinMac.app"
+            BuildableName = "Pinpin.app"
             BlueprintName = "PinpinMac"
             ReferencedContainer = "container:Pinpin.xcodeproj">
          </BuildableReference>
