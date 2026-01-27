@@ -78,7 +78,6 @@ struct MacContentCard: View {
             }
         }
         .contentShape(Rectangle())
-        .clipped()
     }
 
     // Style identique à iOS : checkmark rouge en haut à gauche
