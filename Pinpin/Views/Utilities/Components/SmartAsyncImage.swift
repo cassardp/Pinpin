@@ -49,6 +49,7 @@ struct SmartAsyncImage: View {
                 Color.gray.opacity(0.3)
             }
         }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             // Charger une seule fois
             if !hasLoadedImage {
