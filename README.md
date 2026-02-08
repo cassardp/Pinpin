@@ -76,13 +76,7 @@ PinpinMacShareExtension/ # macOS share extension
 
 ## Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request.
-
-1. Fork the repository
-2. Create your branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Open a Pull Request
+This is a personal project. The code is open-source for transparency and learning purposes, but I'm not accepting contributions at this time.
 
 ## Privacy
 
