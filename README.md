@@ -6,6 +6,17 @@ A local-first Pinterest alternative that respects your privacy. Save inspiration
 
 [![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/fr/app/pinpin-mobile/id6748907154)
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/1.PNG" width="15%" />
+  <img src="assets/screenshots/5.PNG" width="15%" />
+  <img src="assets/screenshots/6.PNG" width="15%" />
+  <img src="assets/screenshots/2.PNG" width="15%" />
+  <img src="assets/screenshots/3.PNG" width="15%" />
+  <img src="assets/screenshots/4.PNG" width="15%" />
+</p>
+
 ## Features
 
 - **Save anything** — Images, links and text from any app via the Share Extension
