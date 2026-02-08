@@ -4,6 +4,8 @@
 
 A local-first Pinterest alternative that respects your privacy. Save inspiration, organize your ideas, rediscover what matters. No ads. No algorithm. No account required.
 
+[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/fr/app/pinpin-mobile/id6748907154)
+
 ## Features
 
 - **Save anything** — Images, links and text from any app via the Share Extension
