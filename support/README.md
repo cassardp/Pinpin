@@ -22,9 +22,9 @@ A local-first Pinterest alternative that respects your privacy. Save inspiration
 
 ## Available On
 
-- iOS 18.4+
-- iPadOS 18.4+
-- macOS 15+
+- iOS 26+
+- iPadOS 26+
+- macOS 26+
 
 
 

@@ -30,9 +30,9 @@ A local-first Pinterest alternative that respects your privacy. Save inspiration
 
 | Platform | Minimum Version |
 |----------|----------------|
-| iOS | 18.4+ |
-| iPadOS | 18.4+ |
-| macOS | 15+ |
+| iOS | 26+ |
+| iPadOS | 26+ |
+| macOS | 26+ |
 
 ## Tech Stack
 

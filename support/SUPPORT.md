@@ -48,9 +48,9 @@ We typically respond within 48 hours.
 
 ## System Requirements
 
-- iOS 18.4 or later
-- iPadOS 18.4 or later
-- macOS 15 or later
+- iOS 26 or later
+- iPadOS 26 or later
+- macOS 26 or later
 
 ---
 

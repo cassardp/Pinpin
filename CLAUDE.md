@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pinpin is a local-first, privacy-respecting moodboard and bookmarking app (Pinterest alternative). It runs on iOS/iPadOS 18.4+ and macOS 15+, with data stored locally via SwiftData and optionally synced through CloudKit.
+Pinpin is a local-first, privacy-respecting moodboard and bookmarking app (Pinterest alternative). It runs on iOS/iPadOS 26+ and macOS 26+, with data stored locally via SwiftData and optionally synced through CloudKit.
 
 ## Build & Run
 
