@@ -16,20 +16,12 @@ struct LinkWithoutImageView: View {
             // Icône globe centrée
             Image(systemName: "globe")
                 .font(AppConstants.contentTitleFont(for: numberOfColumns))
-                #if os(macOS)
-                .foregroundColor(Color(nsColor: .controlBackgroundColor))
-                #else
-                .foregroundColor(Color(.systemBackground))
-                #endif
-                            
+                .foregroundColor(.secondary)
+
             // Titre nettoyé
             Text(cleanedTitle)
                 .font(AppConstants.contentTitleFont(for: numberOfColumns))
-                #if os(macOS)
-                .foregroundColor(Color(nsColor: .controlBackgroundColor))
-                #else
-                .foregroundColor(Color(.systemBackground))
-                #endif
+                .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
         }
