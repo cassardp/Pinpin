@@ -49,46 +49,138 @@ class ShareViewController: NSViewController {
             return
         }
         
-        guard let attachments = extensionItem.attachments, !attachments.isEmpty else {
-            print("❌ [ShareExtension] Pas d'attachments")
-            closeImmediately()
-            return
-        }
+        let attachments = extensionItem.attachments ?? []
         print("📎 [ShareExtension] \(attachments.count) attachment(s) trouvé(s)")
-        
-        // Essayer tous les types
-        let attachment = attachments[0]
-        
-        // Utiliser loadObject au lieu de loadItem (solution macOS)
-        if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-            print("🔗 [ShareExtension] Type URL détecté, chargement...")
-            _ = attachment.loadObject(ofClass: URL.self) { [weak self] (url, error) in
-                if let url = url {
-                    print("✅ [ShareExtension] URL chargée: \(url.absoluteString)")
-                    self?.handleURL(url, title: extensionItem.attributedContentText?.string)
-                } else {
-                    print("❌ [ShareExtension] Erreur chargement URL: \(error?.localizedDescription ?? "unknown")")
-                    self?.closeImmediately()
+
+        if let attachment = attachments.first {
+            // Essayer tous les types (code original inchangé)
+
+            // Utiliser loadObject au lieu de loadItem (solution macOS)
+            if attachment.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
+                print("🔗 [ShareExtension] Type URL détecté, chargement...")
+                _ = attachment.loadObject(ofClass: URL.self) { [weak self] (url, error) in
+                    if let url = url {
+                        print("✅ [ShareExtension] URL chargée: \(url.absoluteString)")
+                        self?.handleURL(url, title: extensionItem.attributedContentText?.string)
+                    } else {
+                        print("❌ [ShareExtension] Erreur chargement URL: \(error?.localizedDescription ?? "unknown")")
+                        self?.closeImmediately()
+                    }
                 }
+                return
             }
+
+            // Essayer plainText
+            if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+                attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { [weak self] (item, error) in
+                    if let urlString = item as? String, let url = URL(string: urlString) {
+                        self?.handleURL(url, title: urlString)
+                    } else {
+                        self?.closeImmediately()
+                    }
+                }
+                return
+            }
+        }
+
+        // Sur macOS, le texte sélectionné arrive dans attributedContentText
+        // avec un tableau attachments vide
+        if let text = extensionItem.attributedContentText?.string, !text.isEmpty {
+            print("📝 [ShareExtension] Texte trouvé dans attributedContentText")
+            handleText(text)
             return
         }
-        
-        // Essayer plainText
-        if attachment.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
-            attachment.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { [weak self] (item, error) in
-                if let urlString = item as? String, let url = URL(string: urlString) {
-                    self?.handleURL(url, title: urlString)
-                } else {
-                    self?.closeImmediately()
-                }
-            }
-            return
-        }
-        
+
         closeImmediately()
     }
     
+    private func handleText(_ text: String) {
+        if let detectedURL = extractURLFromText(text) {
+            handleURL(detectedURL, title: text)
+        } else {
+            saveTextToSwiftData(title: text, description: text)
+        }
+    }
+
+    private func extractURLFromText(_ text: String) -> URL? {
+        let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+        let matches = detector?.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        return matches?.first?.url
+    }
+
+    private func saveTextToSwiftData(title: String, description: String) {
+        print("💾 [ShareExtension] saveTextToSwiftData démarré pour: \(title)")
+        Task { @MainActor in
+            guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.misericode.pinpin") != nil else {
+                print("❌ [ShareExtension] Accès App Group refusé")
+                closeImmediately()
+                return
+            }
+
+            do {
+                let schema = Schema([ContentItem.self, Category.self])
+                let configuration = ModelConfiguration(
+                    schema: schema,
+                    groupContainer: .identifier(AppConstants.groupID),
+                    cloudKitDatabase: .private(AppConstants.cloudKitContainerID)
+                )
+                let container = try ModelContainer(for: schema, configurations: [configuration])
+                let context = container.mainContext
+
+                let contentTitle = title
+                let tenSecondsAgo = Date().addingTimeInterval(-10)
+                let duplicateDescriptor = FetchDescriptor<ContentItem>(
+                    predicate: #Predicate { item in
+                        item.title == contentTitle &&
+                        item.createdAt > tenSecondsAgo
+                    }
+                )
+                if (try? context.fetch(duplicateDescriptor).first) != nil {
+                    print("⚠️ [ShareExtension] Doublon détecté, skip")
+                    self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+                    return
+                }
+
+                let categoryDescriptor = FetchDescriptor<Category>(
+                    predicate: #Predicate { $0.name == "Misc" }
+                )
+                let category = try context.fetch(categoryDescriptor).first ?? {
+                    let misc = Category(name: "Misc")
+                    context.insert(misc)
+                    return misc
+                }()
+
+                let item = ContentItem(
+                    title: title,
+                    itemDescription: description,
+                    url: nil,
+                    imageData: nil,
+                    metadata: nil,
+                    category: category
+                )
+                context.insert(item)
+                try context.save()
+                print("✅ Texte sauvegardé: \(title)")
+
+                let content = UNMutableNotificationContent()
+                content.title = "Added to Pinpin"
+                content.body = title
+                content.sound = .default
+                let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                Task {
+                    try? await UNUserNotificationCenter.current().add(request)
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.closeImmediately()
+                }
+            } catch {
+                print("❌ [ShareExtension] Erreur sauvegarde texte: \(error)")
+                closeImmediately()
+            }
+        }
+    }
+
     private func handleURL(_ url: URL, title: String?) {
         print("🎯 [ShareExtension] handleURL appelé pour: \(url.absoluteString)")
         let displayTitle = title ?? url.host ?? url.absoluteString
